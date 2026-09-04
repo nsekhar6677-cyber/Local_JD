@@ -1,0 +1,3187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Society Ledger">
+<meta name="theme-color" content="#16261B">
+<title>JD Blossom Apartment — Maintenance Tracker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%231E2E24'/%3E%3Ctext x='32' y='42' font-family='Georgia,serif' font-size='26' font-weight='700' fill='%23C9922B' text-anchor='middle'%3EJD%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.5/tesseract.min.js"></script>
+<style>
+  :root{
+    --ink:#1E2E24;
+    --paper:#EEF3EE;
+    --paper-2:#DCE6DD;
+    --spine:#16261B;
+    --gold:#C9922B;
+    --green:#2F7A4D;
+    --red:#B23A2E;
+    --line:#B9C9BC;
+    --white:#FBFCFB;
+    --blue:#1E5C8C;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image: linear-gradient(var(--paper-2) 1px, transparent 1px);
+    background-size: 100% 2.1em;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    min-height:100dvh;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 16px calc(90px + env(safe-area-inset-bottom));}
+
+  header{position:relative;padding:0;}
+  .spine{
+    height:40px;
+    background:repeating-linear-gradient(90deg, var(--spine) 0 3px, #223226 3px 6px);
+    border-bottom:3px solid var(--gold);
+    padding-top:env(safe-area-inset-top);
+  }
+  .head-inner{padding:26px 4px 18px;text-align:center;position:relative;}
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:1.9rem;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:.72rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#4E6154;
+  }
+
+  .who-bar{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .role-badge{
+    font-family:'JetBrains Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
+    padding:4px 9px;border-radius:20px;background:var(--ink);color:var(--white);
+  }
+  .role-badge.owner{background:var(--gold);}
+  .logout-btn{
+    font-family:'JetBrains Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;
+    background:none;border:1px solid var(--line);color:var(--ink);padding:4px 10px;border-radius:20px;cursor:pointer;
+    min-height:26px;
+  }
+
+  nav{
+    display:flex;
+    gap:2px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin:22px 0 20px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    box-shadow:0 2px 8px -4px rgba(15,26,20,.15);
+  }
+  nav button{
+    flex:1;
+    min-width:88px;
+    min-height:44px;
+    background:var(--white);
+    border:none;
+    padding:11px 6px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:.78rem;
+    letter-spacing:.02em;
+    cursor:pointer;
+    color:var(--ink);
+    white-space:nowrap;
+    position:relative;
+    transition:background .15s ease, color .15s ease;
+  }
+  nav button:hover{background:var(--paper-2);}
+  nav button.active{background:var(--ink);color:var(--white);}
+  nav button.active::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold);
+  }
+
+  section{display:none;}
+  section.active{display:block;animation:fadeIn .28s ease;}
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+
+  .card{
+    background:var(--white);
+    border:1px solid var(--line);
+    padding:18px;
+    margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(15,26,20,.05);
+    transition:box-shadow .18s ease;
+  }
+  .card:hover{box-shadow:0 4px 14px -6px rgba(15,26,20,.16);}
+  .card h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1rem;
+    margin:0 0 14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2::before{content:"";width:9px;height:9px;background:var(--gold);flex-shrink:0;}
+
+  /* stats */
+  .stats{display:flex;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:16px;font-family:'JetBrains Mono',monospace;flex-wrap:wrap;}
+  .stat{flex:1;min-width:80px;background:var(--white);padding:12px 6px;text-align:center;transition:background .15s ease;}
+  .stat:hover{background:var(--paper);}
+  .stat b{display:block;font-size:1.3rem;font-family:'Space Grotesk',sans-serif;}
+  .stat span{font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:#4E6154;}
+
+  label{display:block;font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:#4E6154;margin-bottom:5px;font-family:'JetBrains Mono',monospace;}
+  input,select,textarea{
+    width:100%;border:1px solid var(--line);background:var(--paper);
+    padding:11px 10px;font-family:'Inter',sans-serif;font-size:1rem;color:var(--ink);border-radius:2px;
+    min-height:44px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  textarea{resize:vertical;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.5;min-height:auto;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--ink);outline-offset:1px;background:var(--white);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:14px;}
+  .row > div{flex:1;min-width:130px;}
+
+  button{font-size:1rem;}
+  button.primary{
+    background:var(--ink);color:var(--white);border:none;padding:12px 18px;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.86rem;cursor:pointer;
+    min-height:46px;border-radius:2px;width:100%;
+    transition:background .15s ease, transform .1s ease;
+  }
+  button.primary:hover{background:#12201a;}
+  button.primary:active{transform:scale(.98);}
+  button.ghost{
+    background:none;border:1px solid var(--ink);color:var(--ink);padding:10px 16px;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.8rem;cursor:pointer;
+    min-height:44px;border-radius:2px;
+    transition:background .15s ease, color .15s ease, transform .1s ease;
+  }
+  button.ghost:hover{background:var(--ink);color:var(--white);}
+  button.ghost:active{transform:scale(.98);}
+  button.wa{
+    background:var(--green);color:var(--white);border:none;padding:10px 18px;
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;
+    min-height:44px;border-radius:2px;
+    transition:background .15s ease, transform .1s ease;
+  }
+  button.wa:hover{background:#255f3d;}
+  button.wa:active{transform:scale(.98);}
+  button.danger-link{background:none;border:none;color:var(--red);font-family:'JetBrains Mono',monospace;font-size:.72rem;text-decoration:underline;cursor:pointer;padding:6px 0;}
+
+  /* flat table */
+  table{width:100%;border-collapse:collapse;font-size:.86rem;}
+  tbody tr{transition:background .12s ease;}
+  tbody tr:hover{background:var(--paper);}
+  th{
+    font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;
+    color:#4E6154;text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);
+  }
+  td{padding:7px 6px;border-bottom:1px solid var(--paper-2);vertical-align:middle;}
+  td input, td select{padding:6px 7px;font-size:.82rem;min-height:36px;}
+  .del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:1rem;min-height:36px;min-width:36px;}
+
+  .badge{
+    font-family:'JetBrains Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;
+    padding:4px 8px;border-radius:2px;display:inline-block;white-space:nowrap;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);
+  }
+  .badge.paid{background:#E1EEE4;color:var(--green);}
+  .badge.pending{background:#F6E1DE;color:var(--red);}
+  .badge.verified{background:#DCEAF5;color:var(--blue);}
+  .badge.submitted{background:#FDF2DE;color:#8A5A00;}
+
+  .chk{width:20px;height:20px;cursor:pointer;}
+
+  .report-box{
+    background:var(--paper);border:1px dashed var(--line);padding:14px;
+    font-family:'JetBrains Mono',monospace;font-size:.78rem;white-space:pre-wrap;line-height:1.55;
+    max-height:340px;overflow-y:auto;
+  }
+
+  .yr-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+  .yr-bar-row .m{width:38px;flex-shrink:0;color:#4E6154;}
+  .yr-bar-track{flex:1;background:var(--paper-2);height:16px;position:relative;}
+  .yr-bar-fill{background:var(--green);height:100%;}
+  .yr-bar-pct{width:38px;text-align:right;flex-shrink:0;}
+
+  /* expense summary table */
+  .summary-table{width:100%;border-collapse:collapse;font-size:.86rem;}
+  .summary-table th, .summary-table td{padding:8px 10px;border-bottom:1px solid var(--paper-2);}
+  .summary-table thead th{
+    background:var(--ink);color:var(--white);font-family:'Space Grotesk',sans-serif;font-weight:700;
+    padding:12px 10px;border-bottom:none;
+  }
+  .summary-table td.section-label{
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.78rem;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--ink);padding-top:16px;border-bottom:1px solid var(--line);
+  }
+  .summary-table tr.col-head th{
+    background:var(--paper);color:#4E6154;font-family:'JetBrains Mono',monospace;font-weight:500;
+    font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;
+  }
+  .summary-table tr.total-row td{font-weight:700;font-family:'Space Grotesk',sans-serif;}
+  .summary-table tr.receipts-total td{background:#E1EEE4;color:var(--green);}
+  .summary-table tr.payments-total td{background:#DCEAF5;color:var(--blue);}
+  .summary-table tr.balance-row td{background:#FBE3C7;color:#8A5A00;font-size:1rem;padding:14px 10px;}
+  .summary-table tr.item-row td:first-child{padding-left:26px;color:var(--ink);}
+  .summary-table tr.item-row td:nth-child(3){text-align:right;font-family:'JetBrains Mono',monospace;}
+  .summary-table td:nth-child(3){text-align:right;}
+  @media print{
+    body *{visibility:hidden;}
+    #exp-summary-wrap, #exp-summary-wrap *{visibility:visible;}
+    #exp-summary-wrap{position:absolute;left:0;top:0;width:100%;}
+  }
+
+  .note{font-size:.78rem;color:#4E6154;line-height:1.5;margin-top:6px;}
+  .note.warn{color:#8A5A00;background:#FDF2DE;border:1px solid #EAD3A0;padding:10px 12px;border-radius:2px;}
+  .note.err{color:var(--red);background:#F6E1DE;border:1px solid #E3B7AF;padding:10px 12px;border-radius:2px;}
+
+  .flex-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+
+  /* screenshot column */
+  .shot-cell{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .shot-thumb{
+    width:40px;height:40px;object-fit:cover;border:1px solid var(--line);cursor:pointer;
+    background:var(--paper-2);
+  }
+  .shot-placeholder{
+    width:40px;height:40px;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;
+    font-size:1rem;color:#9AA89E;
+  }
+  .file-btn{
+    font-family:'JetBrains Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;
+    border:1px solid var(--ink);background:var(--white);color:var(--ink);padding:6px 8px;cursor:pointer;
+    min-height:32px;
+  }
+  .file-input-hidden{display:none;}
+
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(15,26,20,.85);z-index:999;
+    align-items:center;justify-content:center;padding:24px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-overlay img{max-width:100%;max-height:80vh;border:2px solid var(--white);}
+  .modal-close{
+    position:absolute;top:calc(18px + env(safe-area-inset-top));right:20px;background:var(--white);border:none;
+    width:38px;height:38px;font-size:1.1rem;cursor:pointer;color:var(--ink);border-radius:50%;
+  }
+  .modal-caption{
+    position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
+    color:var(--white);font-family:'JetBrains Mono',monospace;font-size:.75rem;text-align:center;
+  }
+
+  #entry-table-wrap, #flats-table-wrap, #admins-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #entry-table-wrap table{min-width:1140px;}
+  #flats-table-wrap table{min-width:640px;}
+  #admins-table-wrap table{min-width:480px;}
+  #exp-items-wrap table{min-width:520px;}
+  #admins-table-wrap td:last-child{white-space:nowrap;}
+
+  /* ---- login screen ---- */
+  #login-screen{
+    position:relative;
+    min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:24px 16px calc(24px + env(safe-area-inset-bottom));
+    overflow:hidden;
+    background:linear-gradient(180deg, #E4EDE6 0%, var(--paper) 46%, var(--paper) 100%);
+  }
+  .login-bg{
+    position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  }
+  .login-bg svg{
+    position:absolute;inset:0;width:100%;height:100%;display:block;
+  }
+  .login-bg::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(238,243,238,.12) 0%, rgba(238,243,238,.18) 55%, rgba(238,243,238,.5) 100%);
+  }
+  .login-box{width:100%;max-width:380px;position:relative;z-index:1;}
+  .login-panel{
+    background:rgba(251,252,251,.96);border:1px solid var(--line);padding:28px 24px 24px;
+    box-shadow:0 18px 40px -20px rgba(15,26,20,.35);border-radius:2px;
+  }
+  .login-toggle{display:flex;border:1px solid var(--ink);margin-bottom:22px;}
+  .login-toggle button{
+    flex:1;background:var(--white);border:none;padding:12px 6px;font-family:'Space Grotesk',sans-serif;
+    font-weight:600;font-size:.82rem;cursor:pointer;color:var(--ink);min-height:46px;
+  }
+  .login-toggle button.active{background:var(--ink);color:var(--white);}
+  .login-form{display:none;}
+  .login-form.active{display:block;}
+  .link-btn{
+    display:block;background:none;border:none;color:var(--blue);font-family:'JetBrains Mono',monospace;
+    font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;text-decoration:underline;cursor:pointer;
+    padding:10px 0 0;min-height:32px;text-align:center;width:100%;
+  }
+  .recover-panel{
+    margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);
+  }
+  .login-title{font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:700;margin:0 0 4px;}
+  .login-sub{font-size:.8rem;color:#4E6154;margin:0 0 18px;line-height:1.5;}
+
+  .apt-fig{
+    width:64px;height:64px;margin:0 auto 14px;background:var(--ink);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;
+    font-weight:700;font-size:1.6rem;border-radius:2px;
+    box-shadow:0 6px 16px -6px rgba(15,26,20,.5);
+    border:1px solid var(--gold);
+  }
+
+  .owner-cred-list{
+    background:var(--paper);border:1px dashed var(--line);padding:10px;margin-top:10px;
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;max-height:220px;overflow-y:auto;
+  }
+  .owner-cred-list div{padding:4px 0;border-bottom:1px solid var(--paper-2);display:flex;justify-content:space-between;gap:8px;}
+
+  @media (max-width:520px){
+    h1{font-size:1.5rem;}
+    table{font-size:.76rem;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen">
+  <div class="login-bg" aria-hidden="true">
+    <svg viewBox="0 0 800 340" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#DCE9E0"/>
+          <stop offset="100%" stop-color="#EEF3EE"/>
+        </linearGradient>
+      </defs>
+      <!-- sky -->
+      <rect x="0" y="0" width="800" height="340" fill="url(#skyGrad)"/>
+      <circle cx="666" cy="60" r="34" fill="#C9922B" opacity="0.55"/>
+      <circle cx="666" cy="60" r="52" fill="#C9922B" opacity="0.15"/>
+
+      <!-- clouds -->
+      <g fill="#FBFCFB" opacity="0.8">
+        <ellipse cx="120" cy="46" rx="34" ry="12"/><ellipse cx="148" cy="40" rx="24" ry="10"/><ellipse cx="96" cy="40" rx="20" ry="9"/>
+        <ellipse cx="500" cy="34" rx="30" ry="11"/><ellipse cx="526" cy="30" rx="20" ry="9"/><ellipse cx="476" cy="30" rx="18" ry="8"/>
+        <ellipse cx="740" cy="150" rx="26" ry="9"/><ellipse cx="762" cy="146" rx="16" ry="7"/>
+      </g>
+
+      <!-- back row of blocks, softer tone -->
+      <g fill="#B9C9BC">
+        <rect x="30" y="150" width="80" height="150"/>
+        <rect x="120" y="120" width="60" height="180"/>
+        <rect x="600" y="140" width="70" height="160"/>
+        <rect x="690" y="110" width="65" height="190"/>
+      </g>
+
+      <!-- main apartment blocks -->
+      <g fill="#1E2E24">
+        <rect x="60" y="90" width="120" height="220"/>
+        <rect x="200" y="60" width="100" height="250"/>
+        <rect x="320" y="105" width="90" height="205"/>
+        <rect x="470" y="70" width="110" height="240"/>
+        <rect x="600" y="100" width="95" height="210"/>
+      </g>
+
+      <!-- windows, lit gold -->
+      <g fill="#C9922B">
+        <!-- block 1 -->
+        <rect x="74" y="108" width="12" height="14"/><rect x="98" y="108" width="12" height="14"/><rect x="122" y="108" width="12" height="14"/><rect x="146" y="108" width="12" height="14"/>
+        <rect x="74" y="140" width="12" height="14"/><rect x="122" y="140" width="12" height="14"/><rect x="146" y="140" width="12" height="14"/>
+        <rect x="98" y="172" width="12" height="14"/><rect x="122" y="172" width="12" height="14"/><rect x="146" y="172" width="12" height="14"/>
+        <rect x="74" y="204" width="12" height="14"/><rect x="98" y="204" width="12" height="14"/><rect x="146" y="204" width="12" height="14"/>
+        <rect x="74" y="236" width="12" height="14"/><rect x="122" y="236" width="12" height="14"/>
+        <!-- block 2 -->
+        <rect x="216" y="80" width="12" height="14"/><rect x="240" y="80" width="12" height="14"/><rect x="264" y="80" width="12" height="14"/>
+        <rect x="216" y="112" width="12" height="14"/><rect x="264" y="112" width="12" height="14"/>
+        <rect x="240" y="144" width="12" height="14"/><rect x="264" y="144" width="12" height="14"/>
+        <rect x="216" y="176" width="12" height="14"/><rect x="240" y="176" width="12" height="14"/>
+        <rect x="216" y="208" width="12" height="14"/><rect x="264" y="208" width="12" height="14"/>
+        <rect x="240" y="240" width="12" height="14"/>
+        <!-- block 3 -->
+        <rect x="336" y="125" width="10" height="12"/><rect x="358" y="125" width="10" height="12"/><rect x="380" y="125" width="10" height="12"/>
+        <rect x="336" y="155" width="10" height="12"/><rect x="380" y="155" width="10" height="12"/>
+        <rect x="358" y="185" width="10" height="12"/><rect x="380" y="185" width="10" height="12"/>
+        <rect x="336" y="215" width="10" height="12"/><rect x="358" y="215" width="10" height="12"/>
+        <rect x="336" y="245" width="10" height="12"/><rect x="380" y="245" width="10" height="12"/>
+        <!-- block 4 -->
+        <rect x="486" y="90" width="12" height="14"/><rect x="510" y="90" width="12" height="14"/><rect x="534" y="90" width="12" height="14"/><rect x="558" y="90" width="12" height="14"/>
+        <rect x="486" y="122" width="12" height="14"/><rect x="534" y="122" width="12" height="14"/><rect x="558" y="122" width="12" height="14"/>
+        <rect x="510" y="154" width="12" height="14"/><rect x="534" y="154" width="12" height="14"/>
+        <rect x="486" y="186" width="12" height="14"/><rect x="558" y="186" width="12" height="14"/>
+        <rect x="510" y="218" width="12" height="14"/><rect x="534" y="218" width="12" height="14"/><rect x="558" y="218" width="12" height="14"/>
+        <rect x="486" y="250" width="12" height="14"/>
+        <!-- block 5 -->
+        <rect x="616" y="118" width="10" height="12"/><rect x="638" y="118" width="10" height="12"/><rect x="660" y="118" width="10" height="12"/>
+        <rect x="616" y="148" width="10" height="12"/><rect x="660" y="148" width="10" height="12"/>
+        <rect x="638" y="178" width="10" height="12"/><rect x="660" y="178" width="10" height="12"/>
+        <rect x="616" y="208" width="10" height="12"/><rect x="638" y="208" width="10" height="12"/>
+        <rect x="616" y="238" width="10" height="12"/><rect x="660" y="238" width="10" height="12"/>
+      </g>
+
+      <!-- tree line -->
+      <g fill="#2F7A4D">
+        <circle cx="410" cy="290" r="22"/><rect x="406" y="300" width="8" height="14"/>
+        <circle cx="440" cy="298" r="16"/><rect x="437" y="305" width="6" height="10"/>
+        <circle cx="180" cy="300" r="18"/><rect x="176" y="308" width="7" height="12"/>
+        <circle cx="595" cy="298" r="18"/><rect x="591" y="306" width="7" height="12"/>
+        <circle cx="70" cy="296" r="15"/><rect x="66" y="303" width="6" height="11"/>
+        <circle cx="660" cy="292" r="15"/><rect x="656" y="299" width="6" height="11"/>
+      </g>
+
+      <!-- ground / lawn -->
+      <rect x="0" y="308" width="800" height="32" fill="#DCE6DD"/>
+
+      <!-- garden beds either side of the pathway -->
+      <g>
+        <rect x="255" y="313" width="80" height="16" rx="6" fill="#2F7A4D"/>
+        <rect x="465" y="313" width="80" height="16" rx="6" fill="#2F7A4D"/>
+      </g>
+      <g fill="#C9922B">
+        <circle cx="265" cy="319" r="3.4"/><circle cx="280" cy="323" r="3.4"/><circle cx="296" cy="318" r="3.4"/><circle cx="312" cy="322" r="3.4"/><circle cx="326" cy="318" r="3.4"/>
+        <circle cx="475" cy="322" r="3.4"/><circle cx="491" cy="318" r="3.4"/><circle cx="507" cy="323" r="3.4"/><circle cx="523" cy="318" r="3.4"/><circle cx="537" cy="322" r="3.4"/>
+      </g>
+      <g fill="#B23A2E" opacity="0.85">
+        <circle cx="272" cy="316" r="2.2"/><circle cx="304" cy="320" r="2.2"/><circle cx="319" cy="316" r="2.2"/>
+        <circle cx="483" cy="316" r="2.2"/><circle cx="515" cy="320" r="2.2"/><circle cx="530" cy="316" r="2.2"/>
+      </g>
+
+      <!-- pathway to the gate -->
+      <polygon points="372,340 428,340 412,300 388,300" fill="#EEF3EE" opacity="0.9"/>
+
+      <!-- gate: two pillars + arch, boundary wall of a gated community -->
+      <g fill="#16261B">
+        <rect x="352" y="240" width="18" height="100"/>
+        <rect x="430" y="240" width="18" height="100"/>
+        <rect x="344" y="228" width="112" height="14"/>
+      </g>
+      <g fill="#C9922B">
+        <rect x="356" y="248" width="10" height="10"/>
+        <rect x="434" y="248" width="10" height="10"/>
+        <rect x="380" y="228" width="40" height="6"/>
+      </g>
+      <!-- low boundary wall either side of gate -->
+      <rect x="230" y="290" width="120" height="12" fill="#16261B"/>
+      <rect x="450" y="290" width="120" height="12" fill="#16261B"/>
+    </svg>
+  </div>
+
+  <div class="login-box">
+    <div class="login-panel">
+    <div class="apt-fig">JD</div>
+    <h1 style="text-align:center;" id="login-society-title">JD Blossom Apartment</h1>
+    <div class="sub" style="text-align:center;display:block;margin-bottom:24px;">Sign in to continue</div>
+
+    <div class="login-toggle">
+      <button id="toggle-owner" class="active" type="button">Flat Owner</button>
+      <button id="toggle-admin" type="button">Admin</button>
+    </div>
+
+    <!-- Owner login -->
+    <div class="login-form active" id="form-owner">
+      <p class="login-title">Owner sign-in</p>
+      <p class="login-sub">Select your flat and enter the PIN given to you by the committee.</p>
+      <div class="row" style="margin-bottom:12px;">
+        <div>
+          <label for="owner-flat-select">Flat</label>
+          <select id="owner-flat-select"></select>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <div>
+          <label for="owner-pin">PIN</label>
+          <input type="password" inputmode="numeric" id="owner-pin" placeholder="4-digit PIN" maxlength="12">
+        </div>
+      </div>
+      <div id="owner-login-err"></div>
+      <button class="primary" id="owner-login-btn" style="margin-top:10px;">Sign in</button>
+      <button class="link-btn" id="owner-forgot-link" type="button">Forgot your PIN?</button>
+      <button class="link-btn" id="owner-guide-link" type="button">📘 Flat Owner User Guide</button>
+
+      <div class="recover-panel" id="owner-recover-panel" style="display:none;">
+        <div id="owner-recover-step1">
+          <p class="login-sub">Step 1 of 3 — verify flat owner. Enter the phone number your admin has on file for the flat selected above.</p>
+          <div class="row" style="margin-bottom:10px;">
+            <div>
+              <label for="recover-phone">Phone on file</label>
+              <input type="tel" id="recover-phone" placeholder="+91...">
+            </div>
+          </div>
+          <div id="owner-recover-msg"></div>
+          <div class="actions-row">
+            <button class="ghost" id="owner-recover-verify-btn" type="button">Verify flat owner</button>
+            <button class="ghost" id="owner-recover-cancel" type="button">Cancel</button>
+          </div>
+        </div>
+        <div id="owner-recover-step2" style="display:none;">
+          <p class="login-sub">Step 2 of 3 — answer your security question.</p>
+          <p class="login-sub" id="owner-recover-question" style="font-weight:600;color:var(--ink);"></p>
+          <div class="row" style="margin-bottom:10px;">
+            <div>
+              <label for="owner-recover-answer">Answer</label>
+              <input type="text" id="owner-recover-answer">
+            </div>
+          </div>
+          <div id="owner-recover-msg2"></div>
+          <div class="actions-row">
+            <button class="ghost" id="owner-recover-answer-btn" type="button">Verify answer</button>
+            <button class="ghost" id="owner-recover-cancel2" type="button">Cancel</button>
+          </div>
+        </div>
+        <div id="owner-recover-step3" style="display:none;">
+          <p class="login-sub">Step 3 of 3 — set your new PIN.</p>
+          <div class="row" style="margin-bottom:6px;">
+            <div>
+              <label for="recover-newpin">New PIN</label>
+              <input type="password" inputmode="numeric" id="recover-newpin" placeholder="4+ digit PIN" maxlength="12">
+            </div>
+          </div>
+          <div id="owner-recover-msg3"></div>
+          <div class="actions-row">
+            <button class="ghost" id="owner-recover-submit" type="button">Reset PIN</button>
+            <button class="ghost" id="owner-recover-cancel3" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="login-sub" id="owner-recover-success" style="display:none;color:var(--green);font-weight:600;text-align:center;margin-top:10px;">Password reset successful — you can sign in now.</p>
+    </div>
+
+    <!-- Admin login -->
+    <div class="login-form" id="form-admin">
+      <p class="login-title">Admin / committee sign-in</p>
+      <p class="login-sub">Full access to manage flats, payments, and settings.</p>
+      <div class="row" style="margin-bottom:12px;">
+        <div>
+          <label for="admin-profile-select">Admin profile</label>
+          <select id="admin-profile-select"></select>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <div>
+          <label for="admin-pass">Password</label>
+          <input type="password" id="admin-pass" placeholder="Password">
+        </div>
+      </div>
+      <div id="admin-login-err"></div>
+      <button class="primary" id="admin-login-btn" style="margin-top:10px;">Sign in</button>
+      <button class="link-btn" id="admin-forgot-link" type="button">Forgot the admin password?</button>
+      <button class="link-btn" id="admin-guide-link" type="button">📘 Admin User Guide</button>
+
+      <div class="recover-panel" id="admin-recover-panel" style="display:none;">
+        <p class="login-sub" id="admin-recover-question"></p>
+        <div class="row" style="margin-bottom:10px;">
+          <div>
+            <label for="recover-admin-answer">Answer</label>
+            <input type="text" id="recover-admin-answer">
+          </div>
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <div>
+            <label for="recover-admin-newpass">New password</label>
+            <input type="password" id="recover-admin-newpass" placeholder="At least 4 characters">
+          </div>
+        </div>
+        <div id="admin-recover-msg"></div>
+        <div class="actions-row">
+          <button class="ghost" id="admin-recover-submit" type="button">Reset password</button>
+          <button class="ghost" id="admin-recover-cancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="note" style="text-align:center;margin-top:22px;">This app stores all data for this society and is shared by everyone who signs in with a valid flat PIN or the admin password.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="wrap" id="app-screen" style="display:none;">
+  <header>
+    <div class="spine"></div>
+    <div class="head-inner">
+      <h1 id="society-title">JD Blossom Apartment</h1>
+      <div class="sub">Monthly Maintenance Tracker</div>
+      <div class="who-bar">
+        <span class="role-badge" id="role-badge">Admin</span>
+        <button class="logout-btn" id="logout-btn" type="button">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <nav id="tabs"></nav>
+
+  <!-- ===== ADMIN: DASHBOARD ===== -->
+  <section id="tab-dashboard">
+    <div class="card">
+      <h2>This month at a glance</h2>
+      <div class="row">
+        <div>
+          <label for="dash-month">Month</label>
+          <input type="month" id="dash-month">
+        </div>
+      </div>
+      <div class="stats" id="dash-stats"></div>
+      <div class="note" id="dash-lastcheck"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin-bottom:0;">Pending owners — WhatsApp report</h2>
+      </div>
+      <p class="note">Open this app once a day (or set a phone reminder) and tap Generate — a browser page can't send messages on its own overnight, but this gets the message ready in one tap.</p>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="gen-report-btn">Generate report</button>
+      </div>
+      <div id="report-output" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>All flats — this month</h2>
+      <p class="note">Read-only snapshot for <span id="dash-flats-month-label"></span>. Go to Entry to record or edit a payment.</p>
+      <div id="dash-flats-wrap" style="overflow-x:auto;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Society overview — this month</h2>
+      <div id="dash-society-stats" class="stats"></div>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN: FLATS & ACCESS ===== -->
+  <section id="tab-flats">
+    <div class="card">
+      <h2>Flats, owners &amp; login PINs</h2>
+      <p class="note">Each flat has its own PIN for owner sign-in. Edit any field, or reset a PIN — changes save automatically and take effect immediately for that owner.</p>
+      <div id="flats-table-wrap"></div>
+      <div class="actions-row">
+        <button class="ghost" id="add-flat-btn" type="button">+ Add flat</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Share login details</h2>
+      <p class="note">Copy this list and send it to owners individually (WhatsApp/SMS), or open the WhatsApp message for one flat at a time using the button in the table above.</p>
+      <div class="actions-row">
+        <button class="ghost" id="gen-creds-btn" type="button">Generate full login list</button>
+      </div>
+      <div id="creds-output"></div>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN: ENTRY ===== -->
+  <section id="tab-entry">
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="entry-month">Month</label>
+          <input type="month" id="entry-month">
+        </div>
+      </div>
+      <h2>Record submissions</h2>
+      <p class="note">Owners' payment screenshots go in the Proof column — tap the thumbnail to view full size. Tick <b>Verified</b> once you've checked the screenshot matches the amount and flat. Tick <b>Waived</b> to cancel a month's due entirely so nothing carries forward — this is disabled once a payment is verified; un-verify it first if you need to waive it.</p>
+      <div id="entry-table-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN: REPORTS ===== -->
+  <section id="tab-reports">
+    <div class="card">
+      <h2>Monthly report</h2>
+      <div class="row">
+        <div>
+          <label for="rpt-month">Month</label>
+          <input type="month" id="rpt-month">
+        </div>
+      </div>
+      <div id="rpt-monthly-stats" class="stats"></div>
+      <div class="report-box" id="rpt-monthly-box"></div>
+      <div class="actions-row">
+        <button class="ghost" id="copy-monthly-btn" type="button">Copy report</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Period report</h2>
+      <p class="note">Pick a report type — the fields below adjust to match.</p>
+      <div class="row">
+        <div>
+          <label for="rpt-period-type">Report type</label>
+          <select id="rpt-period-type">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="halfyearly">Half-yearly</option>
+            <option value="annually" selected>Annually</option>
+            <option value="custom">Custom time range</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="rpt-period-controls"></div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="rpt-period-btn" type="button">Generate report</button>
+      </div>
+      <div id="rpt-period-stats" class="stats" style="margin-top:14px;"></div>
+      <div id="rpt-period-bars" style="margin-top:6px;"></div>
+      <div id="rpt-period-output" style="margin-top:14px;"></div>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN: EXPENSES ===== -->
+  <section id="tab-expenses">
+    <div class="card">
+      <div class="row">
+        <div>
+          <label for="exp-month">Month</label>
+          <input type="month" id="exp-month">
+        </div>
+      </div>
+      <h2>Receipts</h2>
+      <div class="row">
+        <div>
+          <label for="exp-opening">Balance b/f from last month (₹)</label>
+          <input type="number" id="exp-opening">
+          <p class="note" id="exp-opening-note"></p>
+          <button class="link-btn" id="exp-opening-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
+        </div>
+        <div>
+          <label for="exp-maint">Maintenance amt received (₹)</label>
+          <input type="number" id="exp-maint" min="0">
+          <p class="note" id="exp-maint-note"></p>
+          <button class="link-btn" id="exp-maint-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
+        </div>
+      </div>
+      <div class="stats" id="exp-receipts-stats"></div>
+      <p class="note">"Auto" opening balance carries forward last month's available funds. "Auto" maintenance received pulls this month's collected total from Dashboard/Entry. Either can be overridden above if you need to correct a figure.</p>
+    </div>
+
+    <div class="card">
+      <h2>Payments</h2>
+      <p class="note">Add every expense for the month — water bill, power bill, diesel, salaries, repairs, and so on. Pick a category from the list, or choose "Other" to type your own.</p>
+      <div id="exp-items-wrap" style="overflow-x:auto;"></div>
+      <div class="actions-row">
+        <button class="ghost" id="exp-add-item-btn" type="button">+ Add expense</button>
+      </div>
+      <div class="stats" id="exp-payments-total" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Available funds — balance carried forward</h2>
+      <div class="stats" id="exp-balance-box"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin-bottom:0;">Monthly summary</h2>
+      </div>
+      <p class="note">Updates automatically as you edit the figures above.</p>
+      <div id="exp-summary-wrap" style="overflow-x:auto;margin-top:10px;"></div>
+      <div class="actions-row">
+        <button class="ghost" id="exp-print-btn" type="button">Print / Save as PDF</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Publish monthly summary</h2>
+      <p class="note">Generates a plain-text version of the summary above, ready to paste into WhatsApp or SMS.</p>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="exp-report-btn" type="button">Generate WhatsApp text</button>
+      </div>
+      <div id="exp-report-output" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Publish time-range summary</h2>
+      <p class="note">Summarize receipts, spending by category, and balance across multiple months — handy for quarterly or annual updates to owners. Pick a report type — the fields below adjust to match.</p>
+      <div class="row">
+        <div>
+          <label for="exp-period-type">Report type</label>
+          <select id="exp-period-type">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="halfyearly">Half-yearly</option>
+            <option value="annually">Annually</option>
+            <option value="custom" selected>Custom time range</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="exp-period-controls"></div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="exp-range-btn" type="button">Generate range summary</button>
+      </div>
+      <div id="exp-range-output" style="margin-top:14px;"></div>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN: SETTINGS ===== -->
+  <section id="tab-settings">
+    <div class="card">
+      <h2>Society settings</h2>
+      <div class="row">
+        <div>
+          <label for="set-name">Society name</label>
+          <input type="text" id="set-name" placeholder="e.g. JD Blossom Apartment">
+        </div>
+        <div>
+          <label for="set-amount">Default monthly maintenance (₹)</label>
+          <input type="number" id="set-amount" min="0" step="1">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--ink);margin-bottom:14px;">
+        <input type="checkbox" class="chk" id="set-amount-applyall" style="width:18px;height:18px;">
+        Apply this amount to all 35 flats now
+      </label>
+      <div class="row">
+        <div>
+          <label for="set-admin-phone">Admin WhatsApp number</label>
+          <input type="tel" id="set-admin-phone" placeholder="+91...">
+        </div>
+      </div>
+      <p class="note">Optional — a general contact number for the committee. Owner PIN resets no longer need this; they're verified with a security question each owner sets themselves in My Ledger.</p>
+      <button class="primary" style="width:auto;" id="save-settings-btn" type="button">Save settings</button>
+      <p class="note" id="settings-saved-note"></p>
+      <p class="note">Each flat can also have its own amount set individually from Flats &amp; Access (e.g. for a larger unit) — the default here is only used for flats that don't have a custom amount, unless you tick the box above to apply it to everyone.</p>
+    </div>
+
+    <div class="card">
+      <h2>Account recovery</h2>
+      <p class="note">Set a recovery question so a "Forgot password?" admin can reset any admin profile's password from the sign-in screen. Pick something only an admin would know the answer to. Individual admin passwords and profiles are managed on the new Profile tab.</p>
+      <div class="row">
+        <div>
+          <label for="set-recovery-q">Recovery question</label>
+          <input type="text" id="set-recovery-q" placeholder="e.g. What street is the society office on?">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="set-recovery-a">Answer</label>
+          <input type="text" id="set-recovery-a" placeholder="Answer">
+        </div>
+      </div>
+      <button class="ghost" id="save-recovery-btn" type="button">Save recovery question</button>
+      <p class="note" id="recovery-saved-note"></p>
+      <p class="note warn" id="recovery-warn" style="display:none;">Not set up yet — an admin who forgets the password can't self-recover until this is saved.</p>
+    </div>
+
+    <div class="card">
+      <h2>About this app &amp; data</h2>
+      <p class="note">All flat, owner, PIN and payment data is stored for this society and shared with anyone who signs in here — owners only see their own flat's ledger, admins see everything. This runs as a web app (works on iPhone, Android and desktop browsers); for an app-like icon, open it in your phone's browser and use "Add to Home Screen".</p>
+      <p class="note warn">Heads-up on security: PINs and admin passwords give convenient, lightweight access control suited to a trusted residents' community — they are not bank-grade encryption. Don't reuse a sensitive personal password here.</p>
+    </div>
+
+    <div class="card">
+      <h2>Data backup</h2>
+      <p class="note">Download a full backup of everything in this app — flats, owners, PINs, payments, expenses, admin profiles, and settings — as a single CSV file. Keep it somewhere safe; if you ever need to restore, upload it back here.</p>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="export-backup-btn" type="button">Download backup (CSV)</button>
+        <button class="ghost" id="import-backup-btn" type="button">Restore from backup</button>
+        <input type="file" id="import-backup-input" accept=".csv" class="file-input-hidden">
+      </div>
+      <p class="note" id="backup-note"></p>
+      <p class="note warn">Restoring a backup replaces all current data in this app with what's in the file — do this only if you're sure.</p>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN: PROFILE ===== -->
+  <section id="tab-profile">
+    <div class="card">
+      <h2>My profile</h2>
+      <div class="row">
+        <div>
+          <label for="my-admin-name">Name</label>
+          <input type="text" id="my-admin-name" placeholder="e.g. Priya Sharma">
+        </div>
+        <div>
+          <label for="my-admin-phone">Phone</label>
+          <input type="tel" id="my-admin-phone" placeholder="+91...">
+        </div>
+      </div>
+      <button class="ghost" id="save-my-profile-btn" type="button">Save profile</button>
+      <p class="note" id="my-profile-saved-note"></p>
+    </div>
+
+    <div class="card">
+      <h2>Change my password</h2>
+      <div class="row">
+        <div>
+          <label for="my-admin-newpass">New password</label>
+          <input type="password" id="my-admin-newpass" placeholder="At least 4 characters">
+        </div>
+      </div>
+      <button class="ghost" id="save-my-password-btn" type="button">Update password</button>
+      <p class="note" id="my-password-saved-note"></p>
+    </div>
+
+    <div class="card">
+      <h2>Admin profiles</h2>
+      <p class="note">Each profile signs in separately from the login screen and has the same full admin access — this is for giving committee members their own named login, not for restricting what any admin can do. Any admin can reset another admin's password from here — this is your backup if someone forgets both their password and their recovery answer.</p>
+      <div id="admins-table-wrap" style="overflow-x:auto;"></div>
+      <div class="actions-row">
+        <button class="ghost" id="add-admin-btn" type="button">+ Add admin profile</button>
+      </div>
+      <p class="note" id="admins-note"></p>
+    </div>
+  </section>
+
+  <!-- ===== OWNER VIEW ===== -->
+  <section id="tab-my">
+    <div class="card">
+      <h2 id="my-flat-title">My flat</h2>
+      <div class="stats" id="my-stats"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin-bottom:0;">This month — <span id="my-month-label"></span></h2>
+      </div>
+      <div id="my-current-status" style="margin-bottom:12px;"></div>
+      <div id="my-upload-area"></div>
+    </div>
+
+    <div class="card">
+      <h2>Society overview</h2>
+      <p class="note">Read-only — collection status for the building this month.</p>
+      <div class="stats" id="my-society-stats"></div>
+    </div>
+
+    <div class="card">
+      <h2>My payment history</h2>
+      <div id="my-history-wrap" style="overflow-x:auto;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Security question</h2>
+      <p class="note">Set this up so you can reset your own PIN from the sign-in screen if you forget it — pick a question only you would know the answer to.</p>
+      <div class="row">
+        <div>
+          <label for="my-recovery-q">Security question</label>
+          <input type="text" id="my-recovery-q" placeholder="e.g. What was my first pet's name?">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="my-recovery-a">Answer</label>
+          <input type="text" id="my-recovery-a" placeholder="Leave blank to keep your current answer">
+        </div>
+      </div>
+      <button class="ghost" id="save-my-recovery-btn" type="button">Save security question</button>
+      <p class="note" id="my-recovery-saved-note"></p>
+      <p class="note warn" id="my-recovery-warn" style="display:none;">Not set up yet — you won't be able to self-reset your PIN until this is saved.</p>
+    </div>
+  </section>
+
+</div>
+
+<div class="modal-overlay" id="shot-modal">
+  <button class="modal-close" id="shot-modal-close" type="button">✕</button>
+  <img id="shot-modal-img" src="" alt="Payment screenshot">
+  <div class="modal-caption" id="shot-modal-caption"></div>
+</div>
+
+<div class="modal-overlay" id="guide-modal">
+  <div class="login-panel" style="max-width:560px;max-height:82vh;overflow-y:auto;text-align:left;">
+    <div class="flex-between" style="margin-bottom:14px;">
+      <h2 id="guide-modal-title" style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:1.15rem;"></h2>
+      <button class="modal-close" id="guide-modal-close" type="button" style="position:static;width:32px;height:32px;">✕</button>
+    </div>
+    <div id="guide-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal">
+  <div class="login-panel" style="max-width:360px;">
+    <p id="confirm-modal-text" style="margin:0 0 16px;font-size:.92rem;line-height:1.5;"></p>
+    <div class="actions-row">
+      <button class="primary" id="confirm-modal-yes" type="button" style="width:auto;">Yes, remove</button>
+      <button class="ghost" id="confirm-modal-no" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== STATE ===================== */
+const TABS_ADMIN = [
+  {id:'dashboard', label:'Dashboard'},
+  {id:'flats', label:'Flats & Access'},
+  {id:'entry', label:'Entry'},
+  {id:'reports', label:'Reports'},
+  {id:'expenses', label:'Expenses'},
+  {id:'settings', label:'Settings'},
+  {id:'profile', label:'Profile'}
+];
+const TABS_OWNER = [
+  {id:'my', label:'My Ledger'}
+];
+
+let flats = [];
+let payments = {}; // key: `${flatId}:${YYYY-MM}` -> {paid,amount,date,mode,screenshot,verified}
+let settings = {societyName:'JD Blossom Apartment', defaultAmount:2000, lastCheck:null, adminPassword:'admin123', adminRecoveryQuestion:'', adminRecoveryAnswer:'', adminPhone:''};
+let expenses = {}; // key: 'YYYY-MM' -> {openingOverride, maintReceivedOverride, items:[{id,category,paidOn,amount}]}
+let admins = []; // [{id, name, phone, password}]
+let currentUser = null; // {role:'admin', adminId} | {role:'owner', flatId}
+
+function todayMonth(){ return new Date().toISOString().slice(0,7); }
+function todayDate(){ return new Date().toISOString().slice(0,10); }
+function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
+function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
+function monthLabelOf(month){
+  const [y,mo] = month.split('-');
+  return new Date(y, mo-1, 1).toLocaleDateString('en-IN', {month:'long', year:'numeric'});
+}
+function last12Months(){
+  const out = [];
+  const d = new Date();
+  d.setDate(1);
+  for(let i=0;i<12;i++){
+    out.push(d.toISOString().slice(0,7));
+    d.setMonth(d.getMonth()-1);
+  }
+  return out;
+}
+
+/* ===================== LOAD / SAVE (shared across all users) ===================== */
+const DEFAULT_OWNERS = [
+  {name:'Kundan Kumar Sigh', phone:'+917795681920'},
+  {name:'Manish Kumar', phone:'+919108416357'},
+  {name:'Anushree M.', phone:'+919148873188'},
+  {name:'Shanmukh Rao Subudhi', phone:'+918951323159'},
+  {name:'Virender Solanki - Sudeshna', phone:'+918095679091'},
+  {name:'Abha Singh', phone:'+918707743302'},
+  {name:'Maheshwara N.', phone:'+919620183269'},
+  {name:'Munisekhar Nimmala', phone:'+918197426677'},
+  {name:'Subhish J Pillai', phone:'+919620183269'},
+  {name:'O. Kathiri Chetty', phone:'+919845064751'},
+  {name:'Kheem Singh Bisht', phone:'+918553093745'},
+  {name:'Deepak Kumar', phone:'+919561725494'},
+  {name:'Sindhu Raghavendra', phone:'+919686356006'},
+  {name:'Munikrishna N.', phone:'+918892208983'},
+  {name:'Pallavi', phone:'+919663358058'},
+  {name:'Krishnamurthy Kurakula', phone:'+919731098098'},
+  {name:'Saran Kumar Reddy V.', phone:'+917259824248'},
+  {name:'Anima Remesh', phone:'+919449661228'},
+  {name:'LR. Umarani Ramesh', phone:'+919449446845'},
+  {name:'Anitha Balakrishna', phone:'+918317377800'},
+  {name:'Sai Manohar Boidapu', phone:'+919686239385'},
+  {name:'Swapnil Sunny', phone:'+918884898221'},
+  {name:'Mohan Kumar', phone:'+919620183269'},
+  {name:'Hari Dindukurthi', phone:'+917702115644'},
+  {name:'Vineel Kumar G', phone:'+919867197773'},
+  {name:'Harendra Kumar', phone:'+919035203994'},
+  {name:'Venu Bandi', phone:'+914025476081'},
+  {name:'Sumukan Setty', phone:'+919886655802'},
+  {name:'Shantakumar Banappanavar', phone:'+918497009775'},
+  {name:'Lavanya Kumar T', phone:'+919480437016'},
+  {name:'Avinash Kumar Reddy Eluru', phone:'+919533766101'},
+  {name:'Vinjamoori Shankar', phone:'+918095323902'},
+  {name:'Deepa Bharath Raj', phone:'+919731314929'},
+  {name:'Tejeswar Vasupally', phone:'+918792646237'},
+  {name:'Chaitanya P', phone:'+919620377357'}
+];
+
+async function loadAll(){
+  try{
+    const f = await window.storage.get('flats', true);
+    flats = f ? JSON.parse(f.value) : [];
+  }catch(e){ flats = []; }
+  try{
+    await loadPayments();
+  }catch(e){ payments = {}; }
+  try{
+    const s = await window.storage.get('settings', true);
+    if(s) settings = {...settings, ...JSON.parse(s.value)};
+  }catch(e){}
+  try{
+    const ex = await window.storage.get('expenses', true);
+    expenses = ex ? JSON.parse(ex.value) : {};
+  }catch(e){ expenses = {}; }
+  try{
+    const ad = await window.storage.get('admins', true);
+    admins = ad ? JSON.parse(ad.value) : [];
+  }catch(e){ admins = []; }
+
+  if(admins.length === 0){
+    // migrate the old single admin password into the first named profile
+    admins.push({id:'admin1', name:'Admin', phone:'', password: settings.adminPassword || 'admin123'});
+    await saveAdmins();
+  }
+
+  if(flats.length === 0){
+    let i = 1;
+    for(let floor=0; floor<=4; floor++){
+      for(let unit=1; unit<=7; unit++){
+        const flatNo = 'f' + floor + String(unit).padStart(2,'0');
+        const owner = DEFAULT_OWNERS[i-1] || {name:'', phone:''};
+        flats.push({id:'id'+i, flatNo, owner: owner.name, phone: owner.phone, amount: settings.defaultAmount, pin: String(1000+i)});
+        i++;
+      }
+    }
+    await saveFlats();
+    await saveSettings();
+  }
+  // backfill pins for older data that might not have them
+  let needSave = false;
+  flats.forEach((f,idx)=>{ if(!f.pin){ f.pin = String(1000+idx+1); needSave = true; } });
+
+  // migrate flat numbers to the f001..f407 (floor+unit) scheme if they don't already match
+  const flatNoPattern = /^f[0-4]0[1-7]$/;
+  if(flats.length === 35 && !flats.every(f=>flatNoPattern.test(f.flatNo))){
+    flats.forEach((f,idx)=>{
+      const floor = Math.floor(idx/7);
+      const unit = (idx%7)+1;
+      f.flatNo = 'f' + floor + String(unit).padStart(2,'0');
+    });
+    needSave = true;
+  }
+  if(needSave) await saveFlats();
+
+  document.getElementById('login-society-title').textContent = settings.societyName || 'JD Blossom Apartment';
+  initLoginScreen();
+}
+
+async function saveFlats(){ try{ await window.storage.set('flats', JSON.stringify(flats), true); }catch(e){} }
+
+/* ---------- payments: per-month storage keys, with fetch-merge-write to avoid concurrent overwrite loss ---------- */
+function splitPayKey(key){
+  const idx = key.lastIndexOf(':');
+  return { flatId: key.slice(0, idx), month: key.slice(idx+1) };
+}
+
+// Explicit, authoritative index of "which months have data" — kept in its own small key.
+// This is the primary way loadPayments() discovers what to fetch. It does NOT depend on
+// window.storage.list() behaving a particular way, since that's an assumption we can't
+// fully verify against the real backend from here. list() is still used as a best-effort
+// supplementary check in loadPayments(), but the index is the source of truth.
+async function addMonthToIndex(month){
+  let idx = [];
+  try{
+    const cur = await window.storage.get('payments_index', true);
+    if(cur && cur.value) idx = JSON.parse(cur.value);
+  }catch(e){ idx = []; }
+  if(!Array.isArray(idx)) idx = [];
+  if(!idx.includes(month)){
+    idx.push(month);
+    idx.sort();
+    try{ await window.storage.set('payments_index', JSON.stringify(idx), true); }catch(e){}
+  }
+}
+
+// One-time (idempotent) migration: old versions stored everything in a single 'payments' key.
+// Split that into one key per month, then remove the old key. Safe to call every load —
+// it's a no-op once the old key is gone. Already-existing per-month data always wins over
+// data reconstructed from the old legacy blob, so a second device migrating late can never
+// silently roll back a fresher submission that was already saved under the new format.
+async function migrateOldPaymentsIfNeeded(){
+  let old = null;
+  try{ old = await window.storage.get('payments', true); }catch(e){ return; }
+  if(!old || !old.value) return;
+  let oldPayments = {};
+  try{ oldPayments = JSON.parse(old.value); }catch(e){ oldPayments = {}; }
+  const byMonth = {};
+  for(const key in oldPayments){
+    const { flatId, month } = splitPayKey(key);
+    if(!byMonth[month]) byMonth[month] = {};
+    byMonth[month][flatId] = oldPayments[key];
+  }
+  for(const month in byMonth){
+    let existing = {};
+    try{
+      const cur = await window.storage.get('payments_'+month, true);
+      if(cur && cur.value) existing = JSON.parse(cur.value);
+    }catch(e){}
+    // existing (already-migrated / freshly-saved) data wins over the old legacy blob
+    const merged = {...byMonth[month], ...existing};
+    try{ await window.storage.set('payments_'+month, JSON.stringify(merged), true); }catch(e){}
+    await addMonthToIndex(month);
+  }
+  try{ await window.storage.delete('payments', true); }catch(e){}
+}
+
+async function loadPayments(){
+  await migrateOldPaymentsIfNeeded();
+  payments = {};
+  const monthsToLoad = new Set();
+
+  // Primary source: the explicit index (doesn't depend on list() behaving a particular way)
+  try{
+    const idxRec = await window.storage.get('payments_index', true);
+    if(idxRec && idxRec.value){
+      const idx = JSON.parse(idxRec.value);
+      if(Array.isArray(idx)) idx.forEach(m => monthsToLoad.add(m));
+    }
+  }catch(e){}
+
+  // Supplementary/best-effort: list() discovery, in case the index is ever missing an entry
+  try{
+    const list = await window.storage.list('payments_', true);
+    const rawKeys = (list && list.keys) ? list.keys : [];
+    rawKeys.forEach(k=>{
+      const keyStr = typeof k === 'string' ? k : (k && k.key ? k.key : null);
+      if(keyStr && keyStr !== 'payments_index') monthsToLoad.add(keyStr.slice('payments_'.length));
+    });
+  }catch(e){}
+
+  for(const month of monthsToLoad){
+    try{
+      const rec = await window.storage.get('payments_'+month, true);
+      if(rec && rec.value){
+        const monthObj = JSON.parse(rec.value);
+        for(const flatId in monthObj){
+          payments[payKey(flatId, month)] = monthObj[flatId];
+        }
+      }
+    }catch(e){ /* skip this month on read error, don't lose the rest */ }
+  }
+}
+
+// Saves ONE flat's record for ONE month. Fetches the latest copy of that month's key
+// immediately before writing, so a concurrent save (from another device) to a DIFFERENT
+// flat in the same month is preserved instead of being overwritten wholesale.
+async function savePayments(flatId, month){
+  if(!flatId || !month) return; // guard against accidental no-arg calls
+  const storageKey = 'payments_' + month;
+  let monthObj = {};
+  try{
+    const cur = await window.storage.get(storageKey, true);
+    if(cur && cur.value) monthObj = JSON.parse(cur.value);
+  }catch(e){ monthObj = {}; }
+  monthObj[flatId] = payments[payKey(flatId, month)];
+  try{ await window.storage.set(storageKey, JSON.stringify(monthObj), true); }catch(e){}
+  await addMonthToIndex(month);
+}
+
+// Used only for full-state operations (CSV restore) where every month is being replaced at once.
+async function saveAllPaymentsBulk(){
+  const byMonth = {};
+  for(const key in payments){
+    const { flatId, month } = splitPayKey(key);
+    if(!byMonth[month]) byMonth[month] = {};
+    byMonth[month][flatId] = payments[key];
+  }
+  const months = Object.keys(byMonth);
+  for(const month of months){
+    try{ await window.storage.set('payments_'+month, JSON.stringify(byMonth[month]), true); }catch(e){}
+  }
+  try{ await window.storage.set('payments_index', JSON.stringify(months.sort()), true); }catch(e){}
+}
+
+async function saveSettings(){ try{ await window.storage.set('settings', JSON.stringify(settings), true); }catch(e){} }
+async function saveExpenses(){ try{ await window.storage.set('expenses', JSON.stringify(expenses), true); }catch(e){} }
+async function saveAdmins(){ try{ await window.storage.set('admins', JSON.stringify(admins), true); }catch(e){} }
+
+/* ---------- DATA BACKUP: single CSV export/import ---------- */
+function csvEscape(value){
+  return '"' + String(value).replace(/"/g, '""') + '"';
+}
+
+async function exportBackupCsv(){
+  const rows = [
+    ['key','value'],
+    ['meta_app', settings.societyName || 'JD Blossom Apartment'],
+    ['meta_exportedAt', new Date().toISOString()],
+    ['flats', JSON.stringify(flats)],
+    ['payments', JSON.stringify(payments)],
+    ['settings', JSON.stringify(settings)],
+    ['expenses', JSON.stringify(expenses)],
+    ['admins', JSON.stringify(admins)]
+  ];
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Jdb_data.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const note = document.getElementById('backup-note');
+  note.textContent = 'Backup downloaded to your browser\'s downloads folder — move it wherever you\'d like to keep it.';
+  setTimeout(()=>{ note.textContent=''; }, 5000);
+}
+
+function parseBackupCsv(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field=''; }
+      else if(c === '\r'){ /* skip */ }
+      else if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function importBackupCsv(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const note = document.getElementById('backup-note');
+  try{
+    const text = await file.text();
+    const rows = parseBackupCsv(text);
+    const data = {};
+    rows.slice(1).forEach(r=>{ if(r.length>=2) data[r[0]] = r[1]; });
+    if(!data.flats || !data.payments || !data.settings){
+      note.textContent = "This doesn't look like a valid backup file (missing expected data).";
+      e.target.value = '';
+      return;
+    }
+    if(!(await customConfirm('Restore this backup? This replaces all current flats, payments, expenses, admin profiles and settings in the app with what\'s in the file.'))){
+      e.target.value = '';
+      return;
+    }
+    flats = JSON.parse(data.flats);
+    payments = JSON.parse(data.payments);
+    settings = {...settings, ...JSON.parse(data.settings)};
+    expenses = data.expenses ? JSON.parse(data.expenses) : {};
+    admins = data.admins ? JSON.parse(data.admins) : admins;
+    await saveFlats(); await saveAllPaymentsBulk(); await saveSettings(); await saveExpenses(); await saveAdmins();
+
+    document.getElementById('set-name').value = settings.societyName || '';
+    document.getElementById('set-amount').value = settings.defaultAmount || 2000;
+    document.getElementById('set-admin-phone').value = settings.adminPhone || '';
+    document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
+    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
+
+    note.textContent = 'Backup restored successfully.';
+    e.target.value = '';
+  }catch(err){
+    note.textContent = "Could not read that file — make sure it's a backup CSV exported from this app.";
+    e.target.value = '';
+  }
+}
+
+
+/* ---------- expense ledger helpers ---------- */
+function prevMonthKeyGlobal(month){
+  const [y,m] = month.split('-').map(Number);
+  const d = new Date(y, m-2, 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function nextMonthKeyGlobal(month){
+  const [y,m] = month.split('-').map(Number);
+  const d = new Date(y, m, 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function monthsInRangeGlobal(from, to){
+  const out = [];
+  if(!from || !to || from > to) return out;
+  let cur = from;
+  let guard = 0;
+  while(cur <= to && guard < 240){
+    out.push(cur);
+    cur = nextMonthKeyGlobal(cur);
+    guard++;
+  }
+  return out;
+}
+function getExpenseData(month){
+  if(!expenses[month]) expenses[month] = {openingOverride:null, maintReceivedOverride:null, items:[]};
+  return expenses[month];
+}
+function computeExpenseMonth(month, depth){
+  depth = depth || 0;
+  const data = getExpenseData(month);
+  let autoOpening = 0;
+  if(depth < 24){
+    const prev = prevMonthKeyGlobal(month);
+    if(expenses[prev]){
+      autoOpening = computeExpenseMonth(prev, depth+1).closing;
+    }
+  }
+  const autoMaint = monthStats(month).collected;
+  const opening = (data.openingOverride !== null && data.openingOverride !== undefined) ? Number(data.openingOverride) : autoOpening;
+  const maintReceived = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? Number(data.maintReceivedOverride) : autoMaint;
+  const totalReceipts = opening + maintReceived;
+  const totalPayments = data.items.reduce((s,it)=>s+(Number(it.amount)||0),0);
+  const closing = totalReceipts - totalPayments;
+  return {opening, maintReceived, totalReceipts, totalPayments, closing, autoOpening, autoMaint};
+}
+
+function payKey(flatId, month){ return flatId + ':' + month; }
+function getPayment(flatId, month){
+  return payments[payKey(flatId, month)] || {paid:false, amount:null, date:'', mode:'', screenshot:null, verified:false, autoCheck:null, waived:false};
+}
+
+/* ---------- automatic balance carry-forward ---------- */
+function prevMonthKeyGlobal(month){
+  const [y,m] = month.split('-').map(Number);
+  const d = new Date(y, m-2, 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function flatFirstMonth(flatId){
+  const months = Object.keys(payments)
+    .filter(k=>k.startsWith(flatId+':'))
+    .map(k=>k.split(':')[1]);
+  if(months.length === 0) return null;
+  return months.sort()[0];
+}
+// Returns {base, carryIn, dueThisMonth, paid, carryOut} for a flat in a given month.
+// carryIn/carryOut > 0 means an outstanding balance owed; < 0 means a credit for next month.
+function computeFlatDue(flatId, month, depth){
+  depth = depth || 0;
+  const flat = flats.find(f=>f.id===flatId);
+  const base = flat ? Number(flat.amount ?? settings.defaultAmount) : Number(settings.defaultAmount);
+  const firstMonth = flatFirstMonth(flatId);
+  let carryIn = 0;
+  if(depth < 36 && firstMonth && month > firstMonth){
+    const prev = prevMonthKeyGlobal(month);
+    carryIn = computeFlatDue(flatId, prev, depth+1).carryOut;
+  }
+  const p = getPayment(flatId, month);
+  if(p.waived){
+    // Waived by admin: this month's due is cancelled outright and nothing carries forward from it.
+    return {base, carryIn, dueThisMonth: 0, paid: 0, carryOut: 0, waived: true};
+  }
+  const dueThisMonth = base + carryIn;
+  const paid = p.paid ? (Number(p.amount) || 0) : 0;
+  const carryOut = dueThisMonth - paid;
+  return {base, carryIn, dueThisMonth, paid, carryOut, waived: false};
+}
+
+function compressImage(file, maxWidth=700, quality=0.6){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- automatic screenshot verification (best-effort OCR match, not a substitute for admin review) ---------- */
+function monthNameVariants(month){
+  const [y, m] = month.split('-').map(Number);
+  const full = new Date(y, m-1, 1).toLocaleDateString('en-US', {month:'long'});
+  const abbr = new Date(y, m-1, 1).toLocaleDateString('en-US', {month:'short'});
+  const mm = String(m).padStart(2,'0');
+  return [
+    `${full} ${y}`, `${abbr} ${y}`, `${mm}/${y}`, `${y}-${mm}`, `${mm}-${y}`, `${mm}/${String(y).slice(2)}`, `${full}${y}`
+  ].map(s=>s.toLowerCase());
+}
+function flatNoVariants(flatNo){
+  const clean = (flatNo||'').toLowerCase().replace(/\s+/g,'');
+  const numOnly = clean.replace(/^f/,'').replace(/^0+/,'');
+  const variants = new Set([clean, 'flat'+numOnly, 'flat '+numOnly, numOnly]);
+  return Array.from(variants).filter(v=>v.length>=2);
+}
+
+async function autoVerifyScreenshot(dataUrl, flat, month, amountEntered){
+  if(typeof Tesseract === 'undefined'){
+    return {status:'pending', reason:"Automatic verification is unavailable right now (couldn't load the checker) — awaiting manual review.", checkedAt: new Date().toISOString()};
+  }
+  let text = '';
+  try{
+    const result = await Tesseract.recognize(dataUrl, 'eng');
+    text = (result && result.data && result.data.text) ? result.data.text : '';
+  }catch(e){
+    return {status:'pending', reason:"Couldn't read text from this screenshot automatically — awaiting manual review.", checkedAt: new Date().toISOString()};
+  }
+  const norm = text.toLowerCase();
+  if(norm.trim().length < 4){
+    return {status:'pending', reason:"The screenshot didn't contain enough readable text to auto-check — awaiting manual review.", checkedAt: new Date().toISOString()};
+  }
+
+  const flatVariants = flatNoVariants(flat.flatNo);
+  const flatFound = flatVariants.some(v=>norm.includes(v));
+
+  const monthVariants = monthNameVariants(month);
+  const monthFound = monthVariants.some(v=>norm.includes(v));
+
+  const numberMatches = (norm.match(/[\d][\d,]*(?:\.\d+)?/g) || [])
+    .map(s=>Number(s.replace(/,/g,'')))
+    .filter(n=>!isNaN(n) && n > 0);
+  const target = Number(amountEntered) || 0;
+  const amountFound = numberMatches.some(n=>Math.abs(n - target) < 1);
+
+  const missing = [];
+  if(!flatFound) missing.push('flat number');
+  if(!monthFound) missing.push('month/year');
+  if(!amountFound) missing.push('amount');
+
+  if(missing.length === 0){
+    return {status:'verified', reason:`Matched flat ${flat.flatNo}, ${monthLabelOf(month)}, and ${inr(target)} in the screenshot text.`, checkedAt: new Date().toISOString()};
+  }
+  if(missing.length === 3){
+    return {status:'pending', reason:"Couldn't confidently match the flat, month, or amount from this screenshot — awaiting manual review.", checkedAt: new Date().toISOString()};
+  }
+  if(!flatFound && monthFound && amountFound){
+    return {status:'rejected', reason:`The amount and month look right, but this screenshot doesn't appear to mention flat ${flat.flatNo} — please confirm it's the correct owner's proof.`, checkedAt: new Date().toISOString()};
+  }
+  return {status:'pending', reason:`Couldn't confirm the ${missing.join(' and ')} from this screenshot — please review manually before verifying.`, checkedAt: new Date().toISOString()};
+}
+
+function openShotModal(dataUrl, caption){
+  document.getElementById('shot-modal-img').src = dataUrl;
+  document.getElementById('shot-modal-caption').textContent = caption || '';
+  document.getElementById('shot-modal').classList.add('open');
+}
+function closeShotModal(){
+  document.getElementById('shot-modal').classList.remove('open');
+  document.getElementById('shot-modal-img').src = '';
+}
+
+// In-page confirm dialog — native window.confirm() is blocked/silently no-ops inside
+// the sandboxed artifact preview, so we use our own modal instead.
+const OWNER_GUIDE_STEPS = [
+  ['Signing in', 'Select your flat from the dropdown, enter the PIN your admin gave you, then tap Sign in.'],
+  ['Forgot your PIN?', 'Tap "Forgot your PIN?" on the sign-in screen. Step 1: verify your flat with the phone number on file. Step 2: answer your security question. Step 3: set a new PIN.'],
+  ['Checking what you owe', 'After signing in, "My Ledger" shows your base amount, anything carried forward from last month, and what\'s actually due this month.'],
+  ['Submitting a payment', 'Enter the amount you paid, pick a mode (UPI/Cash/Bank/Cheque), upload a screenshot of your payment, then tap "Mark as paid & submit". If you pay more or less than what\'s due, the difference automatically carries into next month.'],
+  ['Payment history', 'Scroll down on My Ledger to see your last 12 months — status, amount due, amount paid, and running balance.'],
+  ['Security question', 'Set this up once (bottom of My Ledger) so you can self-reset your PIN later without needing to ask anyone.'],
+  ['Signing out', 'Tap "Log out" in the top-right at any time — always do this on a shared device.'],
+];
+
+const ADMIN_GUIDE_STEPS = [
+  ['Signing in', 'Switch to the Admin tab, select your admin profile, enter your password, and tap Sign in.'],
+  ['Forgot your password?', 'Tap "Forgot the admin password?" and answer your recovery question (set this up under Settings first). If you\'ve also forgotten your answer, ask another admin to reset your password from Profile → Admin profiles.'],
+  ['Dashboard', 'Your home screen — collection totals for the month, a WhatsApp reminder generator for pending owners, and a full snapshot of every flat.'],
+  ['Flats & Access', 'Edit any owner\'s name, phone, amount, or PIN directly in the table — changes save automatically. Use the WhatsApp button to send an owner their login details.'],
+  ['Entry', 'Tick "Paid" and fill in amount/date/mode to record a payment. Check the uploaded screenshot in the Proof column, then tick "Verified" once it matches.'],
+  ['Reports', 'Pick a report type — Monthly, Quarterly, Half-yearly, Annually, or Custom range — and tap Generate for stats plus a copyable summary.'],
+  ['Expenses', 'Add every expense with a category, date, and amount. Opening balance and maintenance received are calculated automatically. Use "Publish" for a shareable summary.'],
+  ['Settings', 'Society name, default amount, your recovery question, and — importantly — Data backup: download a full CSV backup regularly, especially before requesting any change.'],
+  ['Profile', 'Manage your own name/phone/password, and any other admin\'s profile too — including resetting a forgotten password for a colleague, or adding a new admin login.'],
+  ['Signing out', 'Tap "Log out" in the top-right — always do this on a shared device.'],
+];
+
+function renderGuideSteps(steps){
+  return steps.map((s,i)=>`
+    <div style="margin-bottom:14px;padding-bottom:14px;${i<steps.length-1?'border-bottom:1px solid var(--paper-2);':''}">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.92rem;margin-bottom:4px;">${i+1}. ${s[0]}</div>
+      <div style="font-size:.86rem;line-height:1.55;color:#4E6154;">${s[1]}</div>
+    </div>
+  `).join('');
+}
+
+function openGuideModal(title, steps){
+  document.getElementById('guide-modal-title').textContent = title;
+  document.getElementById('guide-modal-body').innerHTML = renderGuideSteps(steps);
+  document.getElementById('guide-modal').classList.add('open');
+}
+function closeGuideModal(){
+  document.getElementById('guide-modal').classList.remove('open');
+}
+document.getElementById('guide-modal-close').addEventListener('click', closeGuideModal);
+document.getElementById('guide-modal').addEventListener('click', (e)=>{ if(e.target.id==='guide-modal') closeGuideModal(); });
+
+function customConfirm(message){
+  return new Promise(resolve=>{
+    const modal = document.getElementById('confirm-modal');
+    document.getElementById('confirm-modal-text').textContent = message;
+    modal.classList.add('open');
+    const yesBtn = document.getElementById('confirm-modal-yes');
+    const noBtn = document.getElementById('confirm-modal-no');
+    const cleanup = (result)=>{
+      modal.classList.remove('open');
+      yesBtn.removeEventListener('click', onYes);
+      noBtn.removeEventListener('click', onNo);
+      modal.removeEventListener('click', onOverlay);
+      resolve(result);
+    };
+    const onYes = ()=>cleanup(true);
+    const onNo = ()=>cleanup(false);
+    const onOverlay = (e)=>{ if(e.target === modal) cleanup(false); };
+    yesBtn.addEventListener('click', onYes);
+    noBtn.addEventListener('click', onNo);
+    modal.addEventListener('click', onOverlay);
+  });
+}
+
+/* ===================== LOGIN SCREEN ===================== */
+function initLoginScreen(){
+  const sel = document.getElementById('owner-flat-select');
+  sel.innerHTML = flats.map(f=>`<option value="${f.id}">${escapeHtml(f.flatNo)}${f.owner?(' — '+escapeHtml(f.owner)):''}</option>`).join('');
+
+  const adminSel = document.getElementById('admin-profile-select');
+  adminSel.innerHTML = admins.map(a=>`<option value="${a.id}">${escapeHtml(a.name || 'Admin')}</option>`).join('');
+
+  document.getElementById('toggle-owner').onclick = ()=>{
+    document.getElementById('toggle-owner').classList.add('active');
+    document.getElementById('toggle-admin').classList.remove('active');
+    document.getElementById('form-owner').classList.add('active');
+    document.getElementById('form-admin').classList.remove('active');
+  };
+  document.getElementById('toggle-admin').onclick = ()=>{
+    document.getElementById('toggle-admin').classList.add('active');
+    document.getElementById('toggle-owner').classList.remove('active');
+    document.getElementById('form-admin').classList.add('active');
+    document.getElementById('form-owner').classList.remove('active');
+  };
+
+  document.getElementById('owner-login-btn').onclick = ownerLogin;
+  document.getElementById('owner-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') ownerLogin(); });
+  document.getElementById('admin-login-btn').onclick = adminLogin;
+  document.getElementById('admin-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') adminLogin(); });
+
+  document.getElementById('owner-forgot-link').onclick = ()=>toggleOwnerRecover(true);
+  document.getElementById('owner-guide-link').onclick = ()=>openGuideModal('Flat Owner User Guide', OWNER_GUIDE_STEPS);
+  document.getElementById('owner-recover-cancel').onclick = ()=>toggleOwnerRecover(false);
+  document.getElementById('owner-recover-cancel2').onclick = ()=>toggleOwnerRecover(false);
+  document.getElementById('owner-recover-cancel3').onclick = ()=>toggleOwnerRecover(false);
+  document.getElementById('owner-recover-verify-btn').onclick = verifyOwnerRecoverPhone;
+  document.getElementById('owner-recover-answer-btn').onclick = verifyOwnerRecoverAnswer;
+  document.getElementById('owner-recover-submit').onclick = submitOwnerRecoverNewPin;
+
+  document.getElementById('admin-forgot-link').onclick = ()=>toggleAdminRecover(true);
+  document.getElementById('admin-guide-link').onclick = ()=>openGuideModal('Admin User Guide', ADMIN_GUIDE_STEPS);
+  document.getElementById('admin-recover-cancel').onclick = ()=>toggleAdminRecover(false);
+  document.getElementById('admin-recover-submit').onclick = submitAdminRecover;
+
+  toggleOwnerRecover(false);
+  toggleAdminRecover(false);
+
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display = 'none';
+}
+
+/* ---------- owner PIN recovery: verify flat owner -> security question -> new PIN ---------- */
+let ownerRecoverFlatId = null;
+
+function toggleOwnerRecover(show){
+  document.getElementById('owner-recover-panel').style.display = show ? 'block' : 'none';
+  document.getElementById('owner-recover-step1').style.display = 'block';
+  document.getElementById('owner-recover-step2').style.display = 'none';
+  document.getElementById('owner-recover-step3').style.display = 'none';
+  document.getElementById('owner-recover-success').style.display = 'none';
+  document.getElementById('owner-recover-msg').innerHTML = '';
+  document.getElementById('owner-recover-msg2').innerHTML = '';
+  document.getElementById('owner-recover-msg3').innerHTML = '';
+  document.getElementById('recover-phone').value = '';
+  document.getElementById('owner-recover-answer').value = '';
+  document.getElementById('recover-newpin').value = '';
+  ownerRecoverFlatId = null;
+}
+
+function verifyOwnerRecoverPhone(){
+  const flatId = document.getElementById('owner-flat-select').value;
+  const flat = flats.find(f=>f.id===flatId);
+  const phone = document.getElementById('recover-phone').value.trim();
+  const msg = document.getElementById('owner-recover-msg');
+  if(!flat){ msg.innerHTML = '<p class="note err">Select your flat above first.</p>'; return; }
+  if(!flat.phone){ msg.innerHTML = '<p class="note err">No phone number is on file for this flat yet, so we can\'t verify you here — ask your admin to reset your PIN from Flats & Access.</p>'; return; }
+  const norm = s => (s||'').replace(/[^0-9]/g,'');
+  if(!phone || norm(phone) !== norm(flat.phone)){ msg.innerHTML = '<p class="note err">That phone number doesn\'t match our records for this flat.</p>'; return; }
+  if(!flat.recoveryQuestion){
+    msg.innerHTML = '<p class="note err">No security question has been set up for this flat yet — ask your admin to reset your PIN directly from Flats & Access, or set one up yourself next time you sign in.</p>';
+    return;
+  }
+
+  msg.innerHTML = '';
+  ownerRecoverFlatId = flat.id;
+  document.getElementById('owner-recover-question').textContent = flat.recoveryQuestion;
+  document.getElementById('owner-recover-answer').value = '';
+  document.getElementById('owner-recover-msg2').innerHTML = '';
+  document.getElementById('owner-recover-step1').style.display = 'none';
+  document.getElementById('owner-recover-step2').style.display = 'block';
+}
+
+function verifyOwnerRecoverAnswer(){
+  const msg = document.getElementById('owner-recover-msg2');
+  const flat = flats.find(f=>f.id===ownerRecoverFlatId);
+  if(!flat){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
+  const answer = document.getElementById('owner-recover-answer').value.trim();
+  if(!answer || answer.toLowerCase() !== (flat.recoveryAnswer || '').trim().toLowerCase()){
+    msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>';
+    return;
+  }
+  msg.innerHTML = '';
+  document.getElementById('recover-newpin').value = '';
+  document.getElementById('owner-recover-msg3').innerHTML = '';
+  document.getElementById('owner-recover-step2').style.display = 'none';
+  document.getElementById('owner-recover-step3').style.display = 'block';
+}
+
+async function submitOwnerRecoverNewPin(){
+  const msg = document.getElementById('owner-recover-msg3');
+  const flat = flats.find(f=>f.id===ownerRecoverFlatId);
+  if(!flat){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
+  const newPin = document.getElementById('recover-newpin').value.trim();
+  if(!newPin || newPin.length < 4){ msg.innerHTML = '<p class="note err">Choose a PIN of at least 4 characters.</p>'; return; }
+  flat.pin = newPin;
+  await saveFlats();
+  document.getElementById('owner-recover-panel').style.display = 'none';
+  document.getElementById('owner-recover-success').style.display = 'block';
+  ownerRecoverFlatId = null;
+}
+
+/* ---------- admin password recovery ---------- */
+function toggleAdminRecover(show){
+  document.getElementById('admin-recover-panel').style.display = show ? 'block' : 'none';
+  document.getElementById('admin-recover-msg').innerHTML = '';
+  document.getElementById('recover-admin-answer').value = '';
+  document.getElementById('recover-admin-newpass').value = '';
+  if(show){
+    const q = settings.adminRecoveryQuestion;
+    document.getElementById('admin-recover-question').textContent = q
+      ? q
+      : 'No recovery question has been set up yet — ask another admin to reset the password from Settings, or sign in as an owner and contact your committee.';
+    document.getElementById('admin-recover-submit').style.display = q ? '' : 'none';
+  }
+}
+
+async function submitAdminRecover(){
+  const answer = document.getElementById('recover-admin-answer').value.trim();
+  const newpass = document.getElementById('recover-admin-newpass').value;
+  const msg = document.getElementById('admin-recover-msg');
+  if(!settings.adminRecoveryQuestion){ msg.innerHTML = '<p class="note err">No recovery question is set up.</p>'; return; }
+  if(!answer || answer.toLowerCase() !== (settings.adminRecoveryAnswer||'').toLowerCase()){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
+  if(!newpass || newpass.length < 4){ msg.innerHTML = '<p class="note err">Choose a password of at least 4 characters.</p>'; return; }
+  const adminId = document.getElementById('admin-profile-select').value;
+  const admin = admins.find(a=>a.id===adminId);
+  if(!admin){ msg.innerHTML = '<p class="note err">Select an admin profile above first.</p>'; return; }
+  admin.password = newpass;
+  await saveAdmins();
+  msg.innerHTML = `<p class="note" style="color:var(--green);">Password updated for ${escapeHtml(admin.name || 'this admin')} — you can sign in now.</p>`;
+  document.getElementById('recover-admin-answer').value = '';
+  document.getElementById('recover-admin-newpass').value = '';
+}
+
+function ownerLogin(){
+  const flatId = document.getElementById('owner-flat-select').value;
+  const pin = document.getElementById('owner-pin').value.trim();
+  const errBox = document.getElementById('owner-login-err');
+  const flat = flats.find(f=>f.id===flatId);
+  if(!flat || !pin || String(flat.pin) !== pin){
+    errBox.innerHTML = '<p class="note err">Incorrect PIN for that flat. Please check with your committee/admin.</p>';
+    return;
+  }
+  errBox.innerHTML = '';
+  document.getElementById('owner-pin').value = '';
+  currentUser = {role:'owner', flatId: flat.id};
+  showApp();
+}
+
+function adminLogin(){
+  const adminId = document.getElementById('admin-profile-select').value;
+  const pass = document.getElementById('admin-pass').value;
+  const errBox = document.getElementById('admin-login-err');
+  const admin = admins.find(a=>a.id===adminId);
+  if(!admin || !pass || pass !== admin.password){
+    errBox.innerHTML = '<p class="note err">Incorrect password for that admin profile.</p>';
+    return;
+  }
+  errBox.innerHTML = '';
+  document.getElementById('admin-pass').value = '';
+  currentUser = {role:'admin', adminId: admin.id};
+  showApp();
+}
+
+function logout(){
+  currentUser = null;
+  document.getElementById('owner-pin').value = '';
+  document.getElementById('admin-pass').value = '';
+  document.getElementById('owner-login-err').innerHTML = '';
+  document.getElementById('admin-login-err').innerHTML = '';
+  initLoginScreen();
+}
+
+/* ===================== APP SHELL ===================== */
+function showApp(){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
+  hideAllSections();
+
+  const badge = document.getElementById('role-badge');
+  document.getElementById('logout-btn').onclick = logout;
+
+  if(currentUser.role === 'admin'){
+    const admin = admins.find(a=>a.id===currentUser.adminId);
+    badge.textContent = admin && admin.name ? admin.name : 'Admin';
+    badge.classList.remove('owner');
+    initAdminUI();
+  } else {
+    const flat = flats.find(f=>f.id===currentUser.flatId);
+    badge.textContent = flat ? flat.flatNo : 'Owner';
+    badge.classList.add('owner');
+    initOwnerUI();
+  }
+}
+
+document.getElementById('shot-modal-close').addEventListener('click', closeShotModal);
+document.getElementById('shot-modal').addEventListener('click', (e)=>{ if(e.target.id==='shot-modal') closeShotModal(); });
+
+const ALL_TAB_IDS = ['dashboard','flats','entry','reports','expenses','settings','profile','my'];
+
+function hideAllSections(){
+  ALL_TAB_IDS.forEach(id=>{
+    const el = document.getElementById('tab-'+id);
+    if(el) el.classList.remove('active');
+  });
+}
+
+function buildNav(tabsList, showFn){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = tabsList.map(t=>`<button data-tab="${t.id}">${t.label}</button>`).join('');
+  nav.querySelectorAll('button').forEach(b=>{ b.onclick = ()=> showFn(b.dataset.tab); });
+}
+function showSection(tabsList, id){
+  hideAllSections();
+  tabsList.forEach(t=>{
+    const el = document.getElementById('tab-'+t.id);
+    if(el) el.classList.toggle('active', t.id===id);
+  });
+  document.querySelectorAll('#tabs button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab===id);
+  });
+}
+
+/* ===================== ADMIN UI ===================== */
+function initAdminUI(){
+  buildNav(TABS_ADMIN, (id)=>showSection(TABS_ADMIN, id));
+
+  document.getElementById('set-name').value = settings.societyName || '';
+  document.getElementById('set-amount').value = settings.defaultAmount || 2000;
+  document.getElementById('set-admin-phone').value = settings.adminPhone || '';
+
+  const m = todayMonth();
+  document.getElementById('dash-month').value = m;
+  document.getElementById('entry-month').value = m;
+  document.getElementById('rpt-month').value = m;
+  document.getElementById('exp-month').value = m;
+
+  document.getElementById('dash-month').onchange = renderDashboard;
+  document.getElementById('entry-month').onchange = renderEntry;
+  document.getElementById('rpt-month').onchange = renderMonthlyReport;
+  document.getElementById('exp-month').onchange = renderExpenses;
+  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); generatePeriodReport(); };
+  document.getElementById('exp-period-type').onchange = renderExpensePeriodControls;
+
+  document.getElementById('gen-report-btn').onclick = renderWhatsAppReport;
+  document.getElementById('add-flat-btn').onclick = addFlat;
+  document.getElementById('gen-creds-btn').onclick = renderCredsList;
+  document.getElementById('save-settings-btn').onclick = saveSettingsHandler;
+  document.getElementById('set-recovery-q').value = settings.adminRecoveryQuestion || '';
+  document.getElementById('set-recovery-a').value = '';
+  document.getElementById('save-recovery-btn').onclick = saveRecoveryHandler;
+  updateRecoveryWarning();
+  document.getElementById('copy-monthly-btn').onclick = ()=>copyText(buildMonthlyReportText(document.getElementById('rpt-month').value), 'copy-monthly-btn');
+  document.getElementById('rpt-period-btn').onclick = generatePeriodReport;
+  document.getElementById('exp-add-item-btn').onclick = addExpenseItem;
+  document.getElementById('exp-opening').addEventListener('change', saveExpenseOpening);
+  document.getElementById('exp-opening-reset').addEventListener('click', resetExpenseOpening);
+  document.getElementById('exp-maint').addEventListener('change', saveExpenseMaint);
+  document.getElementById('exp-maint-reset').addEventListener('click', resetExpenseMaint);
+  document.getElementById('exp-report-btn').onclick = generateExpenseReport;
+  document.getElementById('exp-range-btn').onclick = generateExpenseRangeReport;
+  document.getElementById('exp-print-btn').onclick = ()=>window.print();
+  document.getElementById('export-backup-btn').onclick = exportBackupCsv;
+  document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
+  document.getElementById('import-backup-input').addEventListener('change', importBackupCsv);
+  document.getElementById('save-my-profile-btn').onclick = saveMyProfile;
+  document.getElementById('save-my-password-btn').onclick = saveMyPassword;
+  document.getElementById('add-admin-btn').onclick = addAdminProfile;
+
+  showSection(TABS_ADMIN, 'dashboard');
+  renderFlats();
+  renderEntry();
+  renderDashboard();
+  renderMonthlyReport();
+  renderPeriodControls();
+  renderPeriodReport();
+  renderExpensePeriodControls();
+  renderExpenses();
+  renderProfile();
+  document.getElementById('creds-output').innerHTML = '';
+}
+
+/* ---------- FLATS TAB ---------- */
+function renderFlats(){
+  const wrap = document.getElementById('flats-table-wrap');
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>ID</th><th>Flat No.</th><th>Owner name</th><th>Phone</th><th>Monthly (₹)</th><th>PIN</th><th></th><th></th></tr></thead>
+      <tbody id="flats-tbody"></tbody>
+    </table>
+  `;
+  const tbody = document.getElementById('flats-tbody');
+  tbody.innerHTML = flats.map(f=>`
+    <tr data-id="${f.id}">
+      <td>${f.id}</td>
+      <td><input type="text" class="fld" data-field="flatNo" value="${escapeHtml(f.flatNo)}"></td>
+      <td><input type="text" class="fld" data-field="owner" value="${escapeHtml(f.owner)}" placeholder="Owner name"></td>
+      <td><input type="text" class="fld" data-field="phone" value="${escapeHtml(f.phone)}" placeholder="+91..."></td>
+      <td><input type="number" class="fld" data-field="amount" value="${f.amount ?? settings.defaultAmount}" min="0"></td>
+      <td><input type="text" class="fld" data-field="pin" value="${escapeHtml(String(f.pin))}" style="width:80px;"></td>
+      <td><button class="file-btn wa-share-btn" data-id="${f.id}" type="button">WhatsApp</button></td>
+      <td><button class="del-btn" data-id="${f.id}" type="button">✕</button></td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.fld').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const id = inp.closest('tr').dataset.id;
+      const field = inp.dataset.field;
+      const flat = flats.find(x=>x.id===id);
+      if(field==='amount') flat[field] = Number(inp.value);
+      else if(field==='pin') flat[field] = inp.value.trim() || flat.pin;
+      else if(field==='flatNo') flat[field] = inp.value.trim() || flat.flatNo;
+      else flat[field] = inp.value;
+      await saveFlats();
+      renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
+    });
+  });
+  tbody.querySelectorAll('.del-btn').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      if(!(await customConfirm('Remove this flat and its login? This does not delete past payment records.'))) return;
+      flats = flats.filter(x=>x.id!==b.dataset.id);
+      await saveFlats();
+      renderFlats(); renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
+    });
+  });
+  tbody.querySelectorAll('.wa-share-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const flat = flats.find(x=>x.id===b.dataset.id);
+      const link = window.location.href;
+      const text = `${settings.societyName || 'JD Blossom Apartment'} — your maintenance app login:\nFlat: ${flat.flatNo}\nPIN: ${flat.pin}\nLink: ${link}\n\nOpen the link, choose "Flat Owner", pick your flat, enter the PIN.`;
+      const phone = (flat.phone||'').replace(/[^0-9]/g,'');
+      const waLink = 'https://wa.me/' + (phone ? phone : '') + '?text=' + encodeURIComponent(text);
+      window.open(waLink, '_blank');
+    });
+  });
+}
+
+async function addFlat(){
+  const nums = flats.map(f=>parseInt(String(f.id).replace(/[^0-9]/g,''))||0);
+  const nextIdx = nums.length ? Math.max(...nums)+1 : 1;
+  flats.push({id:'id'+nextIdx, flatNo:'New Flat', owner:'', phone:'', amount: settings.defaultAmount, pin: String(1000+nextIdx)});
+  await saveFlats();
+  renderFlats();
+}
+
+function renderCredsList(){
+  const link = window.location.href;
+  let lines = [`${settings.societyName || 'JD Blossom Apartment'} — owner login list`, `App link: ${link}`, ''];
+  flats.forEach(f=>{
+    lines.push(`${f.flatNo}${f.owner?(' ('+f.owner+')'):''} — PIN: ${f.pin}`);
+  });
+  const text = lines.join('\n');
+  document.getElementById('creds-output').innerHTML = `
+    <div class="report-box">${escapeHtml(text)}</div>
+    <div class="actions-row">
+      <button class="ghost" id="copy-creds-btn" type="button">Copy list</button>
+    </div>
+  `;
+  document.getElementById('copy-creds-btn').onclick = ()=>copyText(text, 'copy-creds-btn');
+}
+
+/* ---------- ENTRY TAB (admin records payments for all flats) ---------- */
+function renderEntry(){
+  const month = document.getElementById('entry-month').value || todayMonth();
+  const wrap = document.getElementById('entry-table-wrap');
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Flat</th><th>Owner</th><th>Paid</th><th>Due (adj.)</th><th>Amount paid</th><th>Balance → next</th><th>Date</th><th>Mode</th><th>Proof</th><th>Auto-check</th><th>Verified</th><th>Waived</th></tr></thead>
+      <tbody id="entry-tbody"></tbody>
+    </table>
+  `;
+  const tbody = document.getElementById('entry-tbody');
+  tbody.innerHTML = flats.map(f=>{
+    const p = getPayment(f.id, month);
+    const due = computeFlatDue(f.id, month);
+    const amt = (p.amount !== undefined && p.amount !== null) ? p.amount : Math.round(due.dueThisMonth);
+    const carryNote = due.waived ? 'waived — excluded from carry-forward' : (due.carryIn > 0 ? `incl. ${inr(due.carryIn)} carried forward` : (due.carryIn < 0 ? `incl. ${inr(Math.abs(due.carryIn))} credit applied` : 'no carry-forward'));
+    const shotCell = p.screenshot
+      ? `<img class="shot-thumb e-shot-view" data-id="${f.id}" src="${p.screenshot}" alt="Payment proof">`
+      : `<div class="shot-placeholder">—</div>`;
+    const ac = p.autoCheck;
+    const acBadge = !p.screenshot ? '<span style="color:#94A399;font-size:.7rem;">—</span>'
+      : !ac ? '<span class="badge submitted">Not checked</span>'
+      : ac.status === 'verified' ? `<span class="badge verified" title="${escapeHtml(ac.reason||'')}">Auto-verified</span>`
+      : ac.status === 'rejected' ? `<span class="badge pending" title="${escapeHtml(ac.reason||'')}">Mismatch</span>`
+      : `<span class="badge submitted" title="${escapeHtml(ac.reason||'')}">Needs review</span>`;
+    const dueDisplay = due.waived ? '<span class="badge submitted">Waived</span>' : inr(due.dueThisMonth);
+    const waivedTitle = p.verified ? 'Un-verify this payment first before waiving it' : "Cancel this month's due — nothing will carry forward";
+    return `
+    <tr data-id="${f.id}" ${due.waived ? 'style="background:var(--paper);"' : ''}>
+      <td>${escapeHtml(f.flatNo)}</td>
+      <td>${escapeHtml(f.owner) || '<span style="color:#94A399">—</span>'}</td>
+      <td><input type="checkbox" class="chk e-paid" ${p.paid?'checked':''} ${due.waived?'disabled':''}></td>
+      <td style="font-family:'JetBrains Mono',monospace;" title="Base ${inr(due.base)} · ${carryNote}">${dueDisplay}</td>
+      <td><input type="number" class="e-amount" value="${amt}" min="0" style="width:80px;" ${due.waived?'disabled':''}></td>
+      <td class="e-balance-cell" style="font-family:'JetBrains Mono',monospace;"></td>
+      <td><input type="date" class="e-date" value="${p.date || (p.paid?todayDate():'')}" ${due.waived?'disabled':''}></td>
+      <td>
+        <select class="e-mode" ${due.waived?'disabled':''}>
+          <option value="">—</option>
+          <option value="UPI" ${p.mode==='UPI'?'selected':''}>UPI</option>
+          <option value="Cash" ${p.mode==='Cash'?'selected':''}>Cash</option>
+          <option value="Bank Transfer" ${p.mode==='Bank Transfer'?'selected':''}>Bank Transfer</option>
+          <option value="Cheque" ${p.mode==='Cheque'?'selected':''}>Cheque</option>
+        </select>
+      </td>
+      <td>
+        <div class="shot-cell">
+          ${shotCell}
+          <input type="file" accept="image/*" class="e-shot-input file-input-hidden" data-id="${f.id}">
+          <div style="display:flex;gap:4px;">
+            <button type="button" class="file-btn e-shot-btn" data-id="${f.id}" ${due.waived?'disabled':''}>${p.screenshot?'Replace':'Upload'}</button>
+            ${p.screenshot ? `<button type="button" class="file-btn e-shot-remove" data-id="${f.id}" style="color:var(--red);border-color:var(--red);">Remove</button>` : ''}
+          </div>
+        </div>
+      </td>
+      <td>${acBadge}</td>
+      <td style="text-align:center;"><input type="checkbox" class="chk e-verified" ${p.verified?'checked':''} ${(p.screenshot && !due.waived)?'':'disabled'}></td>
+      <td style="text-align:center;"><input type="checkbox" class="chk e-waived" ${p.waived?'checked':''} ${p.verified?'disabled':''} title="${waivedTitle}"></td>
+    </tr>`;
+  }).join('');
+
+  // fill in live balance-to-next preview for each row
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const id = tr.dataset.id;
+    const due = computeFlatDue(id, month);
+    if(due.waived){
+      const cell = tr.querySelector('.e-balance-cell');
+      cell.textContent = '₹0';
+      cell.style.color = 'inherit';
+      return;
+    }
+    const amtVal = Number(tr.querySelector('.e-amount').value) || 0;
+    const paidChecked = tr.querySelector('.e-paid').checked;
+    const bal = due.dueThisMonth - (paidChecked ? amtVal : 0);
+    const cell = tr.querySelector('.e-balance-cell');
+    cell.textContent = (bal===0) ? '₹0' : inr(Math.abs(bal)) + (bal>0 ? ' owed' : ' credit');
+    cell.style.color = bal>0 ? 'var(--red)' : bal<0 ? 'var(--green)' : 'inherit';
+  });
+
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    const id = tr.dataset.id;
+    const save = async ()=>{
+      const existing = getPayment(id, month);
+      const paid = tr.querySelector('.e-paid').checked;
+      const amount = Number(tr.querySelector('.e-amount').value);
+      let date = tr.querySelector('.e-date').value;
+      const mode = tr.querySelector('.e-mode').value;
+      const verified = tr.querySelector('.e-verified').checked;
+      if(paid && !date) date = todayDate();
+      payments[payKey(id, month)] = {...existing, paid, amount, date, mode, verified};
+      await savePayments(id, month);
+      renderEntry();
+      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+    };
+    tr.querySelector('.e-paid').addEventListener('change', save);
+    tr.querySelector('.e-amount').addEventListener('change', save);
+    tr.querySelector('.e-date').addEventListener('change', save);
+    tr.querySelector('.e-mode').addEventListener('change', save);
+    tr.querySelector('.e-verified').addEventListener('change', save);
+
+    tr.querySelector('.e-waived').addEventListener('change', async (e)=>{
+      const existing = getPayment(id, month);
+      if(existing.verified){
+        // Guard: shouldn't be reachable since the checkbox is disabled while verified, but block it defensively too.
+        e.target.checked = false;
+        alert('This payment is already verified — un-verify it first before waiving this month\'s due.');
+        return;
+      }
+      const waived = e.target.checked;
+      if(waived){
+        // Waiving cancels this month's due outright — clear paid/verified so the two states can't contradict each other.
+        payments[payKey(id, month)] = {...existing, waived: true, paid: false, verified: false, amount: 0};
+      } else {
+        payments[payKey(id, month)] = {...existing, waived: false};
+      }
+      await savePayments(id, month);
+      renderEntry();
+      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+    });
+
+    const fileInput = tr.querySelector('.e-shot-input');
+    tr.querySelector('.e-shot-btn').addEventListener('click', ()=>fileInput.click());
+    fileInput.addEventListener('change', async ()=>{
+      const file = fileInput.files[0];
+      if(!file) return;
+      try{
+        const dataUrl = await compressImage(file);
+        const existing = getPayment(id, month);
+        payments[payKey(id, month)] = {...existing, screenshot: dataUrl, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
+        await savePayments(id, month);
+        renderEntry();
+        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+
+        const flat = flats.find(x=>x.id===id);
+        const amtEntered = Number(document.querySelector(`tr[data-id="${id}"] .e-amount`)?.value) || Math.round(computeFlatDue(id, month).dueThisMonth);
+        const result = await autoVerifyScreenshot(dataUrl, flat, month, amtEntered);
+        const latest = getPayment(id, month);
+        payments[payKey(id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
+        await savePayments(id, month);
+        renderEntry();
+        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+      }catch(e){
+        alert('Could not read that image, please try another file.');
+      }
+    });
+
+    const removeBtn = tr.querySelector('.e-shot-remove');
+    if(removeBtn){
+      removeBtn.addEventListener('click', async ()=>{
+        if(!(await customConfirm('Remove this payment screenshot?'))) return;
+        const existing = getPayment(id, month);
+        payments[payKey(id, month)] = {...existing, screenshot: null, verified: false, autoCheck: null};
+        await savePayments(id, month);
+        renderEntry();
+        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+      });
+    }
+
+    const thumb = tr.querySelector('.e-shot-view');
+    if(thumb){
+      thumb.addEventListener('click', ()=>{
+        const flat = flats.find(x=>x.id===id);
+        openShotModal(thumb.src, `${flat.flatNo} — ${flat.owner || 'owner'} — ${month}`);
+      });
+    }
+  });
+}
+
+/* ---------- DASHBOARD ---------- */
+function monthStats(month){
+  const total = flats.length;
+  let paidCount = 0, expected = 0, collected = 0, verifiedCount = 0, waivedCount = 0;
+  const pendingList = [];
+  const unverifiedList = [];
+  flats.forEach(f=>{
+    const p = getPayment(f.id, month);
+    const due = computeFlatDue(f.id, month);
+    expected += due.dueThisMonth;
+    if(due.waived){
+      waivedCount++;
+    } else if(p.paid){
+      paidCount++;
+      collected += (Number(p.amount) || 0);
+      if(p.verified) verifiedCount++;
+      else unverifiedList.push(f);
+    }
+    else pendingList.push(f);
+  });
+  return {total, paidCount, pendingCount: total-paidCount-waivedCount, verifiedCount, waivedCount, expected, collected, pendingList, unverifiedList};
+}
+
+function renderDashboard(){
+  const month = document.getElementById('dash-month').value || todayMonth();
+  const s = monthStats(month);
+  const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat"><b>${s.total}</b><span>Flats</span></div>
+    <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
+    <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
+    <div class="stat"><b style="color:var(--blue)">${s.verifiedCount}</b><span>Verified</span></div>
+    <div class="stat"><b>${pct}%</b><span>Collected</span></div>
+    <div class="stat"><b>${inr(s.collected)}</b><span>of ${inr(s.expected)}</span></div>
+  `;
+  const lc = settings.lastCheck ? new Date(settings.lastCheck).toLocaleString('en-IN') : 'never';
+  document.getElementById('dash-lastcheck').textContent = `Last report generated: ${lc}`;
+  document.getElementById('report-output').innerHTML = '';
+
+  // all-flats snapshot for the selected month
+  document.getElementById('dash-flats-month-label').textContent = monthLabelOf(month);
+  const flatRows = flats.map(f=>{
+    const p = getPayment(f.id, month);
+    const due = computeFlatDue(f.id, month);
+    const status = due.waived ? '<span class="badge verified">Waived</span>' : (!p.paid ? '<span class="badge pending">Pending</span>' : (p.verified ? '<span class="badge verified">Verified</span>' : '<span class="badge submitted">Submitted</span>'));
+    const bal = due.carryOut;
+    const balText = due.waived ? '₹0' : (bal===0 ? '₹0' : inr(Math.abs(bal)) + (bal>0 ? ' owed' : ' cr.'));
+    return `<tr>
+      <td>${escapeHtml(f.flatNo)}</td>
+      <td>${escapeHtml(f.owner) || '<span style="color:#94A399">—</span>'}</td>
+      <td>${status}</td>
+      <td>${due.waived ? '₹0' : inr(due.dueThisMonth)}</td>
+      <td>${p.paid ? inr(p.amount||0) : '—'}</td>
+      <td style="color:${bal>0?'var(--red)':bal<0?'var(--green)':'inherit'}">${balText}</td>
+      <td>${p.date || '—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('dash-flats-wrap').innerHTML = `
+    <table>
+      <thead><tr><th>Flat</th><th>Owner</th><th>Status</th><th>Due</th><th>Paid</th><th>Balance→next</th><th>Date</th></tr></thead>
+      <tbody>${flatRows}</tbody>
+    </table>
+  `;
+
+  // society overview — this month only
+  const monthPct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('dash-society-stats').innerHTML = `
+    <div class="stat"><b>${inr(s.collected)}</b><span>Collected</span></div>
+    <div class="stat"><b>${inr(s.expected)}</b><span>Expected</span></div>
+    <div class="stat"><b>${monthPct}%</b><span>Overall</span></div>
+  `;
+}
+
+async function renderWhatsAppReport(){
+  const month = document.getElementById('dash-month').value || todayMonth();
+  const text = buildPendingReportText(month);
+  settings.lastCheck = new Date().toISOString();
+  await saveSettings();
+  document.getElementById('dash-lastcheck').textContent = `Last report generated: ${new Date(settings.lastCheck).toLocaleString('en-IN')}`;
+
+  const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
+  document.getElementById('report-output').innerHTML = `
+    <div class="report-box">${escapeHtml(text)}</div>
+    <div class="actions-row">
+      <button class="wa" id="wa-share-btn" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="copy-pending-btn" type="button">Copy text</button>
+    </div>
+  `;
+  document.getElementById('wa-share-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
+  document.getElementById('copy-pending-btn').addEventListener('click', ()=>copyText(text, 'copy-pending-btn'));
+}
+
+function buildPendingReportText(month){
+  const s = monthStats(month);
+  const monthLabel = monthLabelOf(month);
+  let lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`Maintenance — ${monthLabel}`);
+  lines.push(`Collected: ${s.paidCount}/${s.total} flats (${inr(s.collected)} of ${inr(s.expected)})`);
+  if(s.unverifiedList.length > 0){
+    lines.push(`⏳ ${s.unverifiedList.length} payment screenshot(s) awaiting verification.`);
+  }
+  lines.push('');
+  if(s.pendingList.length === 0){
+    lines.push('✅ All flats have paid this month. No pending dues.');
+  } else {
+    lines.push(`*Pending owners (${s.pendingList.length}):*`);
+    s.pendingList.forEach((f,i)=>{
+      const due = computeFlatDue(f.id, month);
+      const owner = f.owner ? f.owner : '(name not on file)';
+      const extra = due.carryIn > 0 ? ` (incl. ${inr(due.carryIn)} carried forward)` : (due.carryIn < 0 ? ` (after ${inr(Math.abs(due.carryIn))} credit)` : '');
+      lines.push(`${i+1}. ${f.flatNo} — ${owner} — ${inr(due.dueThisMonth)} due${extra}`);
+    });
+    lines.push('');
+    lines.push('Kindly clear dues at the earliest. Thank you.');
+  }
+  return lines.join('\n');
+}
+
+/* ---------- REPORTS TAB ---------- */
+function renderMonthlyReport(){
+  const month = document.getElementById('rpt-month').value || todayMonth();
+  const s = monthStats(month);
+  const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('rpt-monthly-stats').innerHTML = `
+    <div class="stat"><b>${s.total}</b><span>Flats</span></div>
+    <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
+    <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
+    <div class="stat"><b>${pct}%</b><span>Collected</span></div>
+  `;
+  document.getElementById('rpt-monthly-box').textContent = buildMonthlyReportText(month);
+}
+
+function buildMonthlyReportText(month){
+  const s = monthStats(month);
+  const monthLabel = monthLabelOf(month);
+  let lines = [];
+  lines.push(`${settings.societyName || 'JD Blossom Apartment'} — Monthly Report`);
+  lines.push(`Period: ${monthLabel}`);
+  lines.push(`Collected ${inr(s.collected)} of ${inr(s.expected)} expected (${s.expected ? Math.round(s.collected/s.expected*100) : 0}%)`);
+  lines.push('');
+  lines.push('Flat | Owner | Status | Due | Paid | Balance→next | Date | Proof');
+  lines.push('-'.repeat(70));
+  flats.forEach(f=>{
+    const p = getPayment(f.id, month);
+    const due = computeFlatDue(f.id, month);
+    const status = !p.paid ? 'PENDING' : (p.verified ? 'VERIFIED' : 'SUBMITTED');
+    const proof = p.screenshot ? (p.verified?'checked ✓':'uploaded, unverified') : 'none';
+    const bal = due.carryOut;
+    const balText = bal===0 ? '₹0' : inr(Math.abs(bal)) + (bal>0?' owed':' cr.');
+    lines.push(`${f.flatNo} | ${f.owner || '—'} | ${status} | ${inr(due.dueThisMonth)} | ${p.paid ? inr(p.amount||0) : '—'} | ${balText} | ${p.date||'—'} | ${proof}`);
+  });
+  return lines.join('\n');
+}
+
+function currentQuarter(){ return Math.floor(new Date().getMonth()/3)+1; }
+function currentHalf(){ return new Date().getMonth() < 6 ? 1 : 2; }
+
+function renderPeriodControlsFor(prefix){
+  const type = document.getElementById(prefix+'-type').value;
+  const wrap = document.getElementById(prefix+'-controls');
+  const y = new Date().getFullYear();
+  if(type === 'monthly'){
+    wrap.innerHTML = `<div><label for="${prefix}-month">Month</label><input type="month" id="${prefix}-month" value="${todayMonth()}"></div>`;
+  } else if(type === 'quarterly'){
+    const q = currentQuarter();
+    wrap.innerHTML = `
+      <div><label for="${prefix}-year">Year</label><input type="number" id="${prefix}-year" value="${y}" min="2000" max="2100"></div>
+      <div><label for="${prefix}-quarter">Quarter</label>
+        <select id="${prefix}-quarter">
+          <option value="1" ${q===1?'selected':''}>Q1 (Jan–Mar)</option>
+          <option value="2" ${q===2?'selected':''}>Q2 (Apr–Jun)</option>
+          <option value="3" ${q===3?'selected':''}>Q3 (Jul–Sep)</option>
+          <option value="4" ${q===4?'selected':''}>Q4 (Oct–Dec)</option>
+        </select>
+      </div>`;
+  } else if(type === 'halfyearly'){
+    const h = currentHalf();
+    wrap.innerHTML = `
+      <div><label for="${prefix}-year">Year</label><input type="number" id="${prefix}-year" value="${y}" min="2000" max="2100"></div>
+      <div><label for="${prefix}-half">Half</label>
+        <select id="${prefix}-half">
+          <option value="1" ${h===1?'selected':''}>H1 (Jan–Jun)</option>
+          <option value="2" ${h===2?'selected':''}>H2 (Jul–Dec)</option>
+        </select>
+      </div>`;
+  } else if(type === 'annually'){
+    wrap.innerHTML = `<div><label for="${prefix}-year">Year</label><input type="number" id="${prefix}-year" value="${y}" min="2000" max="2100"></div>`;
+  } else {
+    const to = todayMonth();
+    const from = prevMonthKeyGlobal(prevMonthKeyGlobal(to));
+    wrap.innerHTML = `
+      <div><label for="${prefix}-from">From month</label><input type="month" id="${prefix}-from" value="${from}"></div>
+      <div><label for="${prefix}-to">To month</label><input type="month" id="${prefix}-to" value="${to}"></div>`;
+  }
+}
+
+function getPeriodMonthsAndLabelFor(prefix){
+  const type = document.getElementById(prefix+'-type').value;
+  if(type === 'monthly'){
+    const mo = document.getElementById(prefix+'-month').value || todayMonth();
+    return {months:[mo], label: monthLabelOf(mo)};
+  }
+  if(type === 'quarterly'){
+    const y = Number(document.getElementById(prefix+'-year').value) || new Date().getFullYear();
+    const q = Number(document.getElementById(prefix+'-quarter').value) || 1;
+    const startM = (q-1)*3+1;
+    const months = [0,1,2].map(i => y + '-' + String(startM+i).padStart(2,'0'));
+    return {months, label:`Q${q} ${y}`};
+  }
+  if(type === 'halfyearly'){
+    const y = Number(document.getElementById(prefix+'-year').value) || new Date().getFullYear();
+    const h = Number(document.getElementById(prefix+'-half').value) || 1;
+    const startM = h===1 ? 1 : 7;
+    const months = [0,1,2,3,4,5].map(i => y + '-' + String(startM+i).padStart(2,'0'));
+    return {months, label:`H${h} ${y}`};
+  }
+  if(type === 'annually'){
+    const y = Number(document.getElementById(prefix+'-year').value) || new Date().getFullYear();
+    const months = Array.from({length:12}, (_,i) => y + '-' + String(i+1).padStart(2,'0'));
+    return {months, label:`${y}`};
+  }
+  const from = document.getElementById(prefix+'-from').value;
+  const to = document.getElementById(prefix+'-to').value;
+  const months = monthsInRangeGlobal(from, to);
+  return {months, label: (from && to) ? `${monthLabelOf(from)} – ${monthLabelOf(to)}` : 'Custom range'};
+}
+
+function renderPeriodControls(){ renderPeriodControlsFor('rpt-period'); }
+function getPeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('rpt-period'); }
+function renderExpensePeriodControls(){ renderPeriodControlsFor('exp-period'); }
+function getExpensePeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('exp-period'); }
+
+function renderPeriodReport(){
+  const {months} = getPeriodMonthsAndLabel();
+  let totalExpected = 0, totalCollected = 0;
+  const perMonth = months.map(mo=>{
+    const s = monthStats(mo);
+    totalExpected += s.expected; totalCollected += s.collected;
+    return {mo, s};
+  });
+  const pct = totalExpected ? Math.round(totalCollected/totalExpected*100) : 0;
+  document.getElementById('rpt-period-stats').innerHTML = `
+    <div class="stat"><b>${inr(totalCollected)}</b><span>Collected</span></div>
+    <div class="stat"><b>${inr(totalExpected)}</b><span>Expected</span></div>
+    <div class="stat"><b>${pct}%</b><span>Overall</span></div>
+    <div class="stat"><b>${months.length}</b><span>Month(s)</span></div>
+  `;
+  document.getElementById('rpt-period-bars').innerHTML = perMonth.map(({mo,s})=>{
+    const p = s.total ? Math.round(s.paidCount/s.total*100) : 0;
+    return `
+      <div class="yr-bar-row">
+        <div class="m">${monthLabelOf(mo).slice(0,3)}</div>
+        <div class="yr-bar-track"><div class="yr-bar-fill" style="width:${p}%;"></div></div>
+        <div class="yr-bar-pct">${p}%</div>
+      </div>`;
+  }).join('');
+}
+
+function buildPeriodReportText(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  let lines = [];
+  lines.push(`${settings.societyName || 'JD Blossom Apartment'} — Period Report`);
+  lines.push(`Period: ${label}`);
+  lines.push('');
+  lines.push('Month | Paid | Pending | Collected | Expected | %');
+  lines.push('-'.repeat(55));
+  let totalExpected = 0, totalCollected = 0;
+  months.forEach(mo=>{
+    const s = monthStats(mo);
+    totalExpected += s.expected; totalCollected += s.collected;
+    const pct = s.total ? Math.round(s.paidCount/s.total*100) : 0;
+    lines.push(`${monthLabelOf(mo)} | ${s.paidCount} | ${s.pendingCount} | ${inr(s.collected)} | ${inr(s.expected)} | ${pct}%`);
+  });
+  lines.push('-'.repeat(55));
+  const overall = totalExpected ? Math.round(totalCollected/totalExpected*100) : 0;
+  lines.push(`TOTAL | | | ${inr(totalCollected)} | ${inr(totalExpected)} | ${overall}%`);
+  return lines.join('\n');
+}
+
+function generatePeriodReport(){
+  renderPeriodReport();
+  const text = buildPeriodReportText();
+  const out = document.getElementById('rpt-period-output');
+  out.innerHTML = `
+    <div class="report-box">${escapeHtml(text)}</div>
+    <div class="actions-row">
+      <button class="ghost" id="rpt-period-copy-btn" type="button">Copy report</button>
+    </div>
+  `;
+  document.getElementById('rpt-period-copy-btn').onclick = ()=>copyText(text, 'rpt-period-copy-btn');
+}
+
+/* ---------- EXPENSES TAB ---------- */
+function renderExpenses(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const data = getExpenseData(month);
+  const calc = computeExpenseMonth(month);
+
+  document.getElementById('exp-opening').value = (data.openingOverride !== null && data.openingOverride !== undefined) ? data.openingOverride : Math.round(calc.autoOpening);
+  document.getElementById('exp-opening-note').textContent = `Auto (carried from last month's balance): ${inr(calc.autoOpening)}`;
+  document.getElementById('exp-maint').value = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? data.maintReceivedOverride : Math.round(calc.autoMaint);
+  document.getElementById('exp-maint-note').textContent = `Auto (from this month's ledger): ${inr(calc.autoMaint)}`;
+
+  document.getElementById('exp-receipts-stats').innerHTML = `
+    <div class="stat"><b>${inr(calc.opening)}</b><span>Opening bal.</span></div>
+    <div class="stat"><b>${inr(calc.maintReceived)}</b><span>Maint. received</span></div>
+    <div class="stat"><b>${inr(calc.totalReceipts)}</b><span>Total receipts</span></div>
+  `;
+
+  renderExpenseItems(month, data);
+
+  document.getElementById('exp-payments-total').innerHTML = `
+    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
+  `;
+
+  document.getElementById('exp-balance-box').innerHTML = `
+    <div class="stat" style="flex:1;"><b style="font-size:1.5rem;color:var(--green)">${inr(calc.closing)}</b><span>Available funds for maintenance — balance c/f</span></div>
+  `;
+
+  renderExpenseSummaryTable(month, data, calc);
+
+  document.getElementById('exp-report-output').innerHTML = '';
+}
+
+function renderExpenseSummaryTable(month, data, calc){
+  const monthLabel = monthLabelOf(month);
+  const itemRows = data.items.length
+    ? data.items.map(it=>`
+      <tr class="item-row">
+        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}</td>
+        <td>${it.paidOn ? new Date(it.paidOn).toLocaleDateString('en-IN') : '—'}</td>
+        <td>${inr(it.amount)}</td>
+      </tr>`).join('')
+    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
+
+  document.getElementById('exp-summary-wrap').innerHTML = `
+    <table class="summary-table">
+      <thead>
+        <tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${monthLabel}</th></tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="3" class="section-label">Receipts</td></tr>
+        <tr><td>Balance b/f from last month</td><td></td><td>${inr(calc.opening)}</td></tr>
+        <tr><td>Maintenance Amt Received</td><td></td><td>${inr(calc.maintReceived)}</td></tr>
+        <tr class="total-row receipts-total"><td>Total Receipts (Maintenance Amt)</td><td></td><td>${inr(calc.totalReceipts)}</td></tr>
+
+        <tr><td colspan="3" class="section-label">Payments</td></tr>
+        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
+        ${itemRows}
+        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(calc.totalPayments)}</td></tr>
+
+        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f</td><td>${inr(calc.closing)}</td></tr>
+      </tbody>
+    </table>
+  `;
+}
+
+function renderExpenseItems(month, data){
+  const wrap = document.getElementById('exp-items-wrap');
+  const CATEGORY_OPTIONS = ['Water bill','Power bill','Diesel','Watchman Salary','Security Salary','BBMP Garbage Exp','Water Tank cleaning','Drainage cleaning','Lift maintenance','Repair & Maintenance','Housekeeping','Pest control','Miscellaneous'];
+  const rows = data.items.map(it=>{
+    const isCustom = it.category && !CATEGORY_OPTIONS.includes(it.category);
+    return `
+    <tr data-id="${it.id}">
+      <td>
+        <select class="ei-cat-select">
+          <option value="" ${!it.category?'selected':''}>Select…</option>
+          ${CATEGORY_OPTIONS.map(c=>`<option value="${escapeHtml(c)}" ${it.category===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+          <option value="__other__" ${isCustom?'selected':''}>Other (type below)</option>
+        </select>
+        <input type="text" class="ei-cat-custom" style="margin-top:4px;${isCustom?'':'display:none;'}" value="${isCustom?escapeHtml(it.category||''):''}" placeholder="Custom category">
+      </td>
+      <td><input type="date" class="ei-date" value="${it.paidOn||''}"></td>
+      <td><input type="number" class="ei-amt" value="${it.amount||0}" min="0"></td>
+      <td><button class="del-btn ei-del" type="button">✕</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Category</th><th>Paid on</th><th>Amount (₹)</th><th></th></tr></thead>
+      <tbody id="exp-items-tbody">${rows || '<tr><td colspan="4" style="text-align:center;color:#94A399;">No expenses added yet for this month.</td></tr>'}</tbody>
+    </table>
+  `;
+
+  wrap.querySelectorAll('#exp-items-tbody tr[data-id]').forEach(tr=>{
+    const id = tr.dataset.id;
+    const item = data.items.find(x=>x.id===id);
+    const select = tr.querySelector('.ei-cat-select');
+    const custom = tr.querySelector('.ei-cat-custom');
+    const save = async ()=>{
+      item.category = (select.value === '__other__') ? custom.value.trim() : select.value;
+      item.paidOn = tr.querySelector('.ei-date').value;
+      item.amount = Number(tr.querySelector('.ei-amt').value) || 0;
+      await saveExpenses();
+      renderExpenses();
+    };
+    select.addEventListener('change', ()=>{
+      if(select.value === '__other__'){
+        custom.style.display = '';
+        custom.focus();
+      } else {
+        custom.style.display = 'none';
+        save();
+      }
+    });
+    custom.addEventListener('change', save);
+    tr.querySelector('.ei-date').addEventListener('change', save);
+    tr.querySelector('.ei-amt').addEventListener('change', save);
+    tr.querySelector('.ei-del').addEventListener('click', async ()=>{
+      data.items = data.items.filter(x=>x.id!==id);
+
+      await saveExpenses();
+      renderExpenses();
+    });
+  });
+}
+
+async function addExpenseItem(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const data = getExpenseData(month);
+  data.items.push({id:'it'+Date.now()+Math.floor(Math.random()*1000), category:'', paidOn:'', amount:0});
+  await saveExpenses();
+  renderExpenses();
+}
+
+async function saveExpenseOpening(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const data = getExpenseData(month);
+  const val = document.getElementById('exp-opening').value;
+  data.openingOverride = val === '' ? null : Number(val);
+  await saveExpenses();
+  renderExpenses();
+}
+async function resetExpenseOpening(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const data = getExpenseData(month);
+  data.openingOverride = null;
+  await saveExpenses();
+  renderExpenses();
+}
+async function saveExpenseMaint(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const data = getExpenseData(month);
+  const val = document.getElementById('exp-maint').value;
+  data.maintReceivedOverride = val === '' ? null : Number(val);
+  await saveExpenses();
+  renderExpenses();
+}
+async function resetExpenseMaint(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const data = getExpenseData(month);
+  data.maintReceivedOverride = null;
+  await saveExpenses();
+  renderExpenses();
+}
+
+function generateExpenseReport(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const text = buildExpenseReportText(month);
+  const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
+  document.getElementById('exp-report-output').innerHTML = `
+    <div class="report-box">${escapeHtml(text)}</div>
+    <div class="actions-row">
+      <button class="wa" id="exp-wa-btn" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="exp-copy-btn" type="button">Copy text</button>
+    </div>
+  `;
+  document.getElementById('exp-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
+  document.getElementById('exp-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-copy-btn'));
+}
+
+function buildExpenseReportText(month){
+  const calc = computeExpenseMonth(month);
+  const data = getExpenseData(month);
+  const monthLabel = monthLabelOf(month);
+  let lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`Maintenance Amt Summary — ${monthLabel}`);
+  lines.push('');
+  lines.push('Receipts:');
+  lines.push(`Balance b/f from last month: ${inr(calc.opening)}`);
+  lines.push(`Maintenance Amt Received: ${inr(calc.maintReceived)}`);
+  lines.push(`Total Receipts: ${inr(calc.totalReceipts)}`);
+  lines.push('');
+  lines.push('Payments:');
+  if(data.items.length === 0){
+    lines.push('No expenses recorded this month.');
+  } else {
+    data.items.forEach(it=>{
+      lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}`);
+    });
+  }
+  lines.push('');
+  lines.push(`Total Payments: ${inr(calc.totalPayments)}`);
+  lines.push('');
+  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(calc.closing)}`);
+  return lines.join('\n');
+}
+
+/* ---------- EXPENSES: time-range summary ---------- */
+function generateExpenseRangeReport(){
+  const out = document.getElementById('exp-range-output');
+  const {months, label} = getExpensePeriodMonthsAndLabel();
+  if(!months || months.length === 0){
+    out.innerHTML = '<p class="note err">Pick a valid period — check that the "from" month is on or before the "to" month.</p>';
+    return;
+  }
+  const from = months[0], to = months[months.length-1];
+  const openingCalc = computeExpenseMonth(from);
+  const closingCalc = computeExpenseMonth(to);
+  let totalMaint = 0, totalPayments = 0;
+  const categoryTotals = {};
+  months.forEach(mo=>{
+    const c = computeExpenseMonth(mo);
+    totalMaint += c.maintReceived;
+    const d = getExpenseData(mo);
+    d.items.forEach(it=>{
+      const amt = Number(it.amount) || 0;
+      totalPayments += amt;
+      const cat = it.category || '(uncategorised)';
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+    });
+  });
+  const openingBal = openingCalc.opening;
+  const closingBal = closingCalc.closing;
+  const totalReceipts = openingBal + totalMaint;
+  const catKeys = Object.keys(categoryTotals).sort((a,b)=>categoryTotals[b]-categoryTotals[a]);
+  const periodLabel = label;
+
+  const catRows = catKeys.length
+    ? catKeys.map(cat=>`<tr class="item-row"><td>${escapeHtml(cat)}</td><td>${inr(categoryTotals[cat])}</td></tr>`).join('')
+    : `<tr class="item-row"><td colspan="2" style="text-align:center;color:#94A399;">No expenses recorded in this period.</td></tr>`;
+
+  const tableHtml = `
+    <table class="summary-table">
+      <thead><tr><th colspan="2">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${periodLabel}</th></tr></thead>
+      <tbody>
+        <tr><td colspan="2" class="section-label">Receipts</td></tr>
+        <tr><td>Opening balance (${monthLabelOf(from)})</td><td>${inr(openingBal)}</td></tr>
+        <tr><td>Maintenance Amt Received (total)</td><td>${inr(totalMaint)}</td></tr>
+        <tr class="total-row receipts-total"><td>Total Receipts</td><td>${inr(totalReceipts)}</td></tr>
+
+        <tr><td colspan="2" class="section-label">Payments by category</td></tr>
+        ${catRows}
+        <tr class="total-row payments-total"><td>Total Payments</td><td>${inr(totalPayments)}</td></tr>
+
+        <tr class="total-row balance-row"><td>(A) Available Funds — Closing Balance (${monthLabelOf(to)})</td><td>${inr(closingBal)}</td></tr>
+      </tbody>
+    </table>
+  `;
+
+  let lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`Expense Summary — ${periodLabel}`);
+  lines.push('');
+  lines.push('Receipts:');
+  lines.push(`Opening balance (${monthLabelOf(from)}): ${inr(openingBal)}`);
+  lines.push(`Maintenance Amt Received (total): ${inr(totalMaint)}`);
+  lines.push(`Total Receipts: ${inr(totalReceipts)}`);
+  lines.push('');
+  lines.push('Payments by category:');
+  if(catKeys.length === 0){
+    lines.push('No expenses recorded in this period.');
+  } else {
+    catKeys.forEach(cat=>lines.push(`${cat}: ${inr(categoryTotals[cat])}`));
+  }
+  lines.push('');
+  lines.push(`Total Payments: ${inr(totalPayments)}`);
+  lines.push('');
+  lines.push(`(A) Available Funds — Closing Balance (${monthLabelOf(to)}): ${inr(closingBal)}`);
+  const text = lines.join('\n');
+
+  const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
+  out.innerHTML = `
+    ${tableHtml}
+    <div class="actions-row" style="margin-top:12px;">
+      <button class="wa" id="exp-range-wa-btn" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="exp-range-copy-btn" type="button">Copy text</button>
+    </div>
+  `;
+  document.getElementById('exp-range-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
+  document.getElementById('exp-range-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-range-copy-btn'));
+}
+
+/* ---------- SETTINGS ---------- */
+async function saveSettingsHandler(){
+  settings.societyName = document.getElementById('set-name').value.trim() || 'JD Blossom Apartment';
+  settings.defaultAmount = Number(document.getElementById('set-amount').value) || 0;
+  settings.adminPhone = document.getElementById('set-admin-phone').value.trim();
+  const applyAll = document.getElementById('set-amount-applyall').checked;
+  if(applyAll){
+    flats.forEach(f=>{ f.amount = settings.defaultAmount; });
+    await saveFlats();
+    renderFlats();
+  }
+  await saveSettings();
+  document.getElementById('society-title').textContent = settings.societyName;
+  document.getElementById('settings-saved-note').textContent = applyAll ? `Saved — applied ${inr(settings.defaultAmount)} to all ${flats.length} flats.` : 'Saved.';
+  document.getElementById('set-amount-applyall').checked = false;
+  setTimeout(()=>{ document.getElementById('settings-saved-note').textContent=''; }, 3000);
+  renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+}
+
+/* ---------- PROFILE TAB ---------- */
+let resetTargetAdminId = null;
+
+function renderProfile(){
+  const me = admins.find(a=>a.id === (currentUser && currentUser.adminId));
+  document.getElementById('my-admin-name').value = me ? (me.name || '') : '';
+  document.getElementById('my-admin-phone').value = me ? (me.phone || '') : '';
+  document.getElementById('my-admin-newpass').value = '';
+  document.getElementById('my-profile-saved-note').textContent = '';
+  document.getElementById('my-password-saved-note').textContent = '';
+
+  const wrap = document.getElementById('admins-table-wrap');
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>Name</th><th>Phone</th><th></th></tr></thead>
+      <tbody id="admins-tbody"></tbody>
+    </table>
+  `;
+  const tbody = document.getElementById('admins-tbody');
+  tbody.innerHTML = admins.map(a=>{
+    const isMe = currentUser && a.id === currentUser.adminId;
+    const isResetting = resetTargetAdminId === a.id;
+    const rowParts = [`
+    <tr data-id="${a.id}">
+      <td style="min-width:150px;"><input type="text" class="fld admin-name-fld" data-id="${a.id}" value="${escapeHtml(a.name || '')}" placeholder="Name">${isMe ? ' <span style="color:#94A399;font-size:.72rem;">(you)</span>' : ''}</td>
+      <td style="min-width:140px;"><input type="tel" class="fld admin-phone-fld" data-id="${a.id}" value="${escapeHtml(a.phone || '')}" placeholder="+91..."></td>
+      <td style="white-space:nowrap;">
+        <button class="file-btn admin-reset-btn" data-id="${a.id}" type="button">${isResetting ? 'Cancel' : 'Reset password'}</button>
+        <button class="del-btn admin-del-btn" data-id="${a.id}" type="button" ${isMe ? 'disabled title="You can\'t remove your own profile while logged in"' : ''}>✕</button>
+      </td>
+    </tr>`];
+    if(isResetting){
+      rowParts.push(`
+    <tr class="admin-reset-row">
+      <td colspan="3" style="background:var(--paper);">
+        <div class="row" style="margin:10px 0;">
+          <div>
+            <label for="admin-reset-pass">New password for ${escapeHtml(a.name || 'Admin')}</label>
+            <input type="password" id="admin-reset-pass" placeholder="At least 4 characters">
+          </div>
+        </div>
+        <div id="admin-reset-msg"></div>
+        <div class="actions-row">
+          <button class="primary" style="width:auto;" id="admin-reset-save" data-id="${a.id}" type="button">Save new password</button>
+        </div>
+      </td>
+    </tr>`);
+    }
+    return rowParts.join('');
+  }).join('');
+
+  if(admins.length <= 1){
+    document.getElementById('admins-note').innerHTML = '<span style="color:#8A5A00;">You have only one admin profile — if this admin ever forgets both the password and the recovery answer, no one can sign in. Consider adding at least one more admin profile as a backup.</span>';
+  } else {
+    document.getElementById('admins-note').textContent = '';
+  }
+
+  tbody.querySelectorAll('.admin-name-fld').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const target = admins.find(a=>a.id===inp.dataset.id);
+      target.name = inp.value.trim() || 'Admin';
+      await saveAdmins();
+      if(currentUser && target.id === currentUser.adminId){
+        document.getElementById('role-badge').textContent = target.name;
+      }
+      renderProfile();
+    });
+  });
+  tbody.querySelectorAll('.admin-phone-fld').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const target = admins.find(a=>a.id===inp.dataset.id);
+      target.phone = inp.value.trim();
+      await saveAdmins();
+      if(currentUser && target.id === currentUser.adminId){
+        document.getElementById('my-admin-phone').value = target.phone;
+      }
+    });
+  });
+
+  tbody.querySelectorAll('.admin-reset-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      resetTargetAdminId = (resetTargetAdminId === b.dataset.id) ? null : b.dataset.id;
+      renderProfile();
+    });
+  });
+  const saveBtn = document.getElementById('admin-reset-save');
+  if(saveBtn){
+    saveBtn.addEventListener('click', async ()=>{
+      const target = admins.find(a=>a.id===saveBtn.dataset.id);
+      const input = document.getElementById('admin-reset-pass');
+      const msg = document.getElementById('admin-reset-msg');
+      const val = input.value;
+      if(!val || val.length < 4){ msg.innerHTML = '<p class="note err">Use at least 4 characters.</p>'; return; }
+      target.password = val;
+      await saveAdmins();
+      resetTargetAdminId = null;
+      document.getElementById('admins-note').textContent = `Password updated for ${target.name || 'Admin'}. Let them know their new password directly.`;
+      renderProfile();
+    });
+  }
+
+  tbody.querySelectorAll('.admin-del-btn').forEach(b=>{
+    if(b.disabled) return;
+    b.addEventListener('click', async ()=>{
+      if(admins.length <= 1){
+        document.getElementById('admins-note').textContent = 'At least one admin profile must remain.';
+        return;
+      }
+      const target = admins.find(a=>a.id===b.dataset.id);
+      if(!(await customConfirm(`Remove the admin profile "${target.name || 'Admin'}"? They will no longer be able to sign in.`))) return;
+      admins = admins.filter(a=>a.id!==b.dataset.id);
+      await saveAdmins();
+      renderProfile();
+    });
+  });
+}
+
+async function saveMyProfile(){
+  const me = admins.find(a=>a.id === (currentUser && currentUser.adminId));
+  const note = document.getElementById('my-profile-saved-note');
+  if(!me){ note.textContent = 'Something went wrong — please sign in again.'; return; }
+  me.name = document.getElementById('my-admin-name').value.trim() || 'Admin';
+  me.phone = document.getElementById('my-admin-phone').value.trim();
+  await saveAdmins();
+  document.getElementById('role-badge').textContent = me.name;
+  note.textContent = 'Profile saved.';
+  setTimeout(()=>note.textContent='',2000);
+  renderProfile();
+}
+
+async function saveMyPassword(){
+  const me = admins.find(a=>a.id === (currentUser && currentUser.adminId));
+  const note = document.getElementById('my-password-saved-note');
+  const val = document.getElementById('my-admin-newpass').value;
+  if(!me){ note.textContent = 'Something went wrong — please sign in again.'; return; }
+  if(!val){ note.textContent = 'Enter a new password first.'; setTimeout(()=>note.textContent='',2000); return; }
+  if(val.length < 4){ note.textContent = 'Use at least 4 characters.'; setTimeout(()=>note.textContent='',2000); return; }
+  me.password = val;
+  await saveAdmins();
+  document.getElementById('my-admin-newpass').value = '';
+  note.textContent = 'Password updated.';
+  setTimeout(()=>note.textContent='',2500);
+}
+
+async function addAdminProfile(){
+  const note = document.getElementById('admins-note');
+  if(admins.length >= 6){
+    note.textContent = 'You have quite a few admin profiles already — remove one before adding another.';
+    return;
+  }
+  const nextIdx = admins.length + 1;
+  const newPassword = 'admin' + (1000+nextIdx);
+  admins.push({id:'admin' + Date.now(), name:'New Admin ' + nextIdx, phone:'', password:newPassword});
+  await saveAdmins();
+  renderProfile();
+  document.getElementById('admins-note').innerHTML = `<b>Added.</b> Default password is <b>"${newPassword}"</b> — edit the name below, and have them sign in and change their password from the Profile tab.`;
+}
+
+async function saveRecoveryHandler(){
+  const q = document.getElementById('set-recovery-q').value.trim();
+  const a = document.getElementById('set-recovery-a').value.trim();
+  const note = document.getElementById('recovery-saved-note');
+  if(!q || !a){ note.textContent = 'Enter both a question and an answer.'; setTimeout(()=>note.textContent='',2200); return; }
+  settings.adminRecoveryQuestion = q;
+  settings.adminRecoveryAnswer = a;
+  await saveSettings();
+  document.getElementById('set-recovery-a').value = '';
+  note.textContent = 'Recovery question saved.';
+  setTimeout(()=>note.textContent='',2200);
+  updateRecoveryWarning();
+}
+
+function updateRecoveryWarning(){
+  document.getElementById('recovery-warn').style.display = settings.adminRecoveryQuestion ? 'none' : 'block';
+}
+
+/* ===================== OWNER UI ===================== */
+function initOwnerUI(){
+  buildNav(TABS_OWNER, (id)=>showSection(TABS_OWNER, id));
+  showSection(TABS_OWNER, 'my');
+  renderOwnerView();
+}
+
+function renderOwnerView(){
+  const flat = flats.find(f=>f.id===currentUser.flatId);
+  if(!flat){ logout(); return; }
+  const month = todayMonth();
+  document.getElementById('my-flat-title').textContent = `${flat.flatNo}${flat.owner ? ' — ' + flat.owner : ''}`;
+  document.getElementById('my-month-label').textContent = monthLabelOf(month);
+
+  const p = getPayment(flat.id, month);
+  const due = computeFlatDue(flat.id, month);
+  const status = due.waived ? 'waived' : (!p.paid ? 'pending' : (p.verified ? 'verified' : 'submitted'));
+  const statusLabel = status==='waived' ? 'Waived — nothing due' : status==='pending' ? 'Pending' : (status==='verified' ? 'Paid & verified' : 'Submitted — awaiting verification');
+
+  document.getElementById('my-stats').innerHTML = `
+    <div class="stat"><b>${inr(due.base)}</b><span>Base amount</span></div>
+    <div class="stat"><b style="color:${due.carryIn>0?'var(--red)':due.carryIn<0?'var(--green)':'inherit'}">${due.carryIn===0?'₹0':inr(Math.abs(due.carryIn))}</b><span>${due.carryIn>0?'Carried from last month':due.carryIn<0?'Credit from last month':'Carried from last month'}</span></div>
+    <div class="stat"><b style="font-size:1.15rem;">${inr(due.dueThisMonth)}</b><span>Due this month</span></div>
+    <div class="stat"><b style="color:${status==='waived'?'#4E6154':status==='pending'?'var(--red)':status==='verified'?'var(--green)':'#8A5A00'}">${status==='waived'?'Waived':statusLabel.split(' ')[0]}</b><span>${monthLabelOf(month)}</span></div>
+  `;
+
+  document.getElementById('my-current-status').innerHTML = `
+    <span class="badge ${status==='waived'?'submitted':status==='pending'?'pending':status==='verified'?'verified':'submitted'}">${statusLabel}</span>
+    ${status==='waived' ? '<div class="note">Your admin has cancelled this month\'s due — nothing to pay, and it will not carry forward.</div>' : ''}
+    ${p.paid && status!=='waived' ? `<div class="note">Paid: ${inr(p.amount||0)} · Mode: ${p.mode||'—'} · Date: ${p.date||'—'}</div>` : ''}
+    ${p.paid && status!=='waived' ? `<div class="note">Balance to next month: <b style="color:${due.carryOut>0?'var(--red)':due.carryOut<0?'var(--green)':'inherit'}">${due.carryOut===0?'₹0':inr(Math.abs(due.carryOut)) + (due.carryOut>0?' owed':' credit')}</b></div>` : ''}
+    ${p.autoCheck && p.screenshot && status!=='waived' ? renderAutoCheckNote(p.autoCheck) : ''}
+  `;
+
+  const shotPreview = p.screenshot
+    ? `<img class="shot-thumb my-shot-view" src="${p.screenshot}" alt="Payment proof" style="width:56px;height:56px;">`
+    : '';
+
+  if(due.waived){
+    document.getElementById('my-upload-area').innerHTML = `
+      <div class="note">This month's due has been waived by your admin — there's nothing to submit.</div>
+    `;
+  } else if(p.verified){
+    document.getElementById('my-upload-area').innerHTML = `
+      <div class="note" style="color:var(--green);"><b>Verified by admin.</b> This month's payment is locked and can no longer be edited here.</div>
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Amount paid (₹)</label>
+          <div style="padding:11px 10px;background:var(--paper);border:1px solid var(--line);">${inr(p.amount||0)}</div>
+        </div>
+        <div>
+          <label>Mode</label>
+          <div style="padding:11px 10px;background:var(--paper);border:1px solid var(--line);">${p.mode||'—'}</div>
+        </div>
+      </div>
+      ${p.screenshot ? `<div style="margin-top:12px;"><label>Payment screenshot</label><br>${shotPreview}</div>` : ''}
+      <p class="note">If this needs a correction, please contact your admin/committee directly.</p>
+    `;
+    const shotThumb = document.querySelector('.my-shot-view');
+    if(shotThumb){
+      shotThumb.style.cursor = 'pointer';
+      shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
+    }
+  } else {
+    document.getElementById('my-upload-area').innerHTML = `
+      <div class="row" style="margin-bottom:10px;">
+        <div>
+          <label for="my-pay-amount">Amount paid (₹)</label>
+          <input type="number" id="my-pay-amount" value="${(p.amount!==undefined && p.amount!==null) ? p.amount : Math.round(due.dueThisMonth)}" min="0">
+        </div>
+        <div>
+          <label for="my-pay-mode">Mode</label>
+          <select id="my-pay-mode">
+            <option value="">—</option>
+            <option value="UPI" ${p.mode==='UPI'?'selected':''}>UPI</option>
+            <option value="Cash" ${p.mode==='Cash'?'selected':''}>Cash</option>
+            <option value="Bank Transfer" ${p.mode==='Bank Transfer'?'selected':''}>Bank Transfer</option>
+            <option value="Cheque" ${p.mode==='Cheque'?'selected':''}>Cheque</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="align-items:center;">
+        <div>
+          <label>Payment screenshot</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            ${shotPreview}
+            <input type="file" accept="image/*" id="my-shot-input" class="file-input-hidden">
+            <button type="button" class="ghost" id="my-shot-btn">${p.screenshot?'Replace screenshot':'Upload screenshot'}</button>
+            ${p.screenshot ? `<button type="button" class="ghost" id="my-shot-remove" style="color:var(--red);border-color:var(--red);">Remove</button>` : ''}
+          </div>
+          <div id="my-shot-checking" style="margin-top:8px;"></div>
+        </div>
+      </div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Update this month' : 'Mark as paid & submit'}</button>
+      </div>
+      <p class="note">Marking as paid submits it for the admin to verify against your screenshot. If you pay less or more than the amount due, the difference automatically carries to next month.</p>
+    `;
+
+    document.getElementById('my-shot-btn').onclick = ()=>document.getElementById('my-shot-input').click();
+    document.getElementById('my-shot-input').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      try{
+        const dataUrl = await compressImage(file);
+        const existing = getPayment(flat.id, month);
+        payments[payKey(flat.id, month)] = {...existing, screenshot: dataUrl, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
+        await savePayments(flat.id, month);
+        document.getElementById('my-shot-checking').innerHTML = '<p class="note">Checking your screenshot…</p>';
+
+        const amtField = document.getElementById('my-pay-amount');
+        const amtEntered = amtField ? (Number(amtField.value) || Math.round(due.dueThisMonth)) : Math.round(due.dueThisMonth);
+        const result = await autoVerifyScreenshot(dataUrl, flat, month, amtEntered);
+        const latest = getPayment(flat.id, month);
+        payments[payKey(flat.id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
+        await savePayments(flat.id, month);
+        renderOwnerView();
+      }catch(err){
+        alert('Could not read that image, please try another file.');
+      }
+    });
+    const myShotRemoveBtn = document.getElementById('my-shot-remove');
+    if(myShotRemoveBtn){
+      myShotRemoveBtn.addEventListener('click', async ()=>{
+        if(!(await customConfirm('Remove your uploaded screenshot for this month?'))) return;
+        const existing = getPayment(flat.id, month);
+        payments[payKey(flat.id, month)] = {...existing, screenshot: null, verified: false, autoCheck: null};
+        await savePayments(flat.id, month);
+        renderOwnerView();
+      });
+    }
+    const shotThumb = document.querySelector('.my-shot-view');
+    if(shotThumb){
+      shotThumb.style.cursor = 'pointer';
+      shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
+    }
+
+    document.getElementById('my-mark-paid-btn').onclick = async ()=>{
+      const existing = getPayment(flat.id, month);
+      const amount = Number(document.getElementById('my-pay-amount').value) || Math.round(due.dueThisMonth);
+      const mode = document.getElementById('my-pay-mode').value;
+      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: existing.screenshot ? existing.verified : false};
+      await savePayments(flat.id, month);
+      renderOwnerView();
+    };
+  }
+
+  // society-wide read-only overview
+  const s = monthStats(month);
+  const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('my-society-stats').innerHTML = `
+    <div class="stat"><b>${s.total}</b><span>Flats</span></div>
+    <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
+    <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
+    <div class="stat"><b>${pct}%</b><span>Collected</span></div>
+  `;
+
+  // history
+  const months = last12Months();
+  const rows = months.map(mo=>{
+    const hp = getPayment(flat.id, mo);
+    const hDue = computeFlatDue(flat.id, mo);
+    const hStatus = hDue.waived ? '<span class="badge verified">Waived</span>' : (!hp.paid ? '<span class="badge pending">Pending</span>' : (hp.verified ? '<span class="badge verified">Verified</span>' : '<span class="badge submitted">Submitted</span>'));
+    const bal = hDue.carryOut;
+    const balText = hDue.waived ? '₹0' : (bal===0 ? '₹0' : inr(Math.abs(bal)) + (bal>0 ? ' owed' : ' credit'));
+    const shotCell = hp.screenshot
+      ? `<img class="shot-thumb hist-shot-view" data-mo="${mo}" src="${hp.screenshot}" alt="Payment proof">`
+      : `<div class="shot-placeholder">—</div>`;
+    return `<tr>
+      <td>${monthLabelOf(mo)}</td>
+      <td>${hStatus}</td>
+      <td>${hDue.waived ? '₹0' : inr(hDue.dueThisMonth)}</td>
+      <td>${hp.paid ? inr(hp.amount||0) : '—'}</td>
+      <td style="color:${bal>0?'var(--red)':bal<0?'var(--green)':'inherit'}">${balText}</td>
+      <td>${hp.mode || '—'}</td>
+      <td>${shotCell}</td>
+      <td>${hp.date || '—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('my-history-wrap').innerHTML = `
+    <table style="min-width:640px;">
+      <thead><tr><th>Month</th><th>Status</th><th>Due</th><th>Paid</th><th>Balance→next</th><th>Mode</th><th>Screenshot</th><th>Date</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  document.querySelectorAll('.hist-shot-view').forEach(img=>{
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', ()=>{
+      const mo = img.dataset.mo;
+      openShotModal(img.src, `${flat.flatNo} — ${monthLabelOf(mo)}`);
+    });
+  });
+
+  // security question setup
+  document.getElementById('my-recovery-q').value = flat.recoveryQuestion || '';
+  document.getElementById('my-recovery-a').value = '';
+  document.getElementById('my-recovery-saved-note').textContent = '';
+  document.getElementById('my-recovery-warn').style.display = flat.recoveryQuestion ? 'none' : 'block';
+  document.getElementById('save-my-recovery-btn').onclick = async ()=>{
+    const q = document.getElementById('my-recovery-q').value.trim();
+    const a = document.getElementById('my-recovery-a').value.trim();
+    const note = document.getElementById('my-recovery-saved-note');
+    if(!q){ note.textContent = 'Enter a security question.'; setTimeout(()=>note.textContent='',2200); return; }
+    if(!flat.recoveryAnswer && !a){ note.textContent = 'Enter an answer.'; setTimeout(()=>note.textContent='',2200); return; }
+    flat.recoveryQuestion = q;
+    if(a) flat.recoveryAnswer = a;
+    await saveFlats();
+    document.getElementById('my-recovery-a').value = '';
+    document.getElementById('my-recovery-warn').style.display = 'none';
+    note.textContent = 'Security question saved.';
+    setTimeout(()=>note.textContent='',2200);
+  };
+
+}
+
+function renderAutoCheckNote(ac){
+  if(!ac || ac.status==='checking') return '<div class="note">Checking your screenshot…</div>';
+  const color = ac.status==='verified' ? 'var(--green)' : ac.status==='rejected' ? 'var(--red)' : '#8A5A00';
+  const label = ac.status==='verified' ? 'Auto-check: matched' : ac.status==='rejected' ? 'Auto-check: mismatch' : 'Auto-check: needs review';
+  return `<div class="note" style="color:${color};"><b>${label}.</b> ${escapeHtml(ac.reason||'')}</div>`;
+}
+
+
+
+/* ---------- UTIL ---------- */
+async function copyText(text, btnId){
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }
+  const btn = document.getElementById(btnId);
+  if(btn){ const orig = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(()=>btn.textContent=orig, 1500); }
+}
+
+loadAll();
+</script>
+</body>
+</html>
