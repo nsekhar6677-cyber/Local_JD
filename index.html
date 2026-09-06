@@ -887,6 +887,15 @@
       <p class="note" id="backup-note"></p>
       <p class="note warn">Restoring a backup replaces all current data in this app with what's in the file — do this only if you're sure.</p>
     </div>
+
+    <div class="card">
+      <h2>Storage diagnostics</h2>
+      <p class="note">Read-only — inspects what's actually saved right now without changing anything. Useful for confirming all your data is present and accounted for.</p>
+      <div class="actions-row">
+        <button class="ghost" id="run-diagnostics-btn" type="button">Run diagnostics</button>
+      </div>
+      <div id="diagnostics-output" style="margin-top:14px;"></div>
+    </div>
   </section>
 
   <!-- ===== ADMIN: PROFILE ===== -->
@@ -1177,6 +1186,14 @@ async function addMonthToIndex(month){
 // it's a no-op once the old key is gone. Already-existing per-month data always wins over
 // data reconstructed from the old legacy blob, so a second device migrating late can never
 // silently roll back a fresher submission that was already saved under the new format.
+// One-time-per-fact (but safely repeatable) migration: old versions stored everything in a
+// single 'payments' key. This copies that data into per-month keys. It deliberately NEVER
+// deletes the old key — that's the fix for a real bug where an earlier version deleted it
+// unconditionally, even if some of the per-month writes had silently failed, permanently
+// losing whatever hadn't been copied yet. Leaving the old key in place costs a little storage
+// space but removes that entire risk, and makes this function safe to re-run on every load:
+// each run re-merges, so any data that failed to copy before gets another chance next time,
+// while already-migrated/fresher data always wins over the legacy copy for the same record.
 async function migrateOldPaymentsIfNeeded(){
   let old = null;
   try{ old = await window.storage.get('payments', true); }catch(e){ return; }
@@ -1200,7 +1217,7 @@ async function migrateOldPaymentsIfNeeded(){
     try{ await window.storage.set('payments_'+month, JSON.stringify(merged), true); }catch(e){}
     await addMonthToIndex(month);
   }
-  try{ await window.storage.delete('payments', true); }catch(e){}
+  // Deliberately no delete of the old 'payments' key here — see comment above.
 }
 
 async function loadPayments(){
@@ -1326,6 +1343,77 @@ function parseBackupCsv(text){
   }
   if(field.length || row.length){ row.push(field); rows.push(row); }
   return rows;
+}
+
+/* ---------- read-only storage diagnostics — never writes, deletes, or migrates anything ---------- */
+async function runStorageDiagnostics(){
+  const out = document.getElementById('diagnostics-output');
+  out.innerHTML = '<p class="note">Running…</p>';
+  const lines = [];
+
+  // 1. The legacy single-blob key, if it still exists
+  let legacyCount = null;
+  try{
+    const old = await window.storage.get('payments', true);
+    if(old && old.value){
+      const parsed = JSON.parse(old.value);
+      legacyCount = Object.keys(parsed).length;
+      lines.push(`Legacy 'payments' key: PRESENT — ${legacyCount} record(s) inside.`);
+    } else {
+      lines.push(`Legacy 'payments' key: not present.`);
+    }
+  }catch(e){
+    lines.push(`Legacy 'payments' key: could not read (${e && e.message ? e.message : 'error'}).`);
+  }
+
+  // 2. The index
+  let indexMonths = [];
+  try{
+    const idxRec = await window.storage.get('payments_index', true);
+    if(idxRec && idxRec.value){
+      const idx = JSON.parse(idxRec.value);
+      if(Array.isArray(idx)) indexMonths = idx;
+    }
+    lines.push(`payments_index: ${indexMonths.length ? indexMonths.join(', ') : '(empty or missing)'}`);
+  }catch(e){
+    lines.push(`payments_index: could not read (${e && e.message ? e.message : 'error'}).`);
+  }
+
+  // 3. What list() itself reports, for comparison
+  let listedMonths = [];
+  try{
+    const list = await window.storage.list('payments_', true);
+    const rawKeys = (list && list.keys) ? list.keys : [];
+    listedMonths = rawKeys
+      .map(k => typeof k === 'string' ? k : (k && k.key ? k.key : null))
+      .filter(k => k && k !== 'payments_index')
+      .map(k => k.slice('payments_'.length));
+    lines.push(`window.storage.list() reports: ${listedMonths.length ? listedMonths.join(', ') : '(empty or unavailable)'}`);
+  }catch(e){
+    lines.push(`window.storage.list(): failed (${e && e.message ? e.message : 'error'}).`);
+  }
+
+  // 4. Record count per month key found by EITHER method (union), so nothing is missed
+  const allMonths = Array.from(new Set([...indexMonths, ...listedMonths])).sort();
+  lines.push('');
+  lines.push(`Per-month record counts (${allMonths.length} month key(s) found):`);
+  let totalRecords = 0;
+  for(const month of allMonths){
+    try{
+      const rec = await window.storage.get('payments_'+month, true);
+      const count = (rec && rec.value) ? Object.keys(JSON.parse(rec.value)).length : 0;
+      totalRecords += count;
+      lines.push(`  ${month}: ${count} record(s)`);
+    }catch(e){
+      lines.push(`  ${month}: could not read`);
+    }
+  }
+  lines.push('');
+  lines.push(`Total records found across all months: ${totalRecords}`);
+  lines.push(`Currently loaded into this session's memory: ${Object.keys(payments).length}`);
+  lines.push(`Flats currently on file: ${flats.length}`);
+
+  out.innerHTML = `<div class="report-box">${escapeHtml(lines.join('\n'))}</div>`;
 }
 
 async function importBackupCsv(e){
@@ -1899,6 +1987,7 @@ function initAdminUI(){
   document.getElementById('export-backup-btn').onclick = exportBackupCsv;
   document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
   document.getElementById('import-backup-input').addEventListener('change', importBackupCsv);
+  document.getElementById('run-diagnostics-btn').onclick = runStorageDiagnostics;
   document.getElementById('save-my-profile-btn').onclick = saveMyProfile;
   document.getElementById('save-my-password-btn').onclick = saveMyPassword;
   document.getElementById('add-admin-btn').onclick = addAdminProfile;
