@@ -52,6 +52,8 @@ test.describe('design parity with the original app', () => {
 
   for (const screen of SCREENS) {
     test(`${screen.name} is identical`, async ({ browser }, testInfo) => {
+      // Entry was deliberately widened for screens 768px+ (see 04-entry-layout); phones must stay identical.
+      test.skip(screen.name === 'admin-entry' && (testInfo.project.use.viewport?.width ?? 1280) >= 768, 'Entry layout intentionally changed on tablets/laptops');
       const before = await capture(browser, testInfo, 'original', screen);
       const after = await capture(browser, testInfo, 'supabase', screen);
       const a = PNG.sync.read(before.png);

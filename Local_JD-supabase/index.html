@@ -284,6 +284,36 @@
 
   #entry-table-wrap, #flats-table-wrap, #admins-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #entry-table-wrap table{min-width:1140px;}
+
+  /* Entry on laptops/desktops/tablets: use the screen's full width so the whole
+     row fits, and scroll the table inside a screen-high box so its header, the
+     Flat column and the sideways scrollbar are always in view.
+     Phones (under 768px) keep the original behaviour. */
+  @media (min-width:768px){
+    #tab-entry{
+      width:max(100%, min(1240px, calc(100vw - 64px)));
+      margin-left:calc((100% - max(100%, min(1240px, calc(100vw - 64px)))) / 2);
+    }
+    #entry-table-wrap{
+      max-height:calc(100vh - 150px);
+      max-height:calc(100dvh - 150px);
+      overflow:auto;
+      border:1px solid var(--paper-2);
+      overscroll-behavior:contain;
+    }
+    #entry-table-wrap table{border-collapse:separate;border-spacing:0;}
+    #entry-table-wrap thead th{
+      position:sticky;top:0;z-index:3;background:var(--white);
+      box-shadow:inset 0 -1px 0 var(--line);
+    }
+    #entry-table-wrap td:first-child, #entry-table-wrap th:first-child{
+      position:sticky;left:0;z-index:2;background:var(--white);
+      box-shadow:inset -1px 0 0 var(--paper-2);
+    }
+    #entry-table-wrap thead th:first-child{z-index:4;}
+    #entry-table-wrap tbody tr:hover td:first-child{background:var(--paper);}
+    #entry-table-wrap tbody tr[style*="background"] td:first-child{background:var(--paper);}
+  }
   #flats-table-wrap table{min-width:640px;}
   #admins-table-wrap table{min-width:480px;}
   #exp-items-wrap table{min-width:520px;}
