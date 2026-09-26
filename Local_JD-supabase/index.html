@@ -284,6 +284,62 @@
 
   #entry-table-wrap, #flats-table-wrap, #admins-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #entry-table-wrap table{min-width:1140px;}
+
+  /* Entry on laptops/desktops/tablets: use the screen's full width so the whole
+     row fits, and scroll the table inside a screen-high box so its header, the
+     Flat column and the sideways scrollbar are always in view.
+     Phones (under 768px) keep the original behaviour. */
+  @media (min-width:768px){
+    #tab-entry{
+      width:max(100%, min(1240px, calc(100vw - 64px)));
+      margin-left:calc((100% - max(100%, min(1240px, calc(100vw - 64px)))) / 2);
+    }
+    #entry-table-wrap{
+      max-height:calc(100vh - 150px);
+      max-height:calc(100dvh - 150px);
+      overflow:auto;
+      border:1px solid var(--paper-2);
+      overscroll-behavior:contain;
+    }
+    #entry-table-wrap table{border-collapse:separate;border-spacing:0;}
+    #entry-table-wrap thead th{
+      position:sticky;top:0;z-index:3;background:var(--white);
+      box-shadow:inset 0 -1px 0 var(--line);
+    }
+    #entry-table-wrap td:first-child, #entry-table-wrap th:first-child{
+      position:sticky;left:0;z-index:2;background:var(--white);
+      box-shadow:inset -1px 0 0 var(--paper-2);
+    }
+    #entry-table-wrap thead th:first-child{z-index:4;}
+    #entry-table-wrap tbody tr:hover td:first-child{background:var(--paper);}
+    #entry-table-wrap tbody tr[style*="background"] td:first-child{background:var(--paper);}
+  }
+
+  /* Entry on phones: iPhone/Android draw date and dropdown fields with their own
+     sizes (and zoom the page when a field under 16px is tapped), which knocked the
+     Amount / Date / Mode fields out of line. Give them one fixed size and style. */
+  @media (max-width:767px){
+    #entry-table-wrap .e-amount,
+    #entry-table-wrap .e-date,
+    #entry-table-wrap .e-mode{
+      -webkit-appearance:none; appearance:none;
+      box-sizing:border-box; display:block; margin:0;
+      height:40px; min-height:40px; line-height:1.2;
+      padding:0 10px; font-size:16px; border-radius:2px;
+      background-color:var(--paper); color:var(--ink);
+    }
+    #entry-table-wrap .e-date{ width:156px; min-width:156px; text-align:left; }
+    #entry-table-wrap .e-date::-webkit-date-and-time-value{ text-align:left; margin:0; }
+    #entry-table-wrap .e-date::-webkit-datetime-edit{ padding:0; }
+    #entry-table-wrap .e-mode{
+      width:156px; padding-right:30px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%231E2E24' stroke-width='1.6'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 10px center; background-size:10px 6px;
+    }
+    #entry-table-wrap .e-date:disabled,
+    #entry-table-wrap .e-mode:disabled,
+    #entry-table-wrap .e-amount:disabled{ opacity:.55; }
+  }
   #flats-table-wrap table{min-width:640px;}
   #admins-table-wrap table{min-width:480px;}
   #exp-items-wrap table{min-width:520px;}
@@ -1036,8 +1092,11 @@ let expenses = {}; // key: 'YYYY-MM' -> {openingOverride, maintReceivedOverride,
 let admins = []; // [{id, name, phone, password}]
 let currentUser = null; // {role:'admin', adminId} | {role:'owner', flatId}
 
-function todayMonth(){ return new Date().toISOString().slice(0,7); }
-function todayDate(){ return new Date().toISOString().slice(0,10); }
+// Dates use the phone/computer's own (local, e.g. IST) calendar. Using UTC here made
+// the current month/day lag behind between midnight and 5:30 AM IST.
+function localMonthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function todayMonth(){ return localMonthKey(new Date()); }
+function todayDate(){ const d = new Date(); return localMonthKey(d) + '-' + String(d.getDate()).padStart(2,'0'); }
 function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
 function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
 function monthLabelOf(month){
@@ -1046,11 +1105,9 @@ function monthLabelOf(month){
 }
 function last12Months(){
   const out = [];
-  const d = new Date();
-  d.setDate(1);
+  const now = new Date();
   for(let i=0;i<12;i++){
-    out.push(d.toISOString().slice(0,7));
-    d.setMonth(d.getMonth()-1);
+    out.push(localMonthKey(new Date(now.getFullYear(), now.getMonth()-i, 1)));
   }
   return out;
 }
@@ -1179,6 +1236,7 @@ function friendlySaveError(e){
   if(e && e.code === 'LOCKED_WAIVED') return "This month's due was waived by the admin — there's nothing to submit.";
   if(e && e.code === 'CANNOT_DELETE_SELF') return "You can't remove your own profile while logged in.";
   if(e && e.code === 'LAST_ADMIN') return 'At least one admin profile must remain.';
+  if(e && e.code === 'INCOMPLETE_SUBMISSION') return 'Please add the amount, payment mode and a payment screenshot before submitting.';
   return "Couldn't save that change — please refresh and try again.";
 }
 
@@ -1266,6 +1324,9 @@ function rerenderAll(){
   }
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') refreshData(false); });
+// Keep an open screen current (e.g. an owner's ledger after the admin verifies a payment on another device).
+const AUTO_REFRESH_MS = 60 * 1000;
+setInterval(()=>{ if(document.visibilityState === 'visible') refreshData(false); }, AUTO_REFRESH_MS);
 
 async function loadAll(){
   try{
@@ -3265,15 +3326,17 @@ function renderOwnerView(){
       shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
     }
   } else {
+    const REQ = '<span class="req-star" aria-hidden="true" style="color:var(--red);font-weight:700;"> *</span>';
     document.getElementById('my-upload-area').innerHTML = `
+      <p class="note" id="my-required-note" style="margin:0 0 12px;"><span style="color:var(--red);font-weight:700;">*</span> All three are mandatory to submit: <b>Amount paid</b>, <b>Mode</b> and <b>Payment screenshot</b>.</p>
       <div class="row" style="margin-bottom:10px;">
         <div>
-          <label for="my-pay-amount">Amount paid (₹)</label>
-          <input type="number" id="my-pay-amount" value="${(p.amount!==undefined && p.amount!==null) ? p.amount : Math.round(due.dueThisMonth)}" min="0">
+          <label for="my-pay-amount">Amount paid (₹)${REQ}</label>
+          <input type="number" id="my-pay-amount" value="${(p.amount!==undefined && p.amount!==null) ? p.amount : Math.round(due.dueThisMonth)}" min="1" required aria-required="true" inputmode="numeric">
         </div>
         <div>
-          <label for="my-pay-mode">Mode</label>
-          <select id="my-pay-mode">
+          <label for="my-pay-mode">Mode${REQ}</label>
+          <select id="my-pay-mode" required aria-required="true">
             <option value="">—</option>
             <option value="UPI" ${p.mode==='UPI'?'selected':''}>UPI</option>
             <option value="Cash" ${p.mode==='Cash'?'selected':''}>Cash</option>
@@ -3284,7 +3347,7 @@ function renderOwnerView(){
       </div>
       <div class="row" style="align-items:center;">
         <div>
-          <label>Payment screenshot</label>
+          <label>Payment screenshot${REQ}</label>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             ${shotPreview}
             <input type="file" accept="image/*" id="my-shot-input" class="file-input-hidden">
@@ -3294,6 +3357,7 @@ function renderOwnerView(){
           <div id="my-shot-checking" style="margin-top:8px;"></div>
         </div>
       </div>
+      <div id="my-submit-msg" role="alert"></div>
       <div class="actions-row">
         <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Update this month' : 'Mark as paid & submit'}</button>
       </div>
@@ -3322,9 +3386,15 @@ function renderOwnerView(){
         const amtEntered = amtField ? (Number(amtField.value) || Math.round(due.dueThisMonth)) : Math.round(due.dueThisMonth);
         const result = await autoVerifyScreenshot(dataUrl, flat, month, amtEntered);
         const latest = getPayment(flat.id, month);
-        payments[payKey(flat.id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
+        // the auto-check result is kept, but only counts as "verified" once the owner actually submits
+        payments[payKey(flat.id, month)] = {...latest, autoCheck: result};
         await savePayments(flat.id, month);
+        const keepAmount = document.getElementById('my-pay-amount') ? document.getElementById('my-pay-amount').value : null;
+        const keepMode = document.getElementById('my-pay-mode') ? document.getElementById('my-pay-mode').value : null;
         renderOwnerView();
+        // don't lose what the owner already typed/picked before uploading
+        if(keepAmount !== null && document.getElementById('my-pay-amount')) document.getElementById('my-pay-amount').value = keepAmount;
+        if(keepMode !== null && document.getElementById('my-pay-mode')) document.getElementById('my-pay-mode').value = keepMode;
       }catch(err){
         alert('Could not read that image, please try another file.');
       }
@@ -3332,9 +3402,14 @@ function renderOwnerView(){
     const myShotRemoveBtn = document.getElementById('my-shot-remove');
     if(myShotRemoveBtn){
       myShotRemoveBtn.addEventListener('click', async ()=>{
-        if(!(await customConfirm('Remove your uploaded screenshot for this month?'))) return;
+        const current = getPayment(flat.id, month);
+        const question = current.paid
+          ? 'Remove your uploaded screenshot for this month? This also withdraws your submission — upload a new screenshot and submit again.'
+          : 'Remove your uploaded screenshot for this month?';
+        if(!(await customConfirm(question))) return;
         const existing = getPayment(flat.id, month);
-        payments[payKey(flat.id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null};
+        // a submission always needs its screenshot, so removing it withdraws the submission
+        payments[payKey(flat.id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null, paid: false};
         await savePayments(flat.id, month);
         renderOwnerView();
       });
@@ -3345,11 +3420,49 @@ function renderOwnerView(){
       shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
     }
 
+    // Submission needs all three: amount, mode and a payment screenshot.
+    const amountEl = document.getElementById('my-pay-amount');
+    const modeEl = document.getElementById('my-pay-mode');
+    const shotBtnEl = document.getElementById('my-shot-btn');
+    const submitMsg = document.getElementById('my-submit-msg');
+    const markInvalid = (el, bad)=>{
+      if(!el) return;
+      el.style.borderColor = bad ? 'var(--red)' : '';
+      el.style.color = (bad && el === shotBtnEl) ? 'var(--red)' : '';
+      if(bad) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid');
+    };
+    const clearIfFixed = ()=>{
+      if(!submitMsg.innerHTML) return;
+      const a = amountEl.value.trim();
+      markInvalid(amountEl, !a || !(Number(a) > 0));
+      markInvalid(modeEl, !modeEl.value);
+      if(amountEl.getAttribute('aria-invalid') !== 'true' && modeEl.getAttribute('aria-invalid') !== 'true' && shotBtnEl.getAttribute('aria-invalid') !== 'true') submitMsg.innerHTML = '';
+    };
+    amountEl.addEventListener('input', clearIfFixed);
+    modeEl.addEventListener('change', clearIfFixed);
+
     document.getElementById('my-mark-paid-btn').onclick = async ()=>{
       const existing = getPayment(flat.id, month);
-      const amount = Number(document.getElementById('my-pay-amount').value) || Math.round(due.dueThisMonth);
-      const mode = document.getElementById('my-pay-mode').value;
-      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: existing.screenshot ? existing.verified : false};
+      const amountRaw = amountEl.value.trim();
+      const amount = Number(amountRaw);
+      const mode = modeEl.value;
+      const hasShot = !!(existing.screenshotPath || existing.screenshot);
+      const missing = [];
+      const badAmount = !amountRaw || !(amount > 0);
+      if(badAmount) missing.push(amountRaw === '' ? 'Amount paid — enter the amount you paid' : 'Amount paid — must be more than ₹0');
+      if(!mode) missing.push('Mode — choose UPI, Cash, Bank Transfer or Cheque');
+      if(!hasShot) missing.push('Payment screenshot — upload a screenshot of your payment');
+      markInvalid(amountEl, badAmount);
+      markInvalid(modeEl, !mode);
+      markInvalid(shotBtnEl, !hasShot);
+      if(missing.length){
+        submitMsg.innerHTML = `<div class="note err"><b>Not submitted — please fill the mandatory field${missing.length>1?'s':''} below:</b><ul style="margin:6px 0 0;padding-left:20px;">${missing.map(m=>`<li>${escapeHtml(m)}</li>`).join('')}</ul></div>`;
+        (badAmount ? amountEl : (!mode ? modeEl : shotBtnEl)).focus();
+        return;
+      }
+      submitMsg.innerHTML = '';
+      const autoOk = !!(existing.autoCheck && existing.autoCheck.status === 'verified');
+      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: autoOk};
       await savePayments(flat.id, month);
       renderOwnerView();
     };

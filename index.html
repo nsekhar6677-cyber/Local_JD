@@ -284,6 +284,62 @@
 
   #entry-table-wrap, #flats-table-wrap, #admins-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #entry-table-wrap table{min-width:1140px;}
+
+  /* Entry on laptops/desktops/tablets: use the screen's full width so the whole
+     row fits, and scroll the table inside a screen-high box so its header, the
+     Flat column and the sideways scrollbar are always in view.
+     Phones (under 768px) keep the original behaviour. */
+  @media (min-width:768px){
+    #tab-entry{
+      width:max(100%, min(1240px, calc(100vw - 64px)));
+      margin-left:calc((100% - max(100%, min(1240px, calc(100vw - 64px)))) / 2);
+    }
+    #entry-table-wrap{
+      max-height:calc(100vh - 150px);
+      max-height:calc(100dvh - 150px);
+      overflow:auto;
+      border:1px solid var(--paper-2);
+      overscroll-behavior:contain;
+    }
+    #entry-table-wrap table{border-collapse:separate;border-spacing:0;}
+    #entry-table-wrap thead th{
+      position:sticky;top:0;z-index:3;background:var(--white);
+      box-shadow:inset 0 -1px 0 var(--line);
+    }
+    #entry-table-wrap td:first-child, #entry-table-wrap th:first-child{
+      position:sticky;left:0;z-index:2;background:var(--white);
+      box-shadow:inset -1px 0 0 var(--paper-2);
+    }
+    #entry-table-wrap thead th:first-child{z-index:4;}
+    #entry-table-wrap tbody tr:hover td:first-child{background:var(--paper);}
+    #entry-table-wrap tbody tr[style*="background"] td:first-child{background:var(--paper);}
+  }
+
+  /* Entry on phones: iPhone/Android draw date and dropdown fields with their own
+     sizes (and zoom the page when a field under 16px is tapped), which knocked the
+     Amount / Date / Mode fields out of line. Give them one fixed size and style. */
+  @media (max-width:767px){
+    #entry-table-wrap .e-amount,
+    #entry-table-wrap .e-date,
+    #entry-table-wrap .e-mode{
+      -webkit-appearance:none; appearance:none;
+      box-sizing:border-box; display:block; margin:0;
+      height:40px; min-height:40px; line-height:1.2;
+      padding:0 10px; font-size:16px; border-radius:2px;
+      background-color:var(--paper); color:var(--ink);
+    }
+    #entry-table-wrap .e-date{ width:156px; min-width:156px; text-align:left; }
+    #entry-table-wrap .e-date::-webkit-date-and-time-value{ text-align:left; margin:0; }
+    #entry-table-wrap .e-date::-webkit-datetime-edit{ padding:0; }
+    #entry-table-wrap .e-mode{
+      width:156px; padding-right:30px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%231E2E24' stroke-width='1.6'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 10px center; background-size:10px 6px;
+    }
+    #entry-table-wrap .e-date:disabled,
+    #entry-table-wrap .e-mode:disabled,
+    #entry-table-wrap .e-amount:disabled{ opacity:.55; }
+  }
   #flats-table-wrap table{min-width:640px;}
   #admins-table-wrap table{min-width:480px;}
   #exp-items-wrap table{min-width:520px;}
@@ -1031,13 +1087,16 @@ const TABS_OWNER = [
 
 let flats = [];
 let payments = {}; // key: `${flatId}:${YYYY-MM}` -> {paid,amount,date,mode,screenshot,verified}
-let settings = {societyName:'JD Blossom Apartment', defaultAmount:2000, lastCheck:null, adminPassword:'admin123', adminRecoveryQuestion:'', adminRecoveryAnswer:'', adminPhone:''};
+let settings = {societyName:'JD Blossom Apartment', defaultAmount:2000, lastCheck:null, adminRecoveryQuestion:'', adminPhone:''};
 let expenses = {}; // key: 'YYYY-MM' -> {openingOverride, maintReceivedOverride, items:[{id,category,paidOn,amount}]}
 let admins = []; // [{id, name, phone, password}]
 let currentUser = null; // {role:'admin', adminId} | {role:'owner', flatId}
 
-function todayMonth(){ return new Date().toISOString().slice(0,7); }
-function todayDate(){ return new Date().toISOString().slice(0,10); }
+// Dates use the phone/computer's own (local, e.g. IST) calendar. Using UTC here made
+// the current month/day lag behind between midnight and 5:30 AM IST.
+function localMonthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function todayMonth(){ return localMonthKey(new Date()); }
+function todayDate(){ const d = new Date(); return localMonthKey(d) + '-' + String(d.getDate()).padStart(2,'0'); }
 function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
 function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
 function monthLabelOf(month){
@@ -1046,280 +1105,409 @@ function monthLabelOf(month){
 }
 function last12Months(){
   const out = [];
-  const d = new Date();
-  d.setDate(1);
+  const now = new Date();
   for(let i=0;i<12;i++){
-    out.push(d.toISOString().slice(0,7));
-    d.setMonth(d.getMonth()-1);
+    out.push(localMonthKey(new Date(now.getFullYear(), now.getMonth()-i, 1)));
   }
   return out;
 }
+/* ===================== SUPABASE BACKEND =====================
+   All data is stored in Supabase (Postgres + private Storage bucket).
+   The browser only calls the public.jdb_* RPC functions with an app
+   session token that is issued on PIN/password sign-in; every rule
+   (who can read/modify what) is enforced in the database. Payment
+   screenshots go to a private bucket through the jdb-files Edge Function
+   and are shown via short-lived signed URLs. */
+// Two databases: the LIVE one is used only on the live web addresses below.
+// Every other address (Vercel preview links for test branches, your own
+// computer, etc.) uses the separate TEST database, so trying out changes can
+// never touch real payments. If you add a custom domain, add it here too.
+const LIVE_HOSTS = ['jdblossom-maintenance-tracker.vercel.app', 'local-jd-nsekhar6677-cyber.vercel.app'];
+const DB_ENV = {
+  live: { url: 'https://dzjedqxhtxacchwkwhof.supabase.co', key: 'sb_publishable_iP-cIUpZnQUlCCeTkdRfMg_dkrMQyPw' },
+  test: { url: 'https://omxdowsjtcyslfnrxouc.supabase.co', key: 'sb_publishable_X2Xp9O84EeQrZ3-7zZjmoQ_hAH2bKBI' }
+};
+const IS_LIVE = LIVE_HOSTS.includes(location.hostname);
+const SUPABASE_URL = (IS_LIVE ? DB_ENV.live : DB_ENV.test).url;
+const SUPABASE_PUBLISHABLE_KEY = (IS_LIVE ? DB_ENV.live : DB_ENV.test).key;
+// On test copies, label the tab and show a small corner tag so nobody mistakes it for the live site.
+if(!IS_LIVE && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){
+  document.title = '[TEST] ' + document.title;
+  const tag = document.createElement('div');
+  tag.textContent = 'TEST DATABASE';
+  tag.style.cssText = 'position:fixed;top:calc(6px + env(safe-area-inset-top));left:6px;z-index:1001;background:#B23A2E;color:#fff;font:700 10px/1 "JetBrains Mono",monospace;letter-spacing:.08em;padding:5px 7px;border-radius:2px;pointer-events:none;opacity:.92;';
+  document.body.appendChild(tag);
+}
+let sessionToken = null;
+let synced = {flats:{}, admins:{}, expenses:{}, settings:{}}; // last state confirmed by the server (for diff-saves)
+let saveChain = Promise.resolve();
+let lastLoadJson = '';
 
-/* ===================== LOAD / SAVE (shared across all users) ===================== */
-const DEFAULT_OWNERS = [
-  {name:'Kundan Kumar Sigh', phone:'+917795681920'},
-  {name:'Manish Kumar', phone:'+919108416357'},
-  {name:'Anushree M.', phone:'+919148873188'},
-  {name:'Shanmukh Rao Subudhi', phone:'+918951323159'},
-  {name:'Virender Solanki - Sudeshna', phone:'+918095679091'},
-  {name:'Abha Singh', phone:'+918707743302'},
-  {name:'Maheshwara N.', phone:'+919620183269'},
-  {name:'Munisekhar Nimmala', phone:'+918197426677'},
-  {name:'Subhish J Pillai', phone:'+919620183269'},
-  {name:'O. Kathiri Chetty', phone:'+919845064751'},
-  {name:'Kheem Singh Bisht', phone:'+918553093745'},
-  {name:'Deepak Kumar', phone:'+919561725494'},
-  {name:'Sindhu Raghavendra', phone:'+919686356006'},
-  {name:'Munikrishna N.', phone:'+918892208983'},
-  {name:'Pallavi', phone:'+919663358058'},
-  {name:'Krishnamurthy Kurakula', phone:'+919731098098'},
-  {name:'Saran Kumar Reddy V.', phone:'+917259824248'},
-  {name:'Anima Remesh', phone:'+919449661228'},
-  {name:'LR. Umarani Ramesh', phone:'+919449446845'},
-  {name:'Anitha Balakrishna', phone:'+918317377800'},
-  {name:'Sai Manohar Boidapu', phone:'+919686239385'},
-  {name:'Swapnil Sunny', phone:'+918884898221'},
-  {name:'Mohan Kumar', phone:'+919620183269'},
-  {name:'Hari Dindukurthi', phone:'+917702115644'},
-  {name:'Vineel Kumar G', phone:'+919867197773'},
-  {name:'Harendra Kumar', phone:'+919035203994'},
-  {name:'Venu Bandi', phone:'+914025476081'},
-  {name:'Sumukan Setty', phone:'+919886655802'},
-  {name:'Shantakumar Banappanavar', phone:'+918497009775'},
-  {name:'Lavanya Kumar T', phone:'+919480437016'},
-  {name:'Avinash Kumar Reddy Eluru', phone:'+919533766101'},
-  {name:'Vinjamoori Shankar', phone:'+918095323902'},
-  {name:'Deepa Bharath Raj', phone:'+919731314929'},
-  {name:'Tejeswar Vasupally', phone:'+918792646237'},
-  {name:'Chaitanya P', phone:'+919620377357'}
-];
+class ApiError extends Error{ constructor(code, status){ super(code); this.code = code; this.status = status; } }
+
+async function rpc(fn, args){
+  let res;
+  try{
+    res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method:'POST',
+      headers:{'apikey': SUPABASE_PUBLISHABLE_KEY, 'Content-Type':'application/json'},
+      body: JSON.stringify(args || {})
+    });
+  }catch(e){ throw new ApiError('NETWORK', 0); }
+  const text = await res.text();
+  let data = null;
+  try{ data = text ? JSON.parse(text) : null; }catch(e){ data = text; }
+  if(!res.ok){
+    const msg = (data && (data.message || data.error)) || ('HTTP_' + res.status);
+    const code = /SESSION_EXPIRED/.test(msg) ? 'SESSION_EXPIRED' : String(msg);
+    if(code === 'SESSION_EXPIRED') handleSessionExpired();
+    throw new ApiError(code, res.status);
+  }
+  return data;
+}
+
+async function filesApi(body){
+  let res;
+  try{
+    res = await fetch(`${SUPABASE_URL}/functions/v1/jdb-files`, {
+      method:'POST',
+      headers:{'apikey': SUPABASE_PUBLISHABLE_KEY, 'Content-Type':'application/json'},
+      body: JSON.stringify({...body, token: sessionToken})
+    });
+  }catch(e){ throw new ApiError('NETWORK', 0); }
+  let data = null;
+  try{ data = await res.json(); }catch(e){ data = null; }
+  if(!res.ok){
+    const code = (data && data.error) || ('HTTP_' + res.status);
+    if(code === 'SESSION_EXPIRED') handleSessionExpired();
+    throw new ApiError(code, res.status);
+  }
+  return data;
+}
+
+// Stores a compressed screenshot in Supabase Storage; returns its storage path.
+async function uploadScreenshot(flatId, month, dataUrl){
+  const r = await filesApi({action:'upload', flatId, month, dataUrl});
+  return r.path;
+}
+
+// Swaps stored screenshot paths for viewable (signed) URLs (cached for a few hours).
+const signedUrlCache = {};
+async function signScreenshots(){
+  const now = Date.now();
+  const need = [];
+  for(const k in payments){
+    const p = payments[k];
+    if(p && p.screenshotPath){
+      const c = signedUrlCache[p.screenshotPath];
+      if(c && now - c.at < 6*3600*1000) p.screenshot = c.url; else need.push(p.screenshotPath);
+    }
+  }
+  if(need.length === 0) return;
+  try{
+    const r = await filesApi({action:'sign', paths: need});
+    const urls = (r && r.urls) || {};
+    for(const path in urls) signedUrlCache[path] = {url: urls[path], at: now};
+    for(const k in payments){ const p = payments[k]; if(p && p.screenshotPath && !p.screenshot) p.screenshot = urls[p.screenshotPath] || null; }
+  }catch(e){
+    if(e.code !== 'SESSION_EXPIRED') showSyncError("Couldn't load payment screenshots — check your connection and refresh.");
+  }
+}
+
+// Small, non-intrusive error banner (reuses the app's existing .note.err style).
+function showSyncError(message){
+  let el = document.getElementById('sync-error');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'sync-error';
+    el.className = 'note err';
+    el.setAttribute('role','alert');
+    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));z-index:1000;max-width:min(92vw,520px);box-shadow:0 8px 24px -10px rgba(15,26,20,.45);margin:0;';
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.style.display = 'block';
+  clearTimeout(showSyncError._t);
+  showSyncError._t = setTimeout(()=>{ el.style.display = 'none'; }, 6000);
+}
+function friendlySaveError(e){
+  if(e && e.code === 'NETWORK') return "Couldn't save — you appear to be offline. Check your connection and try again.";
+  if(e && e.code === 'LOCKED_VERIFIED') return 'This payment was just verified by the admin, so it can no longer be edited here.';
+  if(e && e.code === 'LOCKED_WAIVED') return "This month's due was waived by the admin — there's nothing to submit.";
+  if(e && e.code === 'CANNOT_DELETE_SELF') return "You can't remove your own profile while logged in.";
+  if(e && e.code === 'LAST_ADMIN') return 'At least one admin profile must remain.';
+  if(e && e.code === 'INCOMPLETE_SUBMISSION') return 'Please add the amount, payment mode and a payment screenshot before submitting.';
+  return "Couldn't save that change — please refresh and try again.";
+}
+
+// Every write goes through one queue so saves reach the server in the order they were made.
+function queueSave(task){
+  const run = saveChain.then(task);
+  saveChain = run.catch(()=>{});
+  return run.catch(async e=>{
+    if(e && e.code === 'SESSION_EXPIRED') return;
+    showSyncError(friendlySaveError(e));
+    // re-sync with the server so the screen never shows data that wasn't saved
+    try{ await refreshData(true); }catch(_){}
+  });
+}
+
+let sessionExpiredHandled = false;
+function handleSessionExpired(){
+  if(!currentUser || sessionExpiredHandled) return;
+  sessionExpiredHandled = true;
+  logout().then(()=>{
+    document.getElementById('owner-login-err').innerHTML = '<p class="note err">Your session has expired — please sign in again.</p>';
+    document.getElementById('admin-login-err').innerHTML = '<p class="note err">Your session has expired — please sign in again.</p>';
+    sessionExpiredHandled = false;
+  });
+}
+
+const clone = o => JSON.parse(JSON.stringify(o));
+function snapshotSynced(){
+  synced = {flats:{}, admins:{}, expenses:{}, settings: clone(settings)};
+  flats.forEach((f,i)=>{ synced.flats[f.id] = {...clone(f), sort:i}; });
+  admins.forEach((a,i)=>{ synced.admins[a.id] = {...clone(a), sort:i}; });
+  for(const m in expenses) synced.expenses[m] = JSON.stringify(expenses[m]);
+}
+
+/* ---------- LOAD ---------- */
+// Before sign-in: only what the login screen needs (flat numbers/owner names, admin names).
+async function loadPublicInfo(){
+  const info = await rpc('jdb_public_info');
+  flats = info.flats || [];
+  admins = info.admins || [];
+  payments = {}; expenses = {};
+  settings = {...settings, societyName: info.societyName || 'JD Blossom Apartment', adminRecoveryQuestion: info.adminRecoveryQuestion || ''};
+}
+
+// After sign-in: everything this user is allowed to see.
+async function loadSessionData(){
+  const d = await rpc('jdb_load', {p_token: sessionToken});
+  const json = JSON.stringify(d);
+  const changed = json !== lastLoadJson;
+  lastLoadJson = json;
+  flats = d.flats || [];
+  payments = d.payments || {};
+  expenses = d.expenses || {};
+  admins = d.admins || [];
+  settings = {...settings, ...(d.settings || {})};
+  currentUser = d.role === 'admin' ? {role:'admin', adminId: d.subject} : {role:'owner', flatId: d.subject};
+  await signScreenshots();
+  snapshotSynced();
+  return changed;
+}
+
+// Pulls the latest data from the server (other devices' changes) and re-renders
+// the open screens — skipped while someone is typing so nothing they're doing is disturbed.
+let refreshing = false;
+async function refreshData(force){
+  if(!sessionToken || refreshing) return;
+  refreshing = true;
+  try{
+    await saveChain;
+    const changed = await loadSessionData();
+    if(!changed && !force) return;
+    const active = document.activeElement;
+    if(!force && active && active.closest && active.closest('#app-screen') && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) return;
+    rerenderAll();
+  }catch(e){ /* offline: keep showing what we have */ }
+  finally{ refreshing = false; }
+}
+function rerenderAll(){
+  if(!currentUser) return;
+  document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
+  if(currentUser.role === 'admin'){
+    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
+  } else {
+    renderOwnerView();
+  }
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') refreshData(false); });
+// Keep an open screen current (e.g. an owner's ledger after the admin verifies a payment on another device).
+const AUTO_REFRESH_MS = 60 * 1000;
+setInterval(()=>{ if(document.visibilityState === 'visible') refreshData(false); }, AUTO_REFRESH_MS);
 
 async function loadAll(){
   try{
-    const f = await window.storage.get('flats', true);
-    flats = f ? JSON.parse(f.value) : [];
-  }catch(e){ flats = []; }
-  try{
-    await loadPayments();
-  }catch(e){ payments = {}; }
-  try{
-    const s = await window.storage.get('settings', true);
-    if(s) settings = {...settings, ...JSON.parse(s.value)};
-  }catch(e){}
-  try{
-    const ex = await window.storage.get('expenses', true);
-    expenses = ex ? JSON.parse(ex.value) : {};
-  }catch(e){ expenses = {}; }
-  try{
-    const ad = await window.storage.get('admins', true);
-    admins = ad ? JSON.parse(ad.value) : [];
-  }catch(e){ admins = []; }
-
-  if(admins.length === 0){
-    // migrate the old single admin password into the first named profile
-    admins.push({id:'admin1', name:'Admin', phone:'', password: settings.adminPassword || 'admin123'});
-    await saveAdmins();
+    await loadPublicInfo();
+  }catch(e){
+    flats = []; admins = [];
+    initLoginScreen();
+    document.getElementById('owner-login-err').innerHTML = '<p class="note err">Couldn\'t reach the server — check your internet connection and refresh the page.</p>';
+    document.getElementById('admin-login-err').innerHTML = '<p class="note err">Couldn\'t reach the server — check your internet connection and refresh the page.</p>';
+    return;
   }
-
-  if(flats.length === 0){
-    let i = 1;
-    for(let floor=0; floor<=4; floor++){
-      for(let unit=1; unit<=7; unit++){
-        const flatNo = 'f' + floor + String(unit).padStart(2,'0');
-        const owner = DEFAULT_OWNERS[i-1] || {name:'', phone:''};
-        flats.push({id:'id'+i, flatNo, owner: owner.name, phone: owner.phone, amount: settings.defaultAmount, pin: String(1000+i)});
-        i++;
-      }
-    }
-    await saveFlats();
-    await saveSettings();
-  }
-  // backfill pins for older data that might not have them
-  let needSave = false;
-  flats.forEach((f,idx)=>{ if(!f.pin){ f.pin = String(1000+idx+1); needSave = true; } });
-
-  // migrate flat numbers to the f001..f407 (floor+unit) scheme if they don't already match
-  const flatNoPattern = /^f[0-4]0[1-7]$/;
-  if(flats.length === 35 && !flats.every(f=>flatNoPattern.test(f.flatNo))){
-    flats.forEach((f,idx)=>{
-      const floor = Math.floor(idx/7);
-      const unit = (idx%7)+1;
-      f.flatNo = 'f' + floor + String(unit).padStart(2,'0');
-    });
-    needSave = true;
-  }
-  if(needSave) await saveFlats();
-
   document.getElementById('login-society-title').textContent = settings.societyName || 'JD Blossom Apartment';
   initLoginScreen();
 }
 
-async function saveFlats(){ try{ await window.storage.set('flats', JSON.stringify(flats), true); }catch(e){} }
+/* ---------- SAVE (only what actually changed is sent) ---------- */
+const FLAT_FIELDS = ['flatNo','owner','phone','amount','pin','sort'];
+async function saveFlats(){
+  if(!currentUser || currentUser.role !== 'admin') return;
+  const upserts = [];
+  const seen = new Set();
+  flats.forEach((f,i)=>{
+    seen.add(f.id);
+    const cur = {...f, sort:i};
+    const prev = synced.flats[f.id];
+    if(!prev){ upserts.push({id:f.id, flatNo:f.flatNo, owner:f.owner||'', phone:f.phone||'', amount:f.amount, pin:String(f.pin||''), sort:i}); return; }
+    const patch = {id:f.id};
+    let dirty = false;
+    FLAT_FIELDS.forEach(k=>{ if(String(cur[k] ?? '') !== String(prev[k] ?? '')){ patch[k] = k==='pin' ? String(cur[k]) : cur[k]; dirty = true; } });
+    if(dirty) upserts.push(patch);
+  });
+  const deletes = Object.keys(synced.flats).filter(id=>!seen.has(id));
+  if(upserts.length === 0 && deletes.length === 0) return;
+  return queueSave(async ()=>{
+    await rpc('jdb_save_flats', {p_token: sessionToken, p_upserts: upserts, p_deletes: deletes});
+    flats.forEach((f,i)=>{ synced.flats[f.id] = {...clone(f), sort:i}; });
+    deletes.forEach(id=>{ delete synced.flats[id]; });
+  });
+}
 
-/* ---------- payments: per-month storage keys, with fetch-merge-write to avoid concurrent overwrite loss ---------- */
+async function saveAdmins(){
+  if(!currentUser || currentUser.role !== 'admin') return;
+  const upserts = [];
+  const seen = new Set();
+  const withPasswords = [];
+  admins.forEach((a,i)=>{
+    seen.add(a.id);
+    const prev = synced.admins[a.id];
+    const patch = {id:a.id};
+    let dirty = !prev;
+    if(!prev){ patch.name = a.name; patch.phone = a.phone || ''; patch.sort = i; }
+    else {
+      if((a.name||'') !== (prev.name||'')){ patch.name = a.name; dirty = true; }
+      if((a.phone||'') !== (prev.phone||'')){ patch.phone = a.phone || ''; dirty = true; }
+      if(i !== prev.sort){ patch.sort = i; dirty = true; }
+    }
+    if(a.password){ patch.password = a.password; dirty = true; withPasswords.push(a); }
+    if(dirty) upserts.push(patch);
+  });
+  const deletes = Object.keys(synced.admins).filter(id=>!seen.has(id));
+  // passwords are only ever sent to the server (hashed there) — never kept in memory
+  withPasswords.forEach(a=>{ delete a.password; });
+  if(upserts.length === 0 && deletes.length === 0) return;
+  return queueSave(async ()=>{
+    await rpc('jdb_save_admins', {p_token: sessionToken, p_upserts: upserts, p_deletes: deletes});
+    admins.forEach((a,i)=>{ synced.admins[a.id] = {...clone(a), sort:i}; });
+    deletes.forEach(id=>{ delete synced.admins[id]; });
+  });
+}
+
+const SETTINGS_FIELDS = ['societyName','defaultAmount','lastCheck','adminRecoveryQuestion','adminPhone'];
+async function saveSettings(){
+  if(!currentUser || currentUser.role !== 'admin') return;
+  const patch = {};
+  SETTINGS_FIELDS.forEach(k=>{ if(String(settings[k] ?? '') !== String(synced.settings[k] ?? '')) patch[k] = settings[k]; });
+  if(settings.adminRecoveryAnswer){ patch.adminRecoveryAnswer = settings.adminRecoveryAnswer; delete settings.adminRecoveryAnswer; }
+  if(Object.keys(patch).length === 0) return;
+  return queueSave(async ()=>{
+    await rpc('jdb_save_settings', {p_token: sessionToken, p_patch: patch});
+    SETTINGS_FIELDS.forEach(k=>{ if(k in patch) synced.settings[k] = patch[k]; });
+  });
+}
+
+async function saveExpenses(){
+  if(!currentUser || currentUser.role !== 'admin') return;
+  const months = {};
+  for(const m in expenses){
+    const j = JSON.stringify(expenses[m]);
+    if(j !== synced.expenses[m]) months[m] = clone(expenses[m]);
+  }
+  if(Object.keys(months).length === 0) return;
+  return queueSave(async ()=>{
+    await rpc('jdb_save_expenses', {p_token: sessionToken, p_months: months});
+    for(const m in months) synced.expenses[m] = JSON.stringify(months[m]);
+  });
+}
+
+/* ---------- payments: one row per flat per month on the server, so a save for one flat can never overwrite another's ---------- */
 function splitPayKey(key){
   const idx = key.lastIndexOf(':');
   return { flatId: key.slice(0, idx), month: key.slice(idx+1) };
 }
 
-// Explicit, authoritative index of "which months have data" — kept in its own small key.
-// This is the primary way loadPayments() discovers what to fetch. It does NOT depend on
-// window.storage.list() behaving a particular way, since that's an assumption we can't
-// fully verify against the real backend from here. list() is still used as a best-effort
-// supplementary check in loadPayments(), but the index is the source of truth.
-async function addMonthToIndex(month){
-  let idx = [];
-  try{
-    const cur = await window.storage.get('payments_index', true);
-    if(cur && cur.value) idx = JSON.parse(cur.value);
-  }catch(e){ idx = []; }
-  if(!Array.isArray(idx)) idx = [];
-  if(!idx.includes(month)){
-    idx.push(month);
-    idx.sort();
-    try{ await window.storage.set('payments_index', JSON.stringify(idx), true); }catch(e){}
-  }
-}
-
-// One-time (idempotent) migration: old versions stored everything in a single 'payments' key.
-// Split that into one key per month, then remove the old key. Safe to call every load —
-// it's a no-op once the old key is gone. Already-existing per-month data always wins over
-// data reconstructed from the old legacy blob, so a second device migrating late can never
-// silently roll back a fresher submission that was already saved under the new format.
-// One-time-per-fact (but safely repeatable) migration: old versions stored everything in a
-// single 'payments' key. This copies that data into per-month keys. It deliberately NEVER
-// deletes the old key — that's the fix for a real bug where an earlier version deleted it
-// unconditionally, even if some of the per-month writes had silently failed, permanently
-// losing whatever hadn't been copied yet. Leaving the old key in place costs a little storage
-// space but removes that entire risk, and makes this function safe to re-run on every load:
-// each run re-merges, so any data that failed to copy before gets another chance next time,
-// while already-migrated/fresher data always wins over the legacy copy for the same record.
-async function migrateOldPaymentsIfNeeded(){
-  let old = null;
-  try{ old = await window.storage.get('payments', true); }catch(e){ return; }
-  if(!old || !old.value) return;
-  let oldPayments = {};
-  try{ oldPayments = JSON.parse(old.value); }catch(e){ oldPayments = {}; }
-  const byMonth = {};
-  for(const key in oldPayments){
-    const { flatId, month } = splitPayKey(key);
-    if(!byMonth[month]) byMonth[month] = {};
-    byMonth[month][flatId] = oldPayments[key];
-  }
-  for(const month in byMonth){
-    let existing = {};
-    try{
-      const cur = await window.storage.get('payments_'+month, true);
-      if(cur && cur.value) existing = JSON.parse(cur.value);
-    }catch(e){}
-    // existing (already-migrated / freshly-saved) data wins over the old legacy blob
-    const merged = {...byMonth[month], ...existing};
-    try{ await window.storage.set('payments_'+month, JSON.stringify(merged), true); }catch(e){}
-    await addMonthToIndex(month);
-  }
-  // Deliberately no delete of the old 'payments' key here — see comment above.
-}
-
-async function loadPayments(){
-  await migrateOldPaymentsIfNeeded();
-  payments = {};
-  const monthsToLoad = new Set();
-
-  // Primary source: the explicit index (doesn't depend on list() behaving a particular way)
-  try{
-    const idxRec = await window.storage.get('payments_index', true);
-    if(idxRec && idxRec.value){
-      const idx = JSON.parse(idxRec.value);
-      if(Array.isArray(idx)) idx.forEach(m => monthsToLoad.add(m));
-    }
-  }catch(e){}
-
-  // Supplementary/best-effort: list() discovery, in case the index is ever missing an entry
-  try{
-    const list = await window.storage.list('payments_', true);
-    const rawKeys = (list && list.keys) ? list.keys : [];
-    rawKeys.forEach(k=>{
-      const keyStr = typeof k === 'string' ? k : (k && k.key ? k.key : null);
-      if(keyStr && keyStr !== 'payments_index') monthsToLoad.add(keyStr.slice('payments_'.length));
-    });
-  }catch(e){}
-
-  for(const month of monthsToLoad){
-    try{
-      const rec = await window.storage.get('payments_'+month, true);
-      if(rec && rec.value){
-        const monthObj = JSON.parse(rec.value);
-        for(const flatId in monthObj){
-          payments[payKey(flatId, month)] = monthObj[flatId];
-        }
-      }
-    }catch(e){ /* skip this month on read error, don't lose the rest */ }
-  }
-}
-
-// Saves ONE flat's record for ONE month. Fetches the latest copy of that month's key
-// immediately before writing, so a concurrent save (from another device) to a DIFFERENT
-// flat in the same month is preserved instead of being overwritten wholesale.
+// Saves ONE flat's record for ONE month.
 async function savePayments(flatId, month){
   if(!flatId || !month) return; // guard against accidental no-arg calls
-  const storageKey = 'payments_' + month;
-  let monthObj = {};
-  try{
-    const cur = await window.storage.get(storageKey, true);
-    if(cur && cur.value) monthObj = JSON.parse(cur.value);
-  }catch(e){ monthObj = {}; }
-  monthObj[flatId] = payments[payKey(flatId, month)];
-  try{ await window.storage.set(storageKey, JSON.stringify(monthObj), true); }catch(e){}
-  await addMonthToIndex(month);
+  const p = payments[payKey(flatId, month)] || {};
+  const data = {...p};
+  delete data.screenshot;
+  data.screenshotPath = p.screenshotPath || null;
+  return queueSave(async ()=>{
+    await rpc('jdb_save_payment', {p_token: sessionToken, p_flat_id: flatId, p_month: month, p_data: data});
+  });
 }
-
-// Used only for full-state operations (CSV restore) where every month is being replaced at once.
-async function saveAllPaymentsBulk(){
-  const byMonth = {};
-  for(const key in payments){
-    const { flatId, month } = splitPayKey(key);
-    if(!byMonth[month]) byMonth[month] = {};
-    byMonth[month][flatId] = payments[key];
-  }
-  const months = Object.keys(byMonth);
-  for(const month of months){
-    try{ await window.storage.set('payments_'+month, JSON.stringify(byMonth[month]), true); }catch(e){}
-  }
-  try{ await window.storage.set('payments_index', JSON.stringify(months.sort()), true); }catch(e){}
-}
-
-async function saveSettings(){ try{ await window.storage.set('settings', JSON.stringify(settings), true); }catch(e){} }
-async function saveExpenses(){ try{ await window.storage.set('expenses', JSON.stringify(expenses), true); }catch(e){} }
-async function saveAdmins(){ try{ await window.storage.set('admins', JSON.stringify(admins), true); }catch(e){} }
 
 /* ---------- DATA BACKUP: single CSV export/import ---------- */
 function csvEscape(value){
   return '"' + String(value).replace(/"/g, '""') + '"';
 }
 
+function blobToDataUrl(blob){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
 async function exportBackupCsv(){
-  const rows = [
-    ['key','value'],
-    ['meta_app', settings.societyName || 'JD Blossom Apartment'],
-    ['meta_exportedAt', new Date().toISOString()],
-    ['flats', JSON.stringify(flats)],
-    ['payments', JSON.stringify(payments)],
-    ['settings', JSON.stringify(settings)],
-    ['expenses', JSON.stringify(expenses)],
-    ['admins', JSON.stringify(admins)]
-  ];
-  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'Jdb_data.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
   const note = document.getElementById('backup-note');
-  note.textContent = 'Backup downloaded to your browser\'s downloads folder — move it wherever you\'d like to keep it.';
+  note.textContent = 'Preparing backup…';
+  try{
+    await saveChain;
+    await loadSessionData();
+    const secrets = await rpc('jdb_export', {p_token: sessionToken});
+    // self-contained backup: screenshots are embedded so the file alone is enough to restore
+    const paymentsOut = {};
+    for(const key in payments){
+      const p = {...payments[key]};
+      if(p.screenshot && p.screenshotPath){
+        try{
+          const res = await fetch(p.screenshot);
+          if(res.ok) p.screenshot = await blobToDataUrl(await res.blob());
+        }catch(e){ /* keep the path; the image stays in cloud storage */ }
+      }
+      paymentsOut[key] = p;
+    }
+    const flatsOut = flats.map(f=>{
+      const o = {...f};
+      delete o.hasRecoveryAnswer;
+      if(secrets.flatSecrets && secrets.flatSecrets[f.id]) o.recoveryAnswerHash = secrets.flatSecrets[f.id];
+      return o;
+    });
+    const adminsOut = admins.map(a=>({...a, passwordHash: secrets.adminSecrets ? secrets.adminSecrets[a.id] : undefined}));
+    const settingsOut = {...settings};
+    if(secrets.adminRecoveryAnswerHash) settingsOut.adminRecoveryAnswerHash = secrets.adminRecoveryAnswerHash;
+    const rows = [
+      ['key','value'],
+      ['meta_app', settings.societyName || 'JD Blossom Apartment'],
+      ['meta_exportedAt', new Date().toISOString()],
+      ['flats', JSON.stringify(flatsOut)],
+      ['payments', JSON.stringify(paymentsOut)],
+      ['settings', JSON.stringify(settingsOut)],
+      ['expenses', JSON.stringify(expenses)],
+      ['admins', JSON.stringify(adminsOut)]
+    ];
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Jdb_data.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    note.textContent = 'Backup downloaded to your browser\'s downloads folder — move it wherever you\'d like to keep it.';
+  }catch(e){
+    note.textContent = e && e.code === 'NETWORK' ? 'Could not create the backup — you appear to be offline.' : 'Could not create the backup — please try again.';
+  }
   setTimeout(()=>{ note.textContent=''; }, 5000);
 }
 
@@ -1345,74 +1533,32 @@ function parseBackupCsv(text){
   return rows;
 }
 
-/* ---------- read-only storage diagnostics — never writes, deletes, or migrates anything ---------- */
+/* ---------- read-only diagnostics — never writes, deletes, or migrates anything ---------- */
 async function runStorageDiagnostics(){
   const out = document.getElementById('diagnostics-output');
   out.innerHTML = '<p class="note">Running…</p>';
   const lines = [];
-
-  // 1. The legacy single-blob key, if it still exists
-  let legacyCount = null;
   try{
-    const old = await window.storage.get('payments', true);
-    if(old && old.value){
-      const parsed = JSON.parse(old.value);
-      legacyCount = Object.keys(parsed).length;
-      lines.push(`Legacy 'payments' key: PRESENT — ${legacyCount} record(s) inside.`);
-    } else {
-      lines.push(`Legacy 'payments' key: not present.`);
-    }
+    const t0 = performance.now();
+    const d = await rpc('jdb_diagnostics', {p_token: sessionToken});
+    const ms = Math.round(performance.now() - t0);
+    lines.push(`Database: Supabase — connected (${ms} ms round trip).`);
+    lines.push(`Server time: ${new Date(d.serverTime).toLocaleString('en-IN')}`);
+    lines.push('');
+    lines.push(`Per-month record counts (${(d.months||[]).length} month(s) found):`);
+    (d.months||[]).forEach(m=>lines.push(`  ${m.month}: ${m.count} record(s), ${m.shots} screenshot(s)`));
+    lines.push('');
+    lines.push(`Total records found across all months: ${d.payments}`);
+    lines.push(`Screenshots stored in cloud storage: ${d.screenshots}`);
+    lines.push(`Payment change-history entries: ${d.history}`);
+    lines.push(`Last payment change: ${d.lastPaymentChange ? new Date(d.lastPaymentChange).toLocaleString('en-IN') : 'never'}`);
+    lines.push(`Currently loaded into this session's memory: ${Object.keys(payments).length}`);
+    lines.push(`Flats currently on file: ${d.flats}`);
+    lines.push(`Admin profiles: ${d.admins}`);
+    lines.push(`Expense months on file: ${d.expenseMonths}`);
   }catch(e){
-    lines.push(`Legacy 'payments' key: could not read (${e && e.message ? e.message : 'error'}).`);
+    lines.push(`Database: could not be reached (${e && e.code ? e.code : 'error'}).`);
   }
-
-  // 2. The index
-  let indexMonths = [];
-  try{
-    const idxRec = await window.storage.get('payments_index', true);
-    if(idxRec && idxRec.value){
-      const idx = JSON.parse(idxRec.value);
-      if(Array.isArray(idx)) indexMonths = idx;
-    }
-    lines.push(`payments_index: ${indexMonths.length ? indexMonths.join(', ') : '(empty or missing)'}`);
-  }catch(e){
-    lines.push(`payments_index: could not read (${e && e.message ? e.message : 'error'}).`);
-  }
-
-  // 3. What list() itself reports, for comparison
-  let listedMonths = [];
-  try{
-    const list = await window.storage.list('payments_', true);
-    const rawKeys = (list && list.keys) ? list.keys : [];
-    listedMonths = rawKeys
-      .map(k => typeof k === 'string' ? k : (k && k.key ? k.key : null))
-      .filter(k => k && k !== 'payments_index')
-      .map(k => k.slice('payments_'.length));
-    lines.push(`window.storage.list() reports: ${listedMonths.length ? listedMonths.join(', ') : '(empty or unavailable)'}`);
-  }catch(e){
-    lines.push(`window.storage.list(): failed (${e && e.message ? e.message : 'error'}).`);
-  }
-
-  // 4. Record count per month key found by EITHER method (union), so nothing is missed
-  const allMonths = Array.from(new Set([...indexMonths, ...listedMonths])).sort();
-  lines.push('');
-  lines.push(`Per-month record counts (${allMonths.length} month key(s) found):`);
-  let totalRecords = 0;
-  for(const month of allMonths){
-    try{
-      const rec = await window.storage.get('payments_'+month, true);
-      const count = (rec && rec.value) ? Object.keys(JSON.parse(rec.value)).length : 0;
-      totalRecords += count;
-      lines.push(`  ${month}: ${count} record(s)`);
-    }catch(e){
-      lines.push(`  ${month}: could not read`);
-    }
-  }
-  lines.push('');
-  lines.push(`Total records found across all months: ${totalRecords}`);
-  lines.push(`Currently loaded into this session's memory: ${Object.keys(payments).length}`);
-  lines.push(`Flats currently on file: ${flats.length}`);
-
   out.innerHTML = `<div class="report-box">${escapeHtml(lines.join('\n'))}</div>`;
 }
 
@@ -1434,12 +1580,29 @@ async function importBackupCsv(e){
       e.target.value = '';
       return;
     }
-    flats = JSON.parse(data.flats);
-    payments = JSON.parse(data.payments);
-    settings = {...settings, ...JSON.parse(data.settings)};
-    expenses = data.expenses ? JSON.parse(data.expenses) : {};
-    admins = data.admins ? JSON.parse(data.admins) : admins;
-    await saveFlats(); await saveAllPaymentsBulk(); await saveSettings(); await saveExpenses(); await saveAdmins();
+    const inFlats = JSON.parse(data.flats);
+    const inPayments = JSON.parse(data.payments);
+    const inSettings = JSON.parse(data.settings);
+    const inExpenses = data.expenses ? JSON.parse(data.expenses) : {};
+    const inAdmins = data.admins ? JSON.parse(data.admins) : [];
+
+    // move any embedded screenshots into cloud storage first
+    const keys = Object.keys(inPayments);
+    const toUpload = keys.filter(k=>{ const p = inPayments[k]; return p && !p.screenshotPath && typeof p.screenshot === 'string' && p.screenshot.startsWith('data:'); });
+    let done = 0;
+    for(const key of toUpload){
+      const { flatId, month } = splitPayKey(key);
+      note.textContent = `Uploading screenshots… ${done+1} of ${toUpload.length}`;
+      inPayments[key].screenshotPath = await uploadScreenshot(flatId, month, inPayments[key].screenshot);
+      done++;
+    }
+    const cleanPayments = {};
+    keys.forEach(k=>{ const p = {...inPayments[k]}; delete p.screenshot; if(!p.screenshotPath) p.screenshotPath = null; cleanPayments[k] = p; });
+
+    note.textContent = 'Restoring…';
+    await saveChain;
+    await rpc('jdb_restore', {p_token: sessionToken, p: {flats: inFlats, payments: cleanPayments, settings: inSettings, expenses: inExpenses, admins: inAdmins}});
+    await loadSessionData();
 
     document.getElementById('set-name').value = settings.societyName || '';
     document.getElementById('set-amount').value = settings.defaultAmount || 2000;
@@ -1450,7 +1613,10 @@ async function importBackupCsv(e){
     note.textContent = 'Backup restored successfully.';
     e.target.value = '';
   }catch(err){
-    note.textContent = "Could not read that file — make sure it's a backup CSV exported from this app.";
+    if(err && err.code === 'SESSION_EXPIRED') return;
+    note.textContent = err && err.code === 'NETWORK'
+      ? "Could not restore — you appear to be offline. Nothing was changed."
+      : "Could not read that file — make sure it's a backup CSV exported from this app.";
     e.target.value = '';
   }
 }
@@ -1728,9 +1894,9 @@ function initLoginScreen(){
   };
 
   document.getElementById('owner-login-btn').onclick = ownerLogin;
-  document.getElementById('owner-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') ownerLogin(); });
+  document.getElementById('owner-pin').onkeydown = e=>{ if(e.key==='Enter') ownerLogin(); };
   document.getElementById('admin-login-btn').onclick = adminLogin;
-  document.getElementById('admin-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') adminLogin(); });
+  document.getElementById('admin-pass').onkeydown = e=>{ if(e.key==='Enter') adminLogin(); };
 
   document.getElementById('owner-forgot-link').onclick = ()=>toggleOwnerRecover(true);
   document.getElementById('owner-guide-link').onclick = ()=>openGuideModal('Flat Owner User Guide', OWNER_GUIDE_STEPS);
@@ -1771,38 +1937,52 @@ function toggleOwnerRecover(show){
   ownerRecoverFlatId = null;
 }
 
-function verifyOwnerRecoverPhone(){
+let ownerRecoverPhone = '';
+let ownerRecoverAnswer = '';
+
+function loginErrorHtml(e, fallback){
+  if(e && e.code === 'NETWORK') return '<p class="note err">Couldn\'t reach the server — check your internet connection and try again.</p>';
+  if(e && e.code === 'LOCKED') return '<p class="note err">Too many incorrect attempts — please wait 15 minutes and try again.</p>';
+  return `<p class="note err">${fallback}</p>`;
+}
+
+async function verifyOwnerRecoverPhone(){
   const flatId = document.getElementById('owner-flat-select').value;
   const flat = flats.find(f=>f.id===flatId);
   const phone = document.getElementById('recover-phone').value.trim();
   const msg = document.getElementById('owner-recover-msg');
   if(!flat){ msg.innerHTML = '<p class="note err">Select your flat above first.</p>'; return; }
-  if(!flat.phone){ msg.innerHTML = '<p class="note err">No phone number is on file for this flat yet, so we can\'t verify you here — ask your admin to reset your PIN from Flats & Access.</p>'; return; }
-  const norm = s => (s||'').replace(/[^0-9]/g,'');
-  if(!phone || norm(phone) !== norm(flat.phone)){ msg.innerHTML = '<p class="note err">That phone number doesn\'t match our records for this flat.</p>'; return; }
-  if(!flat.recoveryQuestion){
-    msg.innerHTML = '<p class="note err">No security question has been set up for this flat yet — ask your admin to reset your PIN directly from Flats & Access, or set one up yourself next time you sign in.</p>';
+  if(!phone){ msg.innerHTML = '<p class="note err">That phone number doesn\'t match our records for this flat.</p>'; return; }
+  let r;
+  try{ r = await rpc('jdb_owner_recover_question', {p_flat_id: flat.id, p_phone: phone}); }
+  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
+  if(!r.ok){
+    if(r.error === 'NO_PHONE'){ msg.innerHTML = '<p class="note err">No phone number is on file for this flat yet, so we can\'t verify you here — ask your admin to reset your PIN from Flats & Access.</p>'; return; }
+    if(r.error === 'NO_QUESTION'){ msg.innerHTML = '<p class="note err">No security question has been set up for this flat yet — ask your admin to reset your PIN directly from Flats & Access, or set one up yourself next time you sign in.</p>'; return; }
+    msg.innerHTML = loginErrorHtml({code:r.error}, 'That phone number doesn\'t match our records for this flat.');
     return;
   }
 
   msg.innerHTML = '';
   ownerRecoverFlatId = flat.id;
-  document.getElementById('owner-recover-question').textContent = flat.recoveryQuestion;
+  ownerRecoverPhone = phone;
+  document.getElementById('owner-recover-question').textContent = r.question;
   document.getElementById('owner-recover-answer').value = '';
   document.getElementById('owner-recover-msg2').innerHTML = '';
   document.getElementById('owner-recover-step1').style.display = 'none';
   document.getElementById('owner-recover-step2').style.display = 'block';
 }
 
-function verifyOwnerRecoverAnswer(){
+async function verifyOwnerRecoverAnswer(){
   const msg = document.getElementById('owner-recover-msg2');
-  const flat = flats.find(f=>f.id===ownerRecoverFlatId);
-  if(!flat){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
+  if(!ownerRecoverFlatId){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
   const answer = document.getElementById('owner-recover-answer').value.trim();
-  if(!answer || answer.toLowerCase() !== (flat.recoveryAnswer || '').trim().toLowerCase()){
-    msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>';
-    return;
-  }
+  if(!answer){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
+  let r;
+  try{ r = await rpc('jdb_owner_recover_reset', {p_flat_id: ownerRecoverFlatId, p_phone: ownerRecoverPhone, p_answer: answer, p_new_pin: null}); }
+  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
+  if(!r.ok){ msg.innerHTML = loginErrorHtml({code:r.error}, 'That answer doesn\'t match.'); return; }
+  ownerRecoverAnswer = answer;
   msg.innerHTML = '';
   document.getElementById('recover-newpin').value = '';
   document.getElementById('owner-recover-msg3').innerHTML = '';
@@ -1812,15 +1992,16 @@ function verifyOwnerRecoverAnswer(){
 
 async function submitOwnerRecoverNewPin(){
   const msg = document.getElementById('owner-recover-msg3');
-  const flat = flats.find(f=>f.id===ownerRecoverFlatId);
-  if(!flat){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
+  if(!ownerRecoverFlatId){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
   const newPin = document.getElementById('recover-newpin').value.trim();
   if(!newPin || newPin.length < 4){ msg.innerHTML = '<p class="note err">Choose a PIN of at least 4 characters.</p>'; return; }
-  flat.pin = newPin;
-  await saveFlats();
+  let r;
+  try{ r = await rpc('jdb_owner_recover_reset', {p_flat_id: ownerRecoverFlatId, p_phone: ownerRecoverPhone, p_answer: ownerRecoverAnswer, p_new_pin: newPin}); }
+  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
+  if(!r.ok){ msg.innerHTML = loginErrorHtml({code:r.error}, r.error === 'PIN_TOO_SHORT' ? 'Choose a PIN of at least 4 characters.' : 'Something went wrong — please close this and try again.'); return; }
   document.getElementById('owner-recover-panel').style.display = 'none';
   document.getElementById('owner-recover-success').style.display = 'block';
-  ownerRecoverFlatId = null;
+  ownerRecoverFlatId = null; ownerRecoverPhone = ''; ownerRecoverAnswer = '';
 }
 
 /* ---------- admin password recovery ---------- */
@@ -1843,55 +2024,100 @@ async function submitAdminRecover(){
   const newpass = document.getElementById('recover-admin-newpass').value;
   const msg = document.getElementById('admin-recover-msg');
   if(!settings.adminRecoveryQuestion){ msg.innerHTML = '<p class="note err">No recovery question is set up.</p>'; return; }
-  if(!answer || answer.toLowerCase() !== (settings.adminRecoveryAnswer||'').toLowerCase()){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
+  if(!answer){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
   if(!newpass || newpass.length < 4){ msg.innerHTML = '<p class="note err">Choose a password of at least 4 characters.</p>'; return; }
   const adminId = document.getElementById('admin-profile-select').value;
   const admin = admins.find(a=>a.id===adminId);
   if(!admin){ msg.innerHTML = '<p class="note err">Select an admin profile above first.</p>'; return; }
-  admin.password = newpass;
-  await saveAdmins();
+  let r;
+  try{ r = await rpc('jdb_admin_recover', {p_admin_id: admin.id, p_answer: answer, p_new_password: newpass}); }
+  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
+  if(!r.ok){
+    if(r.error === 'NO_QUESTION'){ msg.innerHTML = '<p class="note err">No recovery question is set up.</p>'; return; }
+    if(r.error === 'PASSWORD_TOO_SHORT'){ msg.innerHTML = '<p class="note err">Choose a password of at least 4 characters.</p>'; return; }
+    msg.innerHTML = loginErrorHtml({code:r.error}, 'That answer doesn\'t match.');
+    return;
+  }
   msg.innerHTML = `<p class="note" style="color:var(--green);">Password updated for ${escapeHtml(admin.name || 'this admin')} — you can sign in now.</p>`;
   document.getElementById('recover-admin-answer').value = '';
   document.getElementById('recover-admin-newpass').value = '';
 }
 
-function ownerLogin(){
+let signingIn = false;
+async function ownerLogin(){
+  if(signingIn) return;
   const flatId = document.getElementById('owner-flat-select').value;
   const pin = document.getElementById('owner-pin').value.trim();
   const errBox = document.getElementById('owner-login-err');
-  const flat = flats.find(f=>f.id===flatId);
-  if(!flat || !pin || String(flat.pin) !== pin){
-    errBox.innerHTML = '<p class="note err">Incorrect PIN for that flat. Please check with your committee/admin.</p>';
-    return;
-  }
-  errBox.innerHTML = '';
-  document.getElementById('owner-pin').value = '';
-  currentUser = {role:'owner', flatId: flat.id};
-  showApp();
+  const btn = document.getElementById('owner-login-btn');
+  if(!flatId || !pin){ errBox.innerHTML = '<p class="note err">Incorrect PIN for that flat. Please check with your committee/admin.</p>'; return; }
+  signingIn = true; btn.disabled = true;
+  try{
+    const r = await rpc('jdb_login_owner', {p_flat_id: flatId, p_pin: pin});
+    if(!r.ok){ errBox.innerHTML = loginErrorHtml({code:r.error}, 'Incorrect PIN for that flat. Please check with your committee/admin.'); return; }
+    sessionToken = r.token;
+    await loadSessionData();
+    errBox.innerHTML = '';
+    document.getElementById('owner-pin').value = '';
+    showApp();
+  }catch(e){
+    sessionToken = null;
+    errBox.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.');
+  }finally{ signingIn = false; btn.disabled = false; }
 }
 
-function adminLogin(){
+async function adminLogin(){
+  if(signingIn) return;
   const adminId = document.getElementById('admin-profile-select').value;
   const pass = document.getElementById('admin-pass').value;
   const errBox = document.getElementById('admin-login-err');
-  const admin = admins.find(a=>a.id===adminId);
-  if(!admin || !pass || pass !== admin.password){
-    errBox.innerHTML = '<p class="note err">Incorrect password for that admin profile.</p>';
-    return;
-  }
-  errBox.innerHTML = '';
-  document.getElementById('admin-pass').value = '';
-  currentUser = {role:'admin', adminId: admin.id};
-  showApp();
+  const btn = document.getElementById('admin-login-btn');
+  if(!adminId || !pass){ errBox.innerHTML = '<p class="note err">Incorrect password for that admin profile.</p>'; return; }
+  signingIn = true; btn.disabled = true;
+  try{
+    const r = await rpc('jdb_login_admin', {p_admin_id: adminId, p_password: pass});
+    if(!r.ok){ errBox.innerHTML = loginErrorHtml({code:r.error}, 'Incorrect password for that admin profile.'); return; }
+    sessionToken = r.token;
+    await loadSessionData();
+    errBox.innerHTML = '';
+    document.getElementById('admin-pass').value = '';
+    showApp();
+  }catch(e){
+    sessionToken = null;
+    errBox.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.');
+  }finally{ signingIn = false; btn.disabled = false; }
 }
 
-function logout(){
+async function logout(){
+  const token = sessionToken;
   currentUser = null;
+  sessionToken = null;
+  lastLoadJson = '';
+  if(token) rpc('jdb_logout', {p_token: token}).catch(()=>{});
   document.getElementById('owner-pin').value = '';
   document.getElementById('admin-pass').value = '';
   document.getElementById('owner-login-err').innerHTML = '';
   document.getElementById('admin-login-err').innerHTML = '';
+  // drop everything that was loaded for the signed-in user; keep only login-screen info
+  payments = {}; expenses = {};
+  flats = flats.map(f=>({id:f.id, flatNo:f.flatNo, owner:f.owner}));
+  admins = admins.map(a=>({id:a.id, name:a.name}));
   initLoginScreen();
+  try{
+    const before = JSON.stringify([flats, admins]);
+    await loadPublicInfo();
+    document.getElementById('login-society-title').textContent = settings.societyName || 'JD Blossom Apartment';
+    if(JSON.stringify([flats, admins]) !== before && !currentUser){
+      const ownerSel = document.getElementById('owner-flat-select').value;
+      const adminSel = document.getElementById('admin-profile-select').value;
+      const sel = document.getElementById('owner-flat-select');
+      sel.innerHTML = flats.map(f=>`<option value="${f.id}">${escapeHtml(f.flatNo)}${f.owner?(' — '+escapeHtml(f.owner)):''}</option>`).join('');
+      const adminSelEl = document.getElementById('admin-profile-select');
+      adminSelEl.innerHTML = admins.map(a=>`<option value="${a.id}">${escapeHtml(a.name || 'Admin')}</option>`).join('');
+      if(flats.some(f=>f.id===ownerSel)) sel.value = ownerSel;
+      if(admins.some(a=>a.id===adminSel)) adminSelEl.value = adminSel;
+    }
+  }catch(e){ /* offline — the lists above are still usable */ }
 }
 
 /* ===================== APP SHELL ===================== */
@@ -1932,7 +2158,7 @@ function hideAllSections(){
 function buildNav(tabsList, showFn){
   const nav = document.getElementById('tabs');
   nav.innerHTML = tabsList.map(t=>`<button data-tab="${t.id}">${t.label}</button>`).join('');
-  nav.querySelectorAll('button').forEach(b=>{ b.onclick = ()=> showFn(b.dataset.tab); });
+  nav.querySelectorAll('button').forEach(b=>{ b.onclick = ()=>{ showFn(b.dataset.tab); refreshData(false); }; });
 }
 function showSection(tabsList, id){
   hideAllSections();
@@ -1977,16 +2203,16 @@ function initAdminUI(){
   document.getElementById('copy-monthly-btn').onclick = ()=>copyText(buildMonthlyReportText(document.getElementById('rpt-month').value), 'copy-monthly-btn');
   document.getElementById('rpt-period-btn').onclick = generatePeriodReport;
   document.getElementById('exp-add-item-btn').onclick = addExpenseItem;
-  document.getElementById('exp-opening').addEventListener('change', saveExpenseOpening);
-  document.getElementById('exp-opening-reset').addEventListener('click', resetExpenseOpening);
-  document.getElementById('exp-maint').addEventListener('change', saveExpenseMaint);
-  document.getElementById('exp-maint-reset').addEventListener('click', resetExpenseMaint);
+  document.getElementById('exp-opening').onchange = saveExpenseOpening;
+  document.getElementById('exp-opening-reset').onclick = resetExpenseOpening;
+  document.getElementById('exp-maint').onchange = saveExpenseMaint;
+  document.getElementById('exp-maint-reset').onclick = resetExpenseMaint;
   document.getElementById('exp-report-btn').onclick = generateExpenseReport;
   document.getElementById('exp-range-btn').onclick = generateExpenseRangeReport;
   document.getElementById('exp-print-btn').onclick = ()=>window.print();
   document.getElementById('export-backup-btn').onclick = exportBackupCsv;
   document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
-  document.getElementById('import-backup-input').addEventListener('change', importBackupCsv);
+  document.getElementById('import-backup-input').onchange = importBackupCsv;
   document.getElementById('run-diagnostics-btn').onclick = runStorageDiagnostics;
   document.getElementById('save-my-profile-btn').onclick = saveMyProfile;
   document.getElementById('save-my-password-btn').onclick = saveMyPassword;
@@ -2212,8 +2438,11 @@ function renderEntry(){
       if(!file) return;
       try{
         const dataUrl = await compressImage(file);
+        let shotPath;
+        try{ shotPath = await uploadScreenshot(id, month, dataUrl); }
+        catch(upErr){ if(upErr.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(upErr)); return; }
         const existing = getPayment(id, month);
-        payments[payKey(id, month)] = {...existing, screenshot: dataUrl, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
+        payments[payKey(id, month)] = {...existing, screenshot: dataUrl, screenshotPath: shotPath, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
         await savePayments(id, month);
         renderEntry();
         renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
@@ -2236,7 +2465,7 @@ function renderEntry(){
       removeBtn.addEventListener('click', async ()=>{
         if(!(await customConfirm('Remove this payment screenshot?'))) return;
         const existing = getPayment(id, month);
-        payments[payKey(id, month)] = {...existing, screenshot: null, verified: false, autoCheck: null};
+        payments[payKey(id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null};
         await savePayments(id, month);
         renderEntry();
         renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
@@ -3126,6 +3355,7 @@ function renderOwnerView(){
           <div id="my-shot-checking" style="margin-top:8px;"></div>
         </div>
       </div>
+      <div id="my-submit-msg" role="alert"></div>
       <div class="actions-row">
         <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Update this month' : 'Mark as paid & submit'}</button>
       </div>
@@ -3138,18 +3368,31 @@ function renderOwnerView(){
       if(!file) return;
       try{
         const dataUrl = await compressImage(file);
-        const existing = getPayment(flat.id, month);
-        payments[payKey(flat.id, month)] = {...existing, screenshot: dataUrl, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
-        await savePayments(flat.id, month);
         document.getElementById('my-shot-checking').innerHTML = '<p class="note">Checking your screenshot…</p>';
+        let shotPath;
+        try{ shotPath = await uploadScreenshot(flat.id, month, dataUrl); }
+        catch(upErr){
+          document.getElementById('my-shot-checking').innerHTML = '';
+          if(upErr.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(upErr));
+          return;
+        }
+        const existing = getPayment(flat.id, month);
+        payments[payKey(flat.id, month)] = {...existing, screenshot: dataUrl, screenshotPath: shotPath, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
+        await savePayments(flat.id, month);
 
         const amtField = document.getElementById('my-pay-amount');
         const amtEntered = amtField ? (Number(amtField.value) || Math.round(due.dueThisMonth)) : Math.round(due.dueThisMonth);
         const result = await autoVerifyScreenshot(dataUrl, flat, month, amtEntered);
         const latest = getPayment(flat.id, month);
-        payments[payKey(flat.id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
+        // the auto-check result is kept, but only counts as "verified" once the owner actually submits
+        payments[payKey(flat.id, month)] = {...latest, autoCheck: result};
         await savePayments(flat.id, month);
+        const keepAmount = document.getElementById('my-pay-amount') ? document.getElementById('my-pay-amount').value : null;
+        const keepMode = document.getElementById('my-pay-mode') ? document.getElementById('my-pay-mode').value : null;
         renderOwnerView();
+        // don't lose what the owner already typed/picked before uploading
+        if(keepAmount !== null && document.getElementById('my-pay-amount')) document.getElementById('my-pay-amount').value = keepAmount;
+        if(keepMode !== null && document.getElementById('my-pay-mode')) document.getElementById('my-pay-mode').value = keepMode;
       }catch(err){
         alert('Could not read that image, please try another file.');
       }
@@ -3157,9 +3400,14 @@ function renderOwnerView(){
     const myShotRemoveBtn = document.getElementById('my-shot-remove');
     if(myShotRemoveBtn){
       myShotRemoveBtn.addEventListener('click', async ()=>{
-        if(!(await customConfirm('Remove your uploaded screenshot for this month?'))) return;
+        const current = getPayment(flat.id, month);
+        const question = current.paid
+          ? 'Remove your uploaded screenshot for this month? This also withdraws your submission — upload a new screenshot and submit again.'
+          : 'Remove your uploaded screenshot for this month?';
+        if(!(await customConfirm(question))) return;
         const existing = getPayment(flat.id, month);
-        payments[payKey(flat.id, month)] = {...existing, screenshot: null, verified: false, autoCheck: null};
+        // a submission always needs its screenshot, so removing it withdraws the submission
+        payments[payKey(flat.id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null, paid: false};
         await savePayments(flat.id, month);
         renderOwnerView();
       });
@@ -3170,11 +3418,49 @@ function renderOwnerView(){
       shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
     }
 
+    // Submission needs all three: amount, mode and a payment screenshot.
+    const amountEl = document.getElementById('my-pay-amount');
+    const modeEl = document.getElementById('my-pay-mode');
+    const shotBtnEl = document.getElementById('my-shot-btn');
+    const submitMsg = document.getElementById('my-submit-msg');
+    const markInvalid = (el, bad)=>{
+      if(!el) return;
+      el.style.borderColor = bad ? 'var(--red)' : '';
+      el.style.color = (bad && el === shotBtnEl) ? 'var(--red)' : '';
+      if(bad) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid');
+    };
+    const clearIfFixed = ()=>{
+      if(!submitMsg.innerHTML) return;
+      const a = amountEl.value.trim();
+      markInvalid(amountEl, !a || !(Number(a) > 0));
+      markInvalid(modeEl, !modeEl.value);
+      if(amountEl.getAttribute('aria-invalid') !== 'true' && modeEl.getAttribute('aria-invalid') !== 'true' && shotBtnEl.getAttribute('aria-invalid') !== 'true') submitMsg.innerHTML = '';
+    };
+    amountEl.addEventListener('input', clearIfFixed);
+    modeEl.addEventListener('change', clearIfFixed);
+
     document.getElementById('my-mark-paid-btn').onclick = async ()=>{
       const existing = getPayment(flat.id, month);
-      const amount = Number(document.getElementById('my-pay-amount').value) || Math.round(due.dueThisMonth);
-      const mode = document.getElementById('my-pay-mode').value;
-      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: existing.screenshot ? existing.verified : false};
+      const amountRaw = amountEl.value.trim();
+      const amount = Number(amountRaw);
+      const mode = modeEl.value;
+      const hasShot = !!(existing.screenshotPath || existing.screenshot);
+      const missing = [];
+      const badAmount = !amountRaw || !(amount > 0);
+      if(badAmount) missing.push('the amount you paid');
+      if(!mode) missing.push('the payment mode (UPI / Cash / Bank Transfer / Cheque)');
+      if(!hasShot) missing.push('a screenshot of your payment');
+      markInvalid(amountEl, badAmount);
+      markInvalid(modeEl, !mode);
+      markInvalid(shotBtnEl, !hasShot);
+      if(missing.length){
+        const list = missing.length === 1 ? missing[0] : missing.slice(0,-1).join(', ') + ' and ' + missing[missing.length-1];
+        submitMsg.innerHTML = `<p class="note err">Please add ${escapeHtml(list)} before submitting.</p>`;
+        return;
+      }
+      submitMsg.innerHTML = '';
+      const autoOk = !!(existing.autoCheck && existing.autoCheck.status === 'verified');
+      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: autoOk};
       await savePayments(flat.id, month);
       renderOwnerView();
     };
@@ -3236,10 +3522,15 @@ function renderOwnerView(){
     const a = document.getElementById('my-recovery-a').value.trim();
     const note = document.getElementById('my-recovery-saved-note');
     if(!q){ note.textContent = 'Enter a security question.'; setTimeout(()=>note.textContent='',2200); return; }
-    if(!flat.recoveryAnswer && !a){ note.textContent = 'Enter an answer.'; setTimeout(()=>note.textContent='',2200); return; }
+    if(!flat.hasRecoveryAnswer && !a){ note.textContent = 'Enter an answer.'; setTimeout(()=>note.textContent='',2200); return; }
+    try{
+      await rpc('jdb_owner_set_recovery', {p_token: sessionToken, p_question: q, p_answer: a});
+    }catch(err){
+      if(err.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(err));
+      return;
+    }
     flat.recoveryQuestion = q;
-    if(a) flat.recoveryAnswer = a;
-    await saveFlats();
+    if(a) flat.hasRecoveryAnswer = true;
     document.getElementById('my-recovery-a').value = '';
     document.getElementById('my-recovery-warn').style.display = 'none';
     note.textContent = 'Security question saved.';

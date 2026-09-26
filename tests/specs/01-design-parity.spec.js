@@ -25,6 +25,8 @@ async function capture(browser, testInfo, variant, screen) {
   const opts = { baseURL: 'http://localhost:54321', timezoneId: 'Asia/Kolkata', locale: 'en-IN' };
   for (const k of ['viewport', 'screen', 'deviceScaleFactor', 'isMobile', 'hasTouch', 'userAgent']) if (u[k] !== undefined) opts[k] = u[k];
   const ctx = await browser.newContext(opts);
+  // midday IST: the original app mis-dated things between midnight and 5:30 AM IST (fixed in the new version)
+  await ctx.clock.setFixedTime(new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00+05:30`));
   if (variant === 'original') await ctx.addInitScript(legacyStorageMock);
   // freeze animations/caret so screenshots are deterministic
   await ctx.addInitScript(() => {
@@ -53,7 +55,8 @@ test.describe('design parity with the original app', () => {
   for (const screen of SCREENS) {
     test(`${screen.name} is identical`, async ({ browser }, testInfo) => {
       // Entry was deliberately widened for screens 768px+ (see 04-entry-layout); phones must stay identical.
-      test.skip(screen.name === 'admin-entry' && (testInfo.project.use.viewport?.width ?? 1280) >= 768, 'Entry layout intentionally changed on tablets/laptops');
+      // Entry was deliberately improved (04-entry-layout: wide screens; 05: phone field alignment).
+      test.skip(screen.name === 'admin-entry', 'Entry layout intentionally changed — covered by 04/05 specs');
       const before = await capture(browser, testInfo, 'original', screen);
       const after = await capture(browser, testInfo, 'supabase', screen);
       const a = PNG.sync.read(before.png);
