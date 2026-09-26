@@ -7,7 +7,8 @@ of JD Blossom Apartment. One self-contained page (`index.html`), hosted on
 | Piece | Where |
 |---|---|
 | Website | `index.html` → Vercel project `local-jd` (auto-deploys on every push to `main`) |
-| Database | Supabase project `JDBLOSSOMAPT`, private schema `jdb` |
+| Live database | Supabase project `JDBLOSSOMAPT`, private schema `jdb` — used **only** on the live addresses |
+| Test database | Supabase project `JDBLOSSOMAPT-TEST` (same schema) — used on every other address, e.g. Vercel preview links |
 | Payment screenshots | Supabase Storage, private bucket `jdb-screenshots` (served only via 12-hour signed links) |
 | Screenshot API | Supabase Edge Function `jdb-files` (`supabase/functions/jdb-files`) |
 | Database schema + API | `supabase/migrations/*.sql` |
@@ -36,6 +37,19 @@ Fresh database defaults (same as the original app): admin profile **Admin** /
 password **admin123**, flats f001–f407 with PINs 1001–1035.
 **Change the admin password right away** (Profile → Change password), then
 restore your latest backup CSV from Settings → Data backup if you have one.
+
+## Testing a change before it goes live
+
+1. On GitHub, upload the changed files into `Local_JD-supabase/` but choose
+   **"Create a new branch for this commit and start a pull request"**.
+2. Open the **Preview** link Vercel posts on the pull request. It shows a red
+   **TEST DATABASE** tag and uses the test database — try anything, real data is untouched.
+3. Happy? **Merge pull request** → live in about a minute. Not happy? Close it.
+
+`LIVE_HOSTS` near the top of the script in `index.html` lists the live addresses.
+If you add your own domain, add it there, or it will use the test database.
+Database changes (new migration files) must be applied to **both** projects —
+test first, then live.
 
 ## Making changes
 

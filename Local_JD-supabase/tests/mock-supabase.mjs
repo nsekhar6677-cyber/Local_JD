@@ -136,7 +136,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/__files') return send(res, 200, { count: files.size, paths: [...files.keys()] });
 
     if (url.pathname === '/' || url.pathname === '/index.html') {
-      const html = fs.readFileSync(APP, 'utf8').replace("'https://dzjedqxhtxacchwkwhof.supabase.co'", `'http://localhost:${PORT}'`);
+      const html = fs.readFileSync(APP, 'utf8').replace(/'https:\/\/[a-z0-9]+\.supabase\.co'/g, `'http://localhost:${PORT}'`);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(html);
     }
     if (url.pathname === '/original.html' && ORIGINAL) {

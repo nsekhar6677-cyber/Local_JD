@@ -1061,8 +1061,26 @@ function last12Months(){
    (who can read/modify what) is enforced in the database. Payment
    screenshots go to a private bucket through the jdb-files Edge Function
    and are shown via short-lived signed URLs. */
-const SUPABASE_URL = 'https://dzjedqxhtxacchwkwhof.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_iP-cIUpZnQUlCCeTkdRfMg_dkrMQyPw';
+// Two databases: the LIVE one is used only on the live web addresses below.
+// Every other address (Vercel preview links for test branches, your own
+// computer, etc.) uses the separate TEST database, so trying out changes can
+// never touch real payments. If you add a custom domain, add it here too.
+const LIVE_HOSTS = ['jdblossom-maintenance-tracker.vercel.app', 'local-jd-nsekhar6677-cyber.vercel.app'];
+const DB_ENV = {
+  live: { url: 'https://dzjedqxhtxacchwkwhof.supabase.co', key: 'sb_publishable_iP-cIUpZnQUlCCeTkdRfMg_dkrMQyPw' },
+  test: { url: 'https://omxdowsjtcyslfnrxouc.supabase.co', key: 'sb_publishable_X2Xp9O84EeQrZ3-7zZjmoQ_hAH2bKBI' }
+};
+const IS_LIVE = LIVE_HOSTS.includes(location.hostname);
+const SUPABASE_URL = (IS_LIVE ? DB_ENV.live : DB_ENV.test).url;
+const SUPABASE_PUBLISHABLE_KEY = (IS_LIVE ? DB_ENV.live : DB_ENV.test).key;
+// On test copies, label the tab and show a small corner tag so nobody mistakes it for the live site.
+if(!IS_LIVE && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){
+  document.title = '[TEST] ' + document.title;
+  const tag = document.createElement('div');
+  tag.textContent = 'TEST DATABASE';
+  tag.style.cssText = 'position:fixed;top:calc(6px + env(safe-area-inset-top));left:6px;z-index:1001;background:#B23A2E;color:#fff;font:700 10px/1 "JetBrains Mono",monospace;letter-spacing:.08em;padding:5px 7px;border-radius:2px;pointer-events:none;opacity:.92;';
+  document.body.appendChild(tag);
+}
 let sessionToken = null;
 let synced = {flats:{}, admins:{}, expenses:{}, settings:{}}; // last state confirmed by the server (for diff-saves)
 let saveChain = Promise.resolve();
