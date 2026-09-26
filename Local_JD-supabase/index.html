@@ -314,6 +314,32 @@
     #entry-table-wrap tbody tr:hover td:first-child{background:var(--paper);}
     #entry-table-wrap tbody tr[style*="background"] td:first-child{background:var(--paper);}
   }
+
+  /* Entry on phones: iPhone/Android draw date and dropdown fields with their own
+     sizes (and zoom the page when a field under 16px is tapped), which knocked the
+     Amount / Date / Mode fields out of line. Give them one fixed size and style. */
+  @media (max-width:767px){
+    #entry-table-wrap .e-amount,
+    #entry-table-wrap .e-date,
+    #entry-table-wrap .e-mode{
+      -webkit-appearance:none; appearance:none;
+      box-sizing:border-box; display:block; margin:0;
+      height:40px; min-height:40px; line-height:1.2;
+      padding:0 10px; font-size:16px; border-radius:2px;
+      background-color:var(--paper); color:var(--ink);
+    }
+    #entry-table-wrap .e-date{ width:156px; min-width:156px; text-align:left; }
+    #entry-table-wrap .e-date::-webkit-date-and-time-value{ text-align:left; margin:0; }
+    #entry-table-wrap .e-date::-webkit-datetime-edit{ padding:0; }
+    #entry-table-wrap .e-mode{
+      width:156px; padding-right:30px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%231E2E24' stroke-width='1.6'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 10px center; background-size:10px 6px;
+    }
+    #entry-table-wrap .e-date:disabled,
+    #entry-table-wrap .e-mode:disabled,
+    #entry-table-wrap .e-amount:disabled{ opacity:.55; }
+  }
   #flats-table-wrap table{min-width:640px;}
   #admins-table-wrap table{min-width:480px;}
   #exp-items-wrap table{min-width:520px;}
@@ -1066,8 +1092,11 @@ let expenses = {}; // key: 'YYYY-MM' -> {openingOverride, maintReceivedOverride,
 let admins = []; // [{id, name, phone, password}]
 let currentUser = null; // {role:'admin', adminId} | {role:'owner', flatId}
 
-function todayMonth(){ return new Date().toISOString().slice(0,7); }
-function todayDate(){ return new Date().toISOString().slice(0,10); }
+// Dates use the phone/computer's own (local, e.g. IST) calendar. Using UTC here made
+// the current month/day lag behind between midnight and 5:30 AM IST.
+function localMonthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function todayMonth(){ return localMonthKey(new Date()); }
+function todayDate(){ const d = new Date(); return localMonthKey(d) + '-' + String(d.getDate()).padStart(2,'0'); }
 function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
 function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
 function monthLabelOf(month){
@@ -1076,11 +1105,9 @@ function monthLabelOf(month){
 }
 function last12Months(){
   const out = [];
-  const d = new Date();
-  d.setDate(1);
+  const now = new Date();
   for(let i=0;i<12;i++){
-    out.push(d.toISOString().slice(0,7));
-    d.setMonth(d.getMonth()-1);
+    out.push(localMonthKey(new Date(now.getFullYear(), now.getMonth()-i, 1)));
   }
   return out;
 }
@@ -1296,6 +1323,9 @@ function rerenderAll(){
   }
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') refreshData(false); });
+// Keep an open screen current (e.g. an owner's ledger after the admin verifies a payment on another device).
+const AUTO_REFRESH_MS = 60 * 1000;
+setInterval(()=>{ if(document.visibilityState === 'visible') refreshData(false); }, AUTO_REFRESH_MS);
 
 async function loadAll(){
   try{
