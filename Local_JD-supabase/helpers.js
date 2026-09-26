@@ -83,3 +83,10 @@ export function testImage(label = 'UPI 2000') {
 export async function noHorizontalOverflow(page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 }
+
+// owner: upload a payment screenshot and wait until it is stored
+export async function ownerUploadShot(page) {
+  await page.setInputFiles('#my-shot-input', testImage());
+  await expect(page.locator('.my-shot-view')).toBeVisible({ timeout: 30_000 });
+  await settle(page);
+}

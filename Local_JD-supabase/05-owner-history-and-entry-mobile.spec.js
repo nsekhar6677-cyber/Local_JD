@@ -3,7 +3,7 @@
 //    and 5:30 AM IST, and didn't refresh until the owner signed in again.
 // 2) Entry on phones: Amount / Date / Mode fields line up at the same size.
 import { test, expect } from '@playwright/test';
-import { resetDb, sql, openApp, loginAdmin, loginOwner, tab, settle, API } from './helpers.js';
+import { resetDb, sql, openApp, loginAdmin, loginOwner, tab, settle, API, ownerUploadShot } from './helpers.js';
 
 test.beforeEach(async ({ request }) => { await resetDb(request); });
 
@@ -20,6 +20,7 @@ for (const at of ['02:00', '14:00', '23:50']) {
     await expect(first).toContainText(monthLabel(now));
     await expect(first).toContainText('Pending');
     await page.selectOption('#my-pay-mode', 'UPI');
+    await ownerUploadShot(page);
     await page.click('#my-mark-paid-btn');
     await settle(page);
     await expect(first).toContainText('Submitted');
@@ -32,6 +33,8 @@ test('owner history updates by itself when the admin verifies on another device'
   await page.clock.install({ time: new Date('2026-10-15T11:00:00+05:30') });
   await openApp(page);
   await loginOwner(page, { flatId: 'id4', pin: '1004' });
+  await page.selectOption('#my-pay-mode', 'Cash');
+  await ownerUploadShot(page);
   await page.click('#my-mark-paid-btn');
   await settle(page);
   const first = page.locator('#my-history-wrap tbody tr').first();
