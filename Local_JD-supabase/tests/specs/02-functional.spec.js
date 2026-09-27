@@ -1,7 +1,7 @@
 // End-to-end behaviour against the database: every change must survive a
 // page reload / new device, and access rules must hold.
 import { test, expect } from '@playwright/test';
-import { resetDb, sql, month, openApp, loginAdmin, loginOwner, logout, tab, settle, testImage, noHorizontalOverflow, API } from './helpers.js';
+import { resetDb, sql, month, openApp, loginAdmin, loginOwner, logout, tab, settle, testImage, noHorizontalOverflow, API, ownerUploadShot } from './helpers.js';
 
 // full suite on one laptop, one iPhone and one Android profile; the core
 // money-flow tests run on every profile
@@ -129,6 +129,8 @@ test('two devices saving different flats at the same moment never overwrite each
   const A = await mk(); const B = await mk(); const C = await mk();
   await loginAdmin(A.p); await loginAdmin(B.p); await loginOwner(C.p, { flatId: 'id7', pin: '1007' });
   await tab(A.p, 'entry'); await tab(B.p, 'entry');
+  await C.p.selectOption('#my-pay-mode', 'UPI');
+  await ownerUploadShot(C.p);
   await request.get(`${API}/__delay?ms=150`); // make requests overlap
   await Promise.all([
     A.p.locator('#entry-tbody tr[data-id="id5"] .e-paid').check(),
@@ -192,6 +194,8 @@ test('expenses, settings and reports persist', async ({ page, request }, testInf
   await item.locator('.ei-cat-select').selectOption('Diesel');
   await page.locator('#exp-items-tbody tr[data-id] .ei-amt').first().fill('1500');
   await page.locator('#exp-items-tbody tr[data-id] .ei-amt').first().press('Tab');
+  await page.locator('#exp-items-tbody tr[data-id] .ei-date').first().fill(`${m}-10`); // Paid on is mandatory
+  await page.locator('#exp-items-tbody tr[data-id] .ei-date').first().press('Tab');
   await settle(page);
   const e = await sql(request, `select data from jdb.expenses where month='${m}'`);
   expect(e[0].data.items[0]).toMatchObject({ category: 'Diesel', amount: 1500 });

@@ -26,11 +26,14 @@ await db.exec(`
   grant usage on schema extensions to public;
   create schema storage;
   create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects(id bigint generated always as identity primary key, bucket_id text, name text, created_at timestamptz default now(), metadata jsonb);
   grant usage on schema public to anon, authenticated, service_role;
 `);
 async function migrate() {
   for (const f of fs.readdirSync(MIGRATIONS).sort()) {
-    await db.exec(fs.readFileSync(`${MIGRATIONS}/${f}`, 'utf8'));
+    const sql = fs.readFileSync(`${MIGRATIONS}/${f}`, 'utf8');
+    if (sql.includes('mock:skip')) continue; // needs pg_cron / pg_net / Vault
+    await db.exec(sql);
   }
 }
 await migrate();
@@ -101,6 +104,7 @@ const server = http.createServer(async (req, res) => {
         const buf = Buffer.from(m[3], 'base64');
         const path = `${flatId}/${month}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${m[2] === 'jpeg' ? 'jpg' : m[2]}`;
         files.set(path, { buf, type: m[1] });
+        await q(() => db.query(`insert into storage.objects(bucket_id, name) values ('jdb-screenshots', $1)`, [path]));
         const t = crypto.randomUUID(); signed.set(t, path);
         return send(res, 200, { path, url: `http://localhost:${PORT}/storage/${path}?t=${t}` });
       }
@@ -114,6 +118,25 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: 'BAD_ACTION' });
     }
 
+    // emulates the jdb-cleanup Edge Function (same flow; key = "test-cleanup-key")
+    if (req.method === 'POST' && url.pathname === '/functions/v1/jdb-cleanup') {
+      if (req.headers['x-cleanup-key'] !== 'test-cleanup-key') return send(res, 401, { error: 'UNAUTHORIZED' });
+      const body = JSON.parse((await readBody(req)) || '{}');
+      const dryRun = body.dryRun !== false;
+      const prep = await callRpc('jdb_cleanup_prepare', { p_dry_run: dryRun, ...(body.now ? { p_now: body.now } : {}) }, 'service_role');
+      const cur = prep.currentMonth;
+      const re = /^[A-Za-z0-9_-]+\/\d{4}-\d{2}\/[^/]+$/;
+      const paths = [...new Set([...(prep.rows || []).map(r => r.path), ...(prep.orphans || [])])].filter(p => re.test(p) && p.split('/')[1] < cur);
+      let deleted = 0;
+      if (!dryRun) for (const p of paths) { if (files.delete(p)) deleted++; await q(() => db.query(`delete from storage.objects where bucket_id='jdb-screenshots' and name=$1`, [p])); }
+      const summary = { dryRun, currentMonth: cur, rowsCleared: prep.rowsCleared || 0, filesDeleted: deleted, filesFailed: 0, details: { candidates: paths.length, sample: paths.slice(0, 20) } };
+      await callRpc('jdb_cleanup_log', { p_entry: summary }, 'service_role');
+      return send(res, 200, summary);
+    }
+    if (url.pathname === '/vendor/xlsx.full.min.js') {
+      res.writeHead(200, { 'Content-Type': 'application/javascript' });
+      return res.end(fs.readFileSync(path.join(here, 'node_modules/xlsx/dist/xlsx.full.min.js')));
+    }
     if (req.method === 'GET' && url.pathname.startsWith('/storage/')) {
       const p = signed.get(url.searchParams.get('t'));
       if (!p || !files.has(p) || url.pathname !== `/storage/${p}`) return send(res, 400, { error: 'InvalidSignature' });
@@ -128,7 +151,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { rows: r.rows });
     }
     if (url.pathname === '/__reset') {
-      await q(async () => { await db.exec('drop schema jdb cascade'); await migrate(); });
+      await q(async () => { await db.exec('drop schema jdb cascade; delete from storage.objects;'); await migrate(); });
       files.clear(); signed.clear(); delayMs = 0;
       return send(res, 200, { ok: true });
     }
@@ -136,7 +159,8 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/__files') return send(res, 200, { count: files.size, paths: [...files.keys()] });
 
     if (url.pathname === '/' || url.pathname === '/index.html') {
-      const html = fs.readFileSync(APP, 'utf8').replace(/'https:\/\/[a-z0-9]+\.supabase\.co'/g, `'http://localhost:${PORT}'`);
+      const html = fs.readFileSync(APP, 'utf8').replace(/'https:\/\/[a-z0-9]+\.supabase\.co'/g, `'http://localhost:${PORT}'`)
+        .replace('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', '/vendor/xlsx.full.min.js');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(html);
     }
     if (url.pathname === '/original.html' && ORIGINAL) {

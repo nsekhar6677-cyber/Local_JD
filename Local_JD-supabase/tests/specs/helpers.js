@@ -14,7 +14,8 @@ export async function sql(request, query) {
   return (await r.json()).rows;
 }
 
-export function month() { return new Date().toISOString().slice(0, 7); }
+// current month in IST (the app uses the device's local calendar)
+export function month() { return new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 7); }
 
 // In-memory stand-in for the old Claude-artifact `window.storage` API so the
 // ORIGINAL app can be rendered side by side for design-parity comparisons.
@@ -81,4 +82,11 @@ export function testImage(label = 'UPI 2000') {
 
 export async function noHorizontalOverflow(page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+}
+
+// owner: upload a payment screenshot and wait until it is stored
+export async function ownerUploadShot(page) {
+  await page.setInputFiles('#my-shot-input', testImage());
+  await expect(page.locator('.my-shot-view')).toBeVisible({ timeout: 30_000 });
+  await settle(page);
 }
