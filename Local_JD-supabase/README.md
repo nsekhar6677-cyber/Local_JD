@@ -73,6 +73,40 @@ PGlite (Postgres in WebAssembly) — no internet or Supabase account needed.
 (`tests/baseline/original-index.html`) and of the new one, and fails if a single
 screen differs by more than 0.1 % of pixels or scrolls sideways.
 
+
+## Bulk upload & screenshot clean-up
+
+* **Entry → Bulk upload maintenance (Excel)** — columns: Flat No, Maintenance month, Paid Amt,
+  Paid on (MM-DD-YYYY), Mode; optional Name (Owner), Maintenance Share, Previous balance.
+  Preview + validation first; Import is one all-or-nothing call (`jdb_bulk_import_payments`).
+  Imported rows are marked paid + verified, visible to admins and in the owner's My Ledger.
+  "Previous balance" on a flat's earliest month becomes opening arrears (`carryInOverride`).
+* **Expenses → Bulk upload expenses (Excel)** — columns: Category, Paid on (MM-DD-YYYY), Amount;
+  optional Comments, Maintenance month, Mode. Appended per month (`jdb_bulk_add_expenses`),
+  duplicates (same month + category + date + amount) skipped unless ticked.
+* **Expense items** now have optional Mode and Comments; Category, Paid on and Amount are mandatory.
+* **Screenshot clean-up** — Edge Function `jdb-cleanup`, called daily at 00:30 IST by pg_cron.
+  Deletes screenshots uploaded **more than 30 days ago** (from Storage and the dashboard);
+  anything newer is never touched. Clears only `payments.screenshot_path` — amounts, status,
+  verification and history stay. Runs are logged in `jdb.cleanup_log`
+  (last run shown in Settings → Run diagnostics).
+
+## Reports & Expenses
+
+* **Reports** — one period picker (monthly / quarterly / half-yearly / annual / custom from–to)
+  drives both the maintenance collection and the **Expense summary** (receipts, itemised payments
+  with mode + comments, category totals, balance c/f). Buttons: Print / Save as PDF (prints only
+  the summary), Download CSV, Download Excel (Summary, Expenses, Maintenance sheets), WhatsApp text.
+* **Expenses** — Receipts (balance b/f, maintenance received, totals incl. *Available funds —
+  balance carried forward*), expense items (add / edit / delete with comments), bulk upload.
+
+### Applying to a Supabase project (test first, then live)
+1. Run `supabase/migrations/20260928000000_bulk_upload_and_cleanup.sql`.
+2. `select vault.create_secret('https://<project-ref>.supabase.co', 'jdb_project_url');`
+3. Run `supabase/migrations/20260928000100_cleanup_schedule.sql` (turns on pg_cron + pg_net).
+4. Run `supabase/migrations/20260929000000_cleanup_30_days.sql` (30-day rule).
+5. Deploy `supabase/functions/jdb-cleanup` with JWT verification **off** (it checks its own key).
+
 ## Security notes
 
 * The Supabase *publishable* key in `index.html` is meant to be public; it can

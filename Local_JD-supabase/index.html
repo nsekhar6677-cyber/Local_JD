@@ -239,8 +239,34 @@
   .summary-table td:nth-child(3){text-align:right;}
   @media print{
     body *{visibility:hidden;}
-    #exp-summary-wrap, #exp-summary-wrap *{visibility:visible;}
-    #exp-summary-wrap{position:absolute;left:0;top:0;width:100%;}
+    #rpt-exp-print, #rpt-exp-print *{visibility:visible;}
+    #rpt-exp-print{position:absolute;left:0;top:0;width:100%;}
+    #rpt-exp-summary{overflow:visible !important;}
+  }
+  /* Expenses → Receipts: stacks cleanly on phones, two columns from tablet width */
+  .exp-receipts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:14px;}
+  .exp-field{min-width:0;}
+  .exp-field input{width:100%;}
+  .exp-auto{display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:.76rem;color:#4E6154;line-height:1.4;}
+  .exp-auto .link-btn{width:auto;padding:4px 0;min-height:28px;text-align:right;}
+  .stats.exp-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0;}
+  .stats.exp-totals .stat{min-width:0;}
+  .stats.exp-totals .stat b{overflow-wrap:anywhere;font-size:1.15rem;}
+  .exp-bulk{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;}
+  .exp-bulk summary{cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.86rem;padding:6px 0;min-height:36px;}
+  @media (max-width:600px){
+    .exp-receipts-grid{grid-template-columns:1fr;}
+    .stats.exp-totals{grid-template-columns:1fr;}
+    .stats.exp-totals .stat{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:12px 14px;}
+    .stats.exp-totals .stat b{font-size:1.05rem;order:2;white-space:nowrap;overflow-wrap:normal;flex-shrink:0;}
+    .stats.exp-totals .stat span{order:1;}
+    #rpt-period-stats .stat{min-width:45%;}
+    #rpt-exp-table{font-size:.8rem;}
+    #rpt-exp-table th, #rpt-exp-table td{padding:7px 6px;}
+    #rpt-exp-table tr.item-row td:first-child{padding-left:10px;}
+    #rpt-exp-table td:nth-child(2){white-space:nowrap;font-size:.74rem;}
+    #rpt-exp-table td:last-child{white-space:nowrap;}
+    #rpt-exp-table tr.balance-row td{font-size:.88rem;padding:12px 6px;}
   }
 
   .note{font-size:.78rem;color:#4E6154;line-height:1.5;margin-top:6px;}
@@ -282,6 +308,10 @@
     color:var(--white);font-family:'JetBrains Mono',monospace;font-size:.75rem;text-align:center;
   }
 
+  .bulk-table-wrap{overflow:auto;max-height:70vh;border:1px solid var(--paper-2);margin-top:10px;-webkit-overflow-scrolling:touch;}
+  .bulk-table{min-width:980px;}
+  .bulk-table thead th{position:sticky;top:0;background:var(--white);z-index:1;box-shadow:inset 0 -1px 0 var(--line);}
+  .bulk-table td{vertical-align:top;}
   #entry-table-wrap, #flats-table-wrap, #admins-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #entry-table-wrap table{min-width:1140px;}
 
@@ -342,7 +372,9 @@
   }
   #flats-table-wrap table{min-width:640px;}
   #admins-table-wrap table{min-width:480px;}
-  #exp-items-wrap table{min-width:520px;}
+  #exp-items-wrap table{min-width:860px;}
+  #exp-items-wrap tr.ei-invalid td{background:#FBEDEA;}
+  #exp-items-wrap .ei-err{color:var(--red);font-size:.72rem;margin-top:4px;}
   #admins-table-wrap td:last-child{white-space:nowrap;}
 
   /* ---- login screen ---- */
@@ -746,47 +778,59 @@
       <p class="note">Owners' payment screenshots go in the Proof column — tap the thumbnail to view full size. Tick <b>Verified</b> once you've checked the screenshot matches the amount and flat. Tick <b>Waived</b> to cancel a month's due entirely so nothing carries forward — this is disabled once a payment is verified; un-verify it first if you need to waive it.</p>
       <div id="entry-table-wrap"></div>
     </div>
+
+    <div class="card" id="entry-bulk-card">
+      <h2>Bulk upload maintenance (Excel)</h2>
+      <p class="note">Upload an Excel file with the columns <b>Flat No</b>, <b>Maintenance month</b>, <b>Paid Amt</b>, <b>Paid on</b> (MM-DD-YYYY) and <b>Mode</b> — optional: Name (Owner), Maintenance Share, Previous balance. Records are sorted into months automatically. Nothing is saved until you check the preview and press Import; screenshots are not needed. Imported payments appear for admins and in each owner's My Ledger.</p>
+      <input type="file" id="mb-file" accept=".xlsx,.xls" class="file-input-hidden">
+      <div class="actions-row">
+        <button class="ghost" id="mb-pick" type="button">Choose Excel file</button>
+        <button class="link-btn" id="mb-template" type="button" style="width:auto;padding:10px 4px;">Download template</button>
+      </div>
+      <div id="mb-preview"></div>
+    </div>
   </section>
 
   <!-- ===== ADMIN: REPORTS ===== -->
   <section id="tab-reports">
     <div class="card">
-      <h2>Monthly report</h2>
+      <h2>Maintenance &amp; expense report</h2>
+      <p class="note">Choose a period — the maintenance collection and the expense summary below both follow it.</p>
       <div class="row">
         <div>
-          <label for="rpt-month">Month</label>
-          <input type="month" id="rpt-month">
-        </div>
-      </div>
-      <div id="rpt-monthly-stats" class="stats"></div>
-      <div class="report-box" id="rpt-monthly-box"></div>
-      <div class="actions-row">
-        <button class="ghost" id="copy-monthly-btn" type="button">Copy report</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Period report</h2>
-      <p class="note">Pick a report type — the fields below adjust to match.</p>
-      <div class="row">
-        <div>
-          <label for="rpt-period-type">Report type</label>
+          <label for="rpt-period-type">Period</label>
           <select id="rpt-period-type">
-            <option value="monthly">Monthly</option>
+            <option value="monthly" selected>Monthly</option>
             <option value="quarterly">Quarterly</option>
             <option value="halfyearly">Half-yearly</option>
-            <option value="annually" selected>Annually</option>
-            <option value="custom">Custom time range</option>
+            <option value="annually">Annually</option>
+            <option value="custom">Custom range (from – to month)</option>
           </select>
         </div>
       </div>
       <div class="row" id="rpt-period-controls"></div>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="rpt-period-btn" type="button">Generate report</button>
-      </div>
-      <div id="rpt-period-stats" class="stats" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Maintenance collection</h2>
+      <div id="rpt-period-stats" class="stats"></div>
       <div id="rpt-period-bars" style="margin-top:6px;"></div>
+      <div class="actions-row">
+        <button class="ghost" id="rpt-period-btn" type="button">Show collection details</button>
+      </div>
       <div id="rpt-period-output" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Expense summary</h2>
+      <div id="rpt-exp-print"><div id="rpt-exp-summary" style="overflow-x:auto;"></div></div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="rpt-print-btn" type="button">Print / Save as PDF</button>
+        <button class="ghost" id="rpt-csv-btn" type="button">Download CSV</button>
+        <button class="ghost" id="rpt-xlsx-btn" type="button">Download Excel</button>
+        <button class="ghost" id="rpt-wa-btn" type="button">WhatsApp text</button>
+      </div>
+      <div id="rpt-exp-output" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -800,79 +844,38 @@
         </div>
       </div>
       <h2>Receipts</h2>
-      <div class="row">
-        <div>
+      <div class="exp-receipts-grid">
+        <div class="exp-field">
           <label for="exp-opening">Balance b/f from last month (₹)</label>
-          <input type="number" id="exp-opening">
-          <p class="note" id="exp-opening-note"></p>
-          <button class="link-btn" id="exp-opening-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
+          <input type="number" id="exp-opening" inputmode="numeric">
+          <div class="exp-auto"><span id="exp-opening-note"></span><button class="link-btn" id="exp-opening-reset" type="button">Reset to auto</button></div>
         </div>
-        <div>
+        <div class="exp-field">
           <label for="exp-maint">Maintenance amt received (₹)</label>
-          <input type="number" id="exp-maint" min="0">
-          <p class="note" id="exp-maint-note"></p>
-          <button class="link-btn" id="exp-maint-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
+          <input type="number" id="exp-maint" min="0" inputmode="numeric">
+          <div class="exp-auto"><span id="exp-maint-note"></span><button class="link-btn" id="exp-maint-reset" type="button">Reset to auto</button></div>
         </div>
       </div>
-      <div class="stats" id="exp-receipts-stats"></div>
-      <p class="note">"Auto" opening balance carries forward last month's available funds. "Auto" maintenance received pulls this month's collected total from Dashboard/Entry. Either can be overridden above if you need to correct a figure.</p>
+      <div class="stats exp-totals" id="exp-receipts-stats"></div>
     </div>
 
     <div class="card">
       <h2>Payments</h2>
-      <p class="note">Add every expense for the month — water bill, power bill, diesel, salaries, repairs, and so on. Pick a category from the list, or choose "Other" to type your own.</p>
       <div id="exp-items-wrap" style="overflow-x:auto;"></div>
       <div class="actions-row">
-        <button class="ghost" id="exp-add-item-btn" type="button">+ Add expense</button>
+        <button class="primary" style="width:auto;" id="exp-add-item-btn" type="button">+ Add expense</button>
       </div>
-      <div class="stats" id="exp-payments-total" style="margin-top:14px;"></div>
-    </div>
 
-    <div class="card">
-      <h2>Available funds — balance carried forward</h2>
-      <div class="stats" id="exp-balance-box"></div>
-    </div>
-
-    <div class="card">
-      <div class="flex-between">
-        <h2 style="margin-bottom:0;">Monthly summary</h2>
-      </div>
-      <p class="note">Updates automatically as you edit the figures above.</p>
-      <div id="exp-summary-wrap" style="overflow-x:auto;margin-top:10px;"></div>
-      <div class="actions-row">
-        <button class="ghost" id="exp-print-btn" type="button">Print / Save as PDF</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Publish monthly summary</h2>
-      <p class="note">Generates a plain-text version of the summary above, ready to paste into WhatsApp or SMS.</p>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="exp-report-btn" type="button">Generate WhatsApp text</button>
-      </div>
-      <div id="exp-report-output" style="margin-top:14px;"></div>
-    </div>
-
-    <div class="card">
-      <h2>Publish time-range summary</h2>
-      <p class="note">Summarize receipts, spending by category, and balance across multiple months — handy for quarterly or annual updates to owners. Pick a report type — the fields below adjust to match.</p>
-      <div class="row">
-        <div>
-          <label for="exp-period-type">Report type</label>
-          <select id="exp-period-type">
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="halfyearly">Half-yearly</option>
-            <option value="annually">Annually</option>
-            <option value="custom" selected>Custom time range</option>
-          </select>
+      <details id="exp-bulk-card" class="exp-bulk">
+        <summary>Bulk upload expenses (Excel)</summary>
+        <p class="note">Columns: <b>Category</b>, <b>Paid on</b> (MM-DD-YYYY), <b>Amount</b> — optional Comments, Maintenance month, Mode. Nothing is saved until you check the preview and press Import.</p>
+        <input type="file" id="eb-file" accept=".xlsx,.xls" class="file-input-hidden">
+        <div class="actions-row">
+          <button class="ghost" id="eb-pick" type="button">Choose Excel file</button>
+          <button class="link-btn" id="eb-template" type="button" style="width:auto;padding:10px 4px;">Download template</button>
         </div>
-      </div>
-      <div class="row" id="exp-period-controls"></div>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="exp-range-btn" type="button">Generate range summary</button>
-      </div>
-      <div id="exp-range-output" style="margin-top:14px;"></div>
+        <div id="eb-preview"></div>
+      </details>
     </div>
   </section>
 
@@ -1318,7 +1321,7 @@ function rerenderAll(){
   if(!currentUser) return;
   document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
   if(currentUser.role === 'admin'){
-    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
   } else {
     renderOwnerView();
   }
@@ -1556,6 +1559,8 @@ async function runStorageDiagnostics(){
     lines.push(`Flats currently on file: ${d.flats}`);
     lines.push(`Admin profiles: ${d.admins}`);
     lines.push(`Expense months on file: ${d.expenseMonths}`);
+    const lc = d.lastCleanup;
+    lines.push(`Last screenshot clean-up: ${lc ? `${new Date(lc.at).toLocaleString('en-IN')}${lc.dryRun ? ' (dry run)' : ''} — ${lc.filesDeleted} file(s) deleted, ${lc.rowsCleared} link(s) cleared${lc.filesFailed ? `, ${lc.filesFailed} failed` : ''}` : 'not run yet'}`);
   }catch(e){
     lines.push(`Database: could not be reached (${e && e.code ? e.code : 'error'}).`);
   }
@@ -1608,7 +1613,7 @@ async function importBackupCsv(e){
     document.getElementById('set-amount').value = settings.defaultAmount || 2000;
     document.getElementById('set-admin-phone').value = settings.adminPhone || '';
     document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
-    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
 
     note.textContent = 'Backup restored successfully.';
     e.target.value = '';
@@ -1691,14 +1696,18 @@ function flatFirstMonth(flatId){
 function computeFlatDue(flatId, month, depth){
   depth = depth || 0;
   const flat = flats.find(f=>f.id===flatId);
-  const base = flat ? Number(flat.amount ?? settings.defaultAmount) : Number(settings.defaultAmount);
+  const p = getPayment(flatId, month);
+  // imported months can carry that month's own maintenance share and opening arrears
+  const hasNum = v => v !== null && v !== undefined && v !== '' && !isNaN(Number(v));
+  const base = hasNum(p.baseOverride) ? Number(p.baseOverride) : (flat ? Number(flat.amount ?? settings.defaultAmount) : Number(settings.defaultAmount));
   const firstMonth = flatFirstMonth(flatId);
   let carryIn = 0;
-  if(depth < 36 && firstMonth && month > firstMonth){
+  if(hasNum(p.carryInOverride)){
+    carryIn = Number(p.carryInOverride);
+  } else if(depth < 36 && firstMonth && month > firstMonth){
     const prev = prevMonthKeyGlobal(month);
     carryIn = computeFlatDue(flatId, prev, depth+1).carryOut;
   }
-  const p = getPayment(flatId, month);
   if(p.waived){
     // Waived by admin: this month's due is cancelled outright and nothing carries forward from it.
     return {base, carryIn, dueThisMonth: 0, paid: 0, carryOut: 0, waived: true};
@@ -1870,6 +1879,501 @@ function customConfirm(message){
     noBtn.addEventListener('click', onNo);
     modal.addEventListener('click', onOverlay);
   });
+}
+
+/* ===================== BULK UPLOAD (Excel) =====================
+   Admin-only. The file is read in the browser (SheetJS, loaded on first use),
+   checked row by row and shown as a preview. Nothing is saved until the admin
+   presses Import; the import itself is one all-or-nothing database call. */
+const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+let xlsxPromise = null;
+function loadXlsx(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  if(!xlsxPromise){
+    xlsxPromise = new Promise((resolve, reject)=>{
+      const sc = document.createElement('script');
+      sc.src = XLSX_URL;
+      sc.onload = ()=> window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX_LOAD'));
+      sc.onerror = ()=>{ xlsxPromise = null; reject(new Error('XLSX_LOAD')); };
+      document.head.appendChild(sc);
+    });
+  }
+  return xlsxPromise;
+}
+async function readSheetRows(file){
+  const XLSX = await loadXlsx();
+  const wb = XLSX.read(await file.arrayBuffer(), {type:'array', cellDates:false});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null, blankrows:false});
+}
+
+const bulkKey = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+const pad2 = n => String(n).padStart(2,'0');
+function validYmd(y, m, d){
+  if(!(y >= 2000 && y <= 2100 && m >= 1 && m <= 12 && d >= 1)) return false;
+  return d <= new Date(y, m, 0).getDate();
+}
+// Excel date cell, or text as MM-DD-YYYY (also MM/DD/YY, YYYY-MM-DD). Returns {iso} | {error} | {} (blank)
+function bulkParseDate(v){
+  if(v === null || v === undefined || String(v).trim() === '') return {};
+  if(typeof v === 'number' && isFinite(v)){
+    if(v < 20000 || v > 80000) return {error:'not a valid date'};
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+    return {iso: `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`};
+  }
+  if(v instanceof Date && !isNaN(v)) return {iso: `${v.getFullYear()}-${pad2(v.getMonth()+1)}-${pad2(v.getDate())}`};
+  const t = String(v).trim();
+  let m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+  if(m){ const [y,mo,d] = [Number(m[1]),Number(m[2]),Number(m[3])]; return validYmd(y,mo,d) ? {iso:`${y}-${pad2(mo)}-${pad2(d)}`} : {error:`"${t}" is not a real date`}; }
+  m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/);
+  if(m){
+    const mo = Number(m[1]), d = Number(m[2]); let y = Number(m[3]); if(y < 100) y += 2000;
+    return validYmd(y,mo,d) ? {iso:`${y}-${pad2(mo)}-${pad2(d)}`} : {error:`"${t}" is not a valid MM-DD-YYYY date`};
+  }
+  return {error:`"${t}" is not a date (use MM-DD-YYYY)`};
+}
+// "August", "Aug", "08", "2026-08", "Aug 2026", "08/2026", or an Excel date. Year taken from the value,
+// else from the Paid-on date (a month more than one ahead of it belongs to the previous year), else this year.
+function bulkParseMonth(v, paidOnIso){
+  if(v === null || v === undefined || String(v).trim() === '') return {};
+  if(typeof v === 'number' && v > 31){ const d = bulkParseDate(v); return d.iso ? {month: d.iso.slice(0,7)} : {error:'not a valid month'}; }
+  const t = String(v).trim();
+  let y = null, mo = null, m;
+  if((m = t.match(/^(\d{4})[-\/.](\d{1,2})$/))){ y = Number(m[1]); mo = Number(m[2]); }
+  else if((m = t.match(/^(\d{1,2})[-\/.](\d{4})$/))){ mo = Number(m[1]); y = Number(m[2]); }
+  else if((m = t.match(/^(\d{1,2})$/))){ mo = Number(m[1]); }
+  else if((m = t.match(/^([A-Za-z]+)[\s\-\/,']*(\d{2}|\d{4})?$/))){
+    const name = m[1].toLowerCase();
+    const idx = MONTH_NAMES.findIndex(n => n === name || (name.length >= 3 && n.startsWith(name)));
+    if(idx >= 0) mo = idx + 1;
+    if(m[2]){ y = Number(m[2]); if(y < 100) y += 2000; }
+  }
+  if(!(mo >= 1 && mo <= 12)) return {error:`"${t}" is not a month`};
+  let guessed = false;
+  if(!y){
+    if(paidOnIso){
+      const py = Number(paidOnIso.slice(0,4)), pm = Number(paidOnIso.slice(5,7));
+      y = (mo > pm + 1) ? py - 1 : py;
+    } else { y = new Date().getFullYear(); guessed = true; }
+  }
+  if(!(y >= 2000 && y <= 2100)) return {error:`"${t}" has an invalid year`};
+  return {month: `${y}-${pad2(mo)}`, guessed};
+}
+function bulkMoney(v){
+  if(v === null || v === undefined || String(v).trim() === '') return null;
+  if(typeof v === 'number') return v;
+  const t = String(v).replace(/[₹,\s]/g, '').replace(/^rs\.?/i, '');
+  if(t === '-' ) return null;
+  const n = Number(t);
+  return isFinite(n) ? n : NaN;
+}
+function bulkMode(v){
+  const k = bulkKey(v);
+  if(!k) return {mode:''};
+  if(['upi','gpay','googlepay','phonepe','paytm'].includes(k)) return {mode:'UPI'};
+  if(k === 'cash') return {mode:'Cash'};
+  if(['banktransfer','bank','neft','imps','rtgs','netbanking','transfer','online'].includes(k)) return {mode:'Bank Transfer'};
+  if(['cheque','check','chq'].includes(k)) return {mode:'Cheque'};
+  return {error:`unknown mode "${String(v).trim()}" (use UPI, Cash, Bank Transfer or Cheque)`};
+}
+function bulkFindFlat(v){
+  const raw = String(v ?? '').trim();
+  if(!raw) return null;
+  const k = bulkKey(raw);
+  const direct = flats.find(f => bulkKey(f.flatNo) === k);
+  if(direct) return direct;
+  const digits = k.replace(/^flat/, '').replace(/^f/, '');
+  if(/^\d{1,3}$/.test(digits)){
+    const want = 'f' + digits.padStart(3,'0');
+    return flats.find(f => bulkKey(f.flatNo) === want) || null;
+  }
+  return null;
+}
+function bulkCategory(v){
+  const t = String(v ?? '').trim().replace(/\s+/g,' ');
+  if(!t) return {category:''};
+  const k = bulkKey(t);
+  const exact = EXPENSE_CATEGORIES.find(c => bulkKey(c) === k);
+  if(exact) return exact === t ? {category: exact} : {category: exact, note:`category "${t}" → "${exact}"`};
+  // "Watchman Salary - Deepak" → category "Watchman Salary", comment "Deepak"
+  const pre = EXPENSE_CATEGORIES.find(c => k.startsWith(bulkKey(c)) && /[-–:(]/.test(t.slice(c.length, c.length + 3)));
+  if(pre){
+    const extra = t.slice(pre.length).replace(/^[\s\-–:(]+/, '').replace(/\)\s*$/, '').trim();
+    return {category: pre, extraComment: extra, note:`category "${t}" → "${pre}" (+ comment "${extra}")`};
+  }
+  return {category: t, note:`"${t}" isn't in the category list — will be saved as a custom category`};
+}
+// Finds the header row (first 10 rows) and maps columns by name.
+function bulkHeaders(rows, spec){
+  for(let r = 0; r < Math.min(rows.length, 10); r++){
+    const cols = {};
+    (rows[r] || []).forEach((cell, i)=>{
+      const k = bulkKey(cell);
+      if(!k) return;
+      for(const field in spec){ if(cols[field] === undefined && spec[field].includes(k)) cols[field] = i; }
+    });
+    if(Object.keys(cols).length >= 3) return {headerRow: r, cols};
+  }
+  return null;
+}
+const statusBadge = (row)=> row.errors.length ? '<span class="badge pending">Error</span>'
+  : (row.warnings.length ? '<span class="badge submitted">Check</span>' : '<span class="badge paid">Ready</span>');
+const notesHtml = (row)=> [...row.errors.map(e=>`<div style="color:var(--red);">✖ ${escapeHtml(e)}</div>`), ...row.warnings.map(w=>`<div style="color:#8A5A00;">⚠ ${escapeHtml(w)}</div>`), ...(row.infos||[]).map(w=>`<div style="color:#4E6154;">ℹ ${escapeHtml(w)}</div>`)].join('') || '—';
+
+/* ---------------------------------------------------------------- maintenance */
+const MAINT_SPEC = {
+  flat: ['flatno','flat','flatnumber','flatnum'],
+  owner: ['nameowner','owner','ownername','name'],
+  share: ['maintanaceshare','maintananceshare','maintenanceshare','share','maintenance','amountdue','due'],
+  prev: ['previousbalance','prevbalance','previousdue','arrears','balancebf'],
+  paid: ['paidamt','paidamount','amountpaid','paid'],
+  paidOn: ['paidon','paiddate','paymentdate','date'],
+  month: ['maintenancemonth','maintanancemonth','maintanacemonth','month'],
+  mode: ['mode','paymentmode','modeofpayment']
+};
+let maintPreview = null;
+
+function buildMaintPreview(rows){
+  const h = bulkHeaders(rows, MAINT_SPEC);
+  if(!h || h.cols.flat === undefined) return {fileError:'Could not find the header row — the sheet needs at least "Flat No", "Maintenance month" and "Paid Amt" columns.'};
+  const missing = ['flat','month','paid'].filter(f => h.cols[f] === undefined);
+  if(missing.length) return {fileError:`Missing column(s): ${missing.map(f=>({flat:'Flat No',month:'Maintenance month',paid:'Paid Amt'})[f]).join(', ')}.`};
+  const get = (r, f)=> h.cols[f] === undefined ? null : r[h.cols[f]];
+  const out = [];
+  for(let i = h.headerRow + 1; i < rows.length; i++){
+    const r = rows[i] || [];
+    if(r.every(c => c === null || String(c).trim() === '')) continue;
+    const row = {rowNo: i + 1, errors: [], warnings: [], infos: [], overwrite: false};
+    const flat = bulkFindFlat(get(r,'flat'));
+    row.flatRaw = String(get(r,'flat') ?? '').trim();
+    if(!row.flatRaw) row.errors.push('Flat No is missing');
+    else if(!flat) row.errors.push(`flat "${row.flatRaw}" not found in Flats & Access`);
+    row.flat = flat;
+    row.ownerFile = String(get(r,'owner') ?? '').trim();
+    if(flat && row.ownerFile && bulkKey(row.ownerFile) !== bulkKey(flat.owner)) row.warnings.push(`owner in file "${row.ownerFile}" differs from app "${flat.owner || '—'}" (app name kept)`);
+    const pd = bulkParseDate(get(r,'paidOn'));
+    if(pd.error) row.errors.push(`Paid on: ${pd.error}`);
+    row.paidOn = pd.iso || '';
+    const mo = bulkParseMonth(get(r,'month'), row.paidOn);
+    if(mo.error) row.errors.push(`Maintenance month: ${mo.error}`);
+    else if(!mo.month) row.errors.push('Maintenance month is missing');
+    if(mo.guessed) row.warnings.push(`no year given — assumed ${mo.month.slice(0,4)}`);
+    row.month = mo.month || '';
+    const paid = bulkMoney(get(r,'paid'));
+    if(Number.isNaN(paid)) row.errors.push('Paid Amt is not a number');
+    else if(paid !== null && paid < 0) row.errors.push('Paid Amt cannot be negative');
+    row.paid = (paid === null || Number.isNaN(paid)) ? 0 : paid;
+    const share = bulkMoney(get(r,'share'));
+    if(Number.isNaN(share) || (share !== null && share < 0)) row.errors.push('Maintenance Share is not a valid amount');
+    row.share = (share === null || Number.isNaN(share)) ? null : share;
+    const prev = bulkMoney(get(r,'prev'));
+    if(Number.isNaN(prev)) row.errors.push('Previous balance is not a number');
+    row.prev = (prev === null || Number.isNaN(prev)) ? null : prev;
+    const md = bulkMode(get(r,'mode'));
+    if(md.error) row.errors.push(md.error);
+    row.mode = md.mode || '';
+    if(row.paid > 0 && !row.paidOn) row.warnings.push('paid but no "Paid on" date');
+    if(row.paid > 0 && !row.mode) row.warnings.push('paid but no payment mode');
+    if(flat && row.share !== null && Number(row.share) !== Number(flat.amount ?? settings.defaultAmount)) row.infos.push(`share ${inr(row.share)} differs from the flat's current ${inr(flat.amount ?? settings.defaultAmount)} — kept for this month`);
+    out.push(row);
+  }
+  // duplicates inside the file
+  const seen = {};
+  out.forEach(r => { if(r.flat && r.month){ const k = r.flat.id + ':' + r.month; (seen[k] = seen[k] || []).push(r); } });
+  Object.values(seen).forEach(list => { if(list.length > 1) list.forEach(r => r.errors.push(`same flat and month also on row(s) ${list.filter(x=>x!==r).map(x=>x.rowNo).join(', ')}`)); });
+  // existing records
+  out.forEach(r => {
+    if(!r.flat || !r.month) return;
+    const ex = payments[payKey(r.flat.id, r.month)];
+    if(ex){ r.existing = ex; r.warnings.push(`${monthLabelOf(r.month)} already recorded for ${r.flat.flatNo} (${ex.paid ? 'paid ' + inr(ex.amount||0) : (ex.waived ? 'waived' : 'pending')}) — skipped unless you tick Overwrite`); }
+  });
+  maintApplyBalances(out);
+  return {rows: out};
+}
+// Previous balance: opening arrears on the flat's earliest month; later months are checked against the calculation.
+function maintApplyBalances(rows){
+  const good = rows.filter(r => !r.errors.length && r.flat && r.month);
+  const byFlat = {};
+  good.forEach(r => (byFlat[r.flat.id] = byFlat[r.flat.id] || []).push(r));
+  const merged = {...payments};
+  good.forEach(r => { r.carryInOverride = undefined; if(!r.existing || r.overwrite) merged[payKey(r.flat.id, r.month)] = maintRowData(r); });
+  for(const fid in byFlat){
+    const existingMonths = Object.keys(payments).filter(k => k.startsWith(fid + ':')).map(k => k.split(':')[1]);
+    const earliest = [...existingMonths, ...byFlat[fid].map(r => r.month)].sort()[0];
+    byFlat[fid].forEach(r => {
+      if(r.month === earliest && r.prev){
+        r.carryInOverride = r.prev;
+        if(!r.infos.some(x=>x.startsWith('opening'))) r.infos.push(`opening arrears ${inr(r.prev)} carried into ${monthLabelOf(r.month)}`);
+        if(!r.existing || r.overwrite) merged[payKey(fid, r.month)] = maintRowData(r);
+      }
+    });
+  }
+  const saved = payments; payments = merged;
+  try{
+    good.forEach(r => {
+      r.warnings = r.warnings.filter(w => !w.startsWith('Previous balance'));
+      if(r.carryInOverride !== undefined || r.prev === null) return;
+      const calc = computeFlatDue(r.flat.id, r.month).carryIn;
+      if(Math.round(calc) !== Math.round(r.prev)) r.warnings.push(`Previous balance ${inr(r.prev)} in file, but the app works out ${inr(calc)} from earlier months`);
+    });
+  } finally { payments = saved; }
+}
+function maintRowData(r){
+  const d = {paid: r.paid > 0, amount: r.paid, date: r.paidOn, mode: r.mode, verified: r.paid > 0, waived: false, autoCheck: null};
+  if(r.share !== null) d.baseOverride = r.share;
+  if(r.carryInOverride !== undefined) d.carryInOverride = r.carryInOverride;
+  return d;
+}
+const maintIncluded = r => !r.errors.length && (!r.existing || r.overwrite);
+
+function renderMaintPreview(){
+  const box = document.getElementById('mb-preview');
+  if(!maintPreview){ box.innerHTML = ''; return; }
+  if(maintPreview.fileError){ box.innerHTML = `<p class="note err">${escapeHtml(maintPreview.fileError)}</p>`; return; }
+  const rows = maintPreview.rows;
+  const inc = rows.filter(maintIncluded);
+  const nErr = rows.filter(r=>r.errors.length).length;
+  const nWarn = rows.filter(r=>!r.errors.length && r.warnings.length).length;
+  const byMonth = {};
+  inc.forEach(r => { const m = byMonth[r.month] = byMonth[r.month] || {n:0, paid:0}; m.n++; m.paid += r.paid; });
+  const monthsHtml = Object.keys(byMonth).sort().map(m => `<div class="stat"><b style="font-size:1rem;">${byMonth[m].n} · ${inr(byMonth[m].paid)}</b><span>${monthLabelOf(m)}</span></div>`).join('');
+  box.innerHTML = `
+    <div class="stats" style="margin-top:12px;">
+      <div class="stat"><b>${rows.length}</b><span>Rows in file</span></div>
+      <div class="stat"><b style="color:var(--green)">${inc.length}</b><span>Will import</span></div>
+      <div class="stat"><b style="color:#8A5A00">${nWarn}</b><span>To check</span></div>
+      <div class="stat"><b style="color:var(--red)">${nErr}</b><span>Errors</span></div>
+    </div>
+    ${monthsHtml ? `<div class="stats">${monthsHtml}</div>` : ''}
+    <div class="bulk-table-wrap"><table class="bulk-table">
+      <thead><tr><th>Row</th><th>Status</th><th>Flat</th><th>Owner (app)</th><th>Month</th><th>Due</th><th>Prev. bal</th><th>Paid</th><th>Paid on</th><th>Mode</th><th>Notes</th><th>Overwrite</th></tr></thead>
+      <tbody>${rows.map((r, i) => `
+        <tr data-i="${i}" style="${maintIncluded(r) ? '' : 'opacity:.62;'}">
+          <td>${r.rowNo}</td><td>${statusBadge(r)}</td>
+          <td>${escapeHtml(r.flat ? r.flat.flatNo : r.flatRaw)}</td>
+          <td>${escapeHtml(r.flat ? (r.flat.owner || '—') : (r.ownerFile || '—'))}</td>
+          <td>${r.month ? monthLabelOf(r.month) : '—'}</td>
+          <td>${r.share !== null ? inr(r.share) : '—'}</td>
+          <td>${r.prev !== null ? inr(r.prev) : '—'}</td>
+          <td>${inr(r.paid)}</td>
+          <td>${escapeHtml(r.paidOn || '—')}</td>
+          <td>${escapeHtml(r.mode || '—')}</td>
+          <td style="min-width:240px;font-size:.76rem;line-height:1.4;">${notesHtml(r)}</td>
+          <td style="text-align:center;">${r.existing && !r.errors.length ? `<input type="checkbox" class="chk mb-over" ${r.overwrite?'checked':''} aria-label="Overwrite row ${r.rowNo}">` : ''}</td>
+        </tr>`).join('')}</tbody>
+    </table></div>
+    <div id="mb-result"></div>
+    <div class="actions-row">
+      <button class="primary" style="width:auto;" id="mb-import" type="button" ${inc.length ? '' : 'disabled'}>Import ${inc.length} record${inc.length===1?'':'s'}</button>
+      <button class="ghost" id="mb-cancel" type="button">Cancel</button>
+    </div>
+    ${nErr ? '<p class="note">Rows with errors are never imported — fix them in Excel and upload again, or import the rest now.</p>' : ''}`;
+  box.querySelectorAll('.mb-over').forEach(cb => cb.addEventListener('change', ()=>{
+    const r = rows[Number(cb.closest('tr').dataset.i)];
+    r.overwrite = cb.checked;
+    maintApplyBalances(rows);
+    renderMaintPreview();
+  }));
+  document.getElementById('mb-cancel').onclick = ()=>{ maintPreview = null; renderMaintPreview(); };
+  document.getElementById('mb-import').onclick = importMaintPreview;
+}
+
+async function importMaintPreview(){
+  const btn = document.getElementById('mb-import');
+  const inc = maintPreview.rows.filter(maintIncluded);
+  if(!inc.length) return;
+  if(!(await customConfirm(`Import ${inc.length} maintenance record${inc.length===1?'':'s'}? Owners will see them in My Ledger.`))) return;
+  btn.disabled = true; btn.textContent = 'Importing…';
+  try{
+    await saveChain;
+    const res = await rpc('jdb_bulk_import_payments', {p_token: sessionToken, p_rows: inc.map(r => ({flatId: r.flat.id, month: r.month, overwrite: !!r.existing, data: maintRowData(r)}))});
+    await loadSessionData();
+    maintPreview = null;
+    rerenderAll();
+    document.getElementById('mb-preview').innerHTML = `<p class="note" style="color:var(--green);"><b>Imported.</b> ${res.inserted} new, ${res.updated} overwritten${res.skipped ? `, ${res.skipped} skipped (already recorded)` : ''}.</p>`;
+  }catch(e){
+    if(e.code === 'SESSION_EXPIRED') return;
+    btn.disabled = false; btn.textContent = `Import ${inc.length} records`;
+    document.getElementById('mb-result').innerHTML = `<p class="note err">Import failed — nothing was saved. ${e.code === 'NETWORK' ? 'You appear to be offline.' : escapeHtml(e.code || '')}</p>`;
+  }
+}
+
+/* ---------------------------------------------------------------- expenses */
+const EXP_SPEC = {
+  category: ['category','expense','expensecategory','head'],
+  paidOn: ['paidon','paiddate','date','paymentdate'],
+  amount: ['amount','amt','paidamt','paidamount'],
+  comment: ['comments','comment','remarks','remark','notes','note','description'],
+  month: ['maintenancemonth','maintanancemonth','month','expensemonth'],
+  mode: ['mode','paymentmode','modeofpayment']
+};
+let expPreview = null;
+
+function buildExpPreview(rows){
+  const h = bulkHeaders(rows, EXP_SPEC);
+  if(!h) return {fileError:'Could not find the header row — the sheet needs "Category", "Paid on" and "Amount" columns.'};
+  const missing = ['category','paidOn','amount'].filter(f => h.cols[f] === undefined);
+  if(missing.length) return {fileError:`Missing column(s): ${missing.map(f=>({category:'Category',paidOn:'Paid on',amount:'Amount'})[f]).join(', ')}.`};
+  const get = (r, f)=> h.cols[f] === undefined ? null : r[h.cols[f]];
+  const out = [];
+  for(let i = h.headerRow + 1; i < rows.length; i++){
+    const r = rows[i] || [];
+    if(r.every(c => c === null || String(c).trim() === '')) continue;
+    const row = {rowNo: i + 1, errors: [], warnings: [], infos: [], force: false};
+    const cat = bulkCategory(get(r,'category'));
+    row.category = cat.category;
+    if(!row.category) row.errors.push('Category is missing');
+    if(cat.note) row.infos.push(cat.note);
+    const pd = bulkParseDate(get(r,'paidOn'));
+    if(pd.error) row.errors.push(`Paid on: ${pd.error}`);
+    else if(!pd.iso) row.errors.push('Paid on is missing');
+    row.paidOn = pd.iso || '';
+    const amt = bulkMoney(get(r,'amount'));
+    if(amt === null) row.errors.push('Amount is missing');
+    else if(Number.isNaN(amt)) row.errors.push('Amount is not a number');
+    else if(amt <= 0) row.errors.push('Amount must be more than ₹0');
+    row.amount = (amt === null || Number.isNaN(amt)) ? 0 : Math.round(amt * 100) / 100;
+    const comment = String(get(r,'comment') ?? '').trim();
+    row.comment = [cat.extraComment, comment].filter(Boolean).join(' — ');
+    const md = bulkMode(get(r,'mode'));
+    if(md.error) row.errors.push(md.error);
+    row.mode = md.mode || '';
+    const mo = bulkParseMonth(get(r,'month'), row.paidOn);
+    if(mo.error) row.errors.push(`Month: ${mo.error}`);
+    row.month = mo.month || (row.paidOn ? row.paidOn.slice(0,7) : '');
+    if(mo.month && row.paidOn && mo.month !== row.paidOn.slice(0,7)) row.infos.push(`paid on ${row.paidOn} — recorded under ${monthLabelOf(mo.month)} as in the file`);
+    if(!row.month && !row.errors.length) row.errors.push('no month or Paid on date');
+    out.push(row);
+  }
+  const k = r => [r.month, bulkKey(r.category), r.paidOn, r.amount].join('|');
+  const firstSeen = {};
+  out.forEach(r => {
+    if(r.errors.length) return;
+    const key = k(r);
+    if(firstSeen[key]){ r.dup = true; r.warnings.push(`looks like a duplicate of row ${firstSeen[key].rowNo} — skipped unless you tick Import anyway`); }
+    else firstSeen[key] = r;
+    const saved = (expenses[r.month] && expenses[r.month].items) || [];
+    if(!r.dup && saved.some(it => bulkKey(it.category) === bulkKey(r.category) && it.paidOn === r.paidOn && Number(it.amount) === r.amount)){
+      r.dup = true; r.warnings.push(`already saved in ${monthLabelOf(r.month)} — skipped unless you tick Import anyway`);
+    }
+  });
+  return {rows: out};
+}
+const expIncluded = r => !r.errors.length && (!r.dup || r.force);
+
+function renderExpPreview(){
+  const box = document.getElementById('eb-preview');
+  if(!expPreview){ box.innerHTML = ''; return; }
+  if(expPreview.fileError){ box.innerHTML = `<p class="note err">${escapeHtml(expPreview.fileError)}</p>`; return; }
+  const rows = expPreview.rows;
+  const inc = rows.filter(expIncluded);
+  const nErr = rows.filter(r=>r.errors.length).length;
+  const nWarn = rows.filter(r=>!r.errors.length && r.warnings.length).length;
+  const byMonth = {};
+  inc.forEach(r => { const m = byMonth[r.month] = byMonth[r.month] || {n:0, amt:0}; m.n++; m.amt += r.amount; });
+  const monthsHtml = Object.keys(byMonth).sort().map(m => `<div class="stat"><b style="font-size:1rem;">${byMonth[m].n} · ${inr(byMonth[m].amt)}</b><span>${monthLabelOf(m)}</span></div>`).join('');
+  box.innerHTML = `
+    <div class="stats" style="margin-top:12px;">
+      <div class="stat"><b>${rows.length}</b><span>Rows in file</span></div>
+      <div class="stat"><b style="color:var(--green)">${inc.length}</b><span>Will import</span></div>
+      <div class="stat"><b style="color:#8A5A00">${nWarn}</b><span>To check</span></div>
+      <div class="stat"><b style="color:var(--red)">${nErr}</b><span>Errors</span></div>
+    </div>
+    ${monthsHtml ? `<div class="stats">${monthsHtml}</div>` : ''}
+    <div class="bulk-table-wrap"><table class="bulk-table">
+      <thead><tr><th>Row</th><th>Status</th><th>Month</th><th>Category</th><th>Paid on</th><th>Amount</th><th>Mode</th><th>Comments</th><th>Notes</th><th>Import anyway</th></tr></thead>
+      <tbody>${rows.map((r, i) => `
+        <tr data-i="${i}" style="${expIncluded(r) ? '' : 'opacity:.62;'}">
+          <td>${r.rowNo}</td><td>${statusBadge(r)}</td>
+          <td>${r.month ? monthLabelOf(r.month) : '—'}</td>
+          <td>${escapeHtml(r.category || '—')}</td>
+          <td>${escapeHtml(r.paidOn || '—')}</td>
+          <td>${inr(r.amount)}</td>
+          <td>${escapeHtml(r.mode || '—')}</td>
+          <td>${escapeHtml(r.comment || '—')}</td>
+          <td style="min-width:220px;font-size:.76rem;line-height:1.4;">${notesHtml(r)}</td>
+          <td style="text-align:center;">${r.dup && !r.errors.length ? `<input type="checkbox" class="chk eb-force" ${r.force?'checked':''} aria-label="Import row ${r.rowNo} anyway">` : ''}</td>
+        </tr>`).join('')}</tbody>
+    </table></div>
+    <div id="eb-result"></div>
+    <div class="actions-row">
+      <button class="primary" style="width:auto;" id="eb-import" type="button" ${inc.length ? '' : 'disabled'}>Import ${inc.length} expense${inc.length===1?'':'s'}</button>
+      <button class="ghost" id="eb-cancel" type="button">Cancel</button>
+    </div>
+    ${nErr ? '<p class="note">Rows with errors are never imported — fix them in Excel and upload again, or import the rest now.</p>' : ''}`;
+  box.querySelectorAll('.eb-force').forEach(cb => cb.addEventListener('change', ()=>{
+    rows[Number(cb.closest('tr').dataset.i)].force = cb.checked;
+    renderExpPreview();
+  }));
+  document.getElementById('eb-cancel').onclick = ()=>{ expPreview = null; renderExpPreview(); };
+  document.getElementById('eb-import').onclick = importExpPreview;
+}
+
+async function importExpPreview(){
+  const btn = document.getElementById('eb-import');
+  const inc = expPreview.rows.filter(expIncluded);
+  if(!inc.length) return;
+  if(!(await customConfirm(`Import ${inc.length} expense${inc.length===1?'':'s'}? They are added to each month's existing list.`))) return;
+  btn.disabled = true; btn.textContent = 'Importing…';
+  try{
+    await saveChain;
+    const res = await rpc('jdb_bulk_add_expenses', {p_token: sessionToken, p_items: inc.map((r, i) => ({
+      month: r.month, force: !!r.force,
+      item: {id: 'it' + Date.now() + String(i).padStart(4,'0') + Math.floor(Math.random()*100), category: r.category, paidOn: r.paidOn, amount: r.amount, mode: r.mode, comment: r.comment}
+    }))});
+    await loadSessionData();
+    expPreview = null;
+    rerenderAll();
+    document.getElementById('eb-preview').innerHTML = `<p class="note" style="color:var(--green);"><b>Imported.</b> ${res.added} expense${res.added===1?'':'s'} added${res.skipped ? `, ${res.skipped} skipped (already saved)` : ''}.</p>`;
+  }catch(e){
+    if(e.code === 'SESSION_EXPIRED') return;
+    btn.disabled = false; btn.textContent = `Import ${inc.length} expenses`;
+    document.getElementById('eb-result').innerHTML = `<p class="note err">Import failed — nothing was saved. ${e.code === 'NETWORK' ? 'You appear to be offline.' : escapeHtml(e.code || '')}</p>`;
+  }
+}
+
+/* ---------------------------------------------------------------- wiring + templates */
+async function bulkPickFile(input, kind){
+  const file = input.files[0];
+  input.value = '';
+  if(!file) return;
+  const box = document.getElementById(kind === 'maint' ? 'mb-preview' : 'eb-preview');
+  const panel = box.closest('details');
+  if(panel) panel.open = true;
+  box.innerHTML = '<p class="note">Reading file…</p>';
+  try{
+    const rows = await readSheetRows(file);
+    if(kind === 'maint'){ maintPreview = buildMaintPreview(rows); renderMaintPreview(); }
+    else { expPreview = buildExpPreview(rows); renderExpPreview(); }
+    box.scrollIntoView({block:'start', behavior:'smooth'});
+  }catch(e){
+    box.innerHTML = `<p class="note err">${e.message === 'XLSX_LOAD' ? "Couldn't load the Excel reader — check your internet connection and try again." : "Couldn't read that file — please upload an Excel .xlsx file."}</p>`;
+  }
+}
+async function bulkTemplate(kind){
+  try{
+    const XLSX = await loadXlsx();
+    const aoa = kind === 'maint'
+      ? [['Name (Owner)','Flat No','Maintenance Share','Previous balance','Paid Amt','Paid on','Maintenance month','Mode'],
+         ['Owner name','001',2000,'',2000,'08-05-2026','August','UPI']]
+      : [['Category','Paid on','Amount','Comments','Maintenance month','Mode'],
+         ['Power bill','08-21-2026',41898,'','August','UPI']];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Sheet1');
+    XLSX.writeFile(wb, kind === 'maint' ? 'Maintenance_template.xlsx' : 'Expense_template.xlsx');
+  }catch(e){ showSyncError("Couldn't create the template — check your internet connection."); }
+}
+function initBulkUpload(){
+  const mf = document.getElementById('mb-file'), ef = document.getElementById('eb-file');
+  document.getElementById('mb-pick').onclick = ()=> mf.click();
+  document.getElementById('eb-pick').onclick = ()=> ef.click();
+  mf.onchange = ()=> bulkPickFile(mf, 'maint');
+  ef.onchange = ()=> bulkPickFile(ef, 'exp');
+  document.getElementById('mb-template').onclick = ()=> bulkTemplate('maint');
+  document.getElementById('eb-template').onclick = ()=> bulkTemplate('exp');
+  maintPreview = null; expPreview = null;
+  renderMaintPreview(); renderExpPreview();
 }
 
 /* ===================== LOGIN SCREEN ===================== */
@@ -2182,15 +2686,13 @@ function initAdminUI(){
   const m = todayMonth();
   document.getElementById('dash-month').value = m;
   document.getElementById('entry-month').value = m;
-  document.getElementById('rpt-month').value = m;
   document.getElementById('exp-month').value = m;
 
   document.getElementById('dash-month').onchange = renderDashboard;
   document.getElementById('entry-month').onchange = renderEntry;
-  document.getElementById('rpt-month').onchange = renderMonthlyReport;
   document.getElementById('exp-month').onchange = renderExpenses;
-  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); generatePeriodReport(); };
-  document.getElementById('exp-period-type').onchange = renderExpensePeriodControls;
+  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); renderPeriodReport(); };
+  document.getElementById('rpt-period-controls').onchange = ()=> renderPeriodReport();
 
   document.getElementById('gen-report-btn').onclick = renderWhatsAppReport;
   document.getElementById('add-flat-btn').onclick = addFlat;
@@ -2200,16 +2702,16 @@ function initAdminUI(){
   document.getElementById('set-recovery-a').value = '';
   document.getElementById('save-recovery-btn').onclick = saveRecoveryHandler;
   updateRecoveryWarning();
-  document.getElementById('copy-monthly-btn').onclick = ()=>copyText(buildMonthlyReportText(document.getElementById('rpt-month').value), 'copy-monthly-btn');
   document.getElementById('rpt-period-btn').onclick = generatePeriodReport;
   document.getElementById('exp-add-item-btn').onclick = addExpenseItem;
   document.getElementById('exp-opening').onchange = saveExpenseOpening;
   document.getElementById('exp-opening-reset').onclick = resetExpenseOpening;
   document.getElementById('exp-maint').onchange = saveExpenseMaint;
   document.getElementById('exp-maint-reset').onclick = resetExpenseMaint;
-  document.getElementById('exp-report-btn').onclick = generateExpenseReport;
-  document.getElementById('exp-range-btn').onclick = generateExpenseRangeReport;
-  document.getElementById('exp-print-btn').onclick = ()=>window.print();
+  document.getElementById('rpt-print-btn').onclick = ()=>{ renderPeriodReport(); window.print(); };
+  document.getElementById('rpt-csv-btn').onclick = downloadExpenseCsv;
+  document.getElementById('rpt-xlsx-btn').onclick = downloadExpenseXlsx;
+  document.getElementById('rpt-wa-btn').onclick = showExpenseWhatsApp;
   document.getElementById('export-backup-btn').onclick = exportBackupCsv;
   document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
   document.getElementById('import-backup-input').onchange = importBackupCsv;
@@ -2217,15 +2719,14 @@ function initAdminUI(){
   document.getElementById('save-my-profile-btn').onclick = saveMyProfile;
   document.getElementById('save-my-password-btn').onclick = saveMyPassword;
   document.getElementById('add-admin-btn').onclick = addAdminProfile;
+  initBulkUpload();
 
   showSection(TABS_ADMIN, 'dashboard');
   renderFlats();
   renderEntry();
   renderDashboard();
-  renderMonthlyReport();
   renderPeriodControls();
   renderPeriodReport();
-  renderExpensePeriodControls();
   renderExpenses();
   renderProfile();
   document.getElementById('creds-output').innerHTML = '';
@@ -2264,7 +2765,7 @@ function renderFlats(){
       else if(field==='flatNo') flat[field] = inp.value.trim() || flat.flatNo;
       else flat[field] = inp.value;
       await saveFlats();
-      renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
+      renderDashboard(); renderEntry(); renderPeriodReport();
     });
   });
   tbody.querySelectorAll('.del-btn').forEach(b=>{
@@ -2272,7 +2773,7 @@ function renderFlats(){
       if(!(await customConfirm('Remove this flat and its login? This does not delete past payment records.'))) return;
       flats = flats.filter(x=>x.id!==b.dataset.id);
       await saveFlats();
-      renderFlats(); renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
+      renderFlats(); renderDashboard(); renderEntry(); renderPeriodReport();
     });
   });
   tbody.querySelectorAll('.wa-share-btn').forEach(b=>{
@@ -2403,7 +2904,7 @@ function renderEntry(){
       payments[payKey(id, month)] = {...existing, paid, amount, date, mode, verified};
       await savePayments(id, month);
       renderEntry();
-      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+      renderDashboard(); renderPeriodReport(); renderExpenses();
     };
     tr.querySelector('.e-paid').addEventListener('change', save);
     tr.querySelector('.e-amount').addEventListener('change', save);
@@ -2428,7 +2929,7 @@ function renderEntry(){
       }
       await savePayments(id, month);
       renderEntry();
-      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+      renderDashboard(); renderPeriodReport(); renderExpenses();
     });
 
     const fileInput = tr.querySelector('.e-shot-input');
@@ -2445,7 +2946,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...existing, screenshot: dataUrl, screenshotPath: shotPath, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderPeriodReport(); renderExpenses();
 
         const flat = flats.find(x=>x.id===id);
         const amtEntered = Number(document.querySelector(`tr[data-id="${id}"] .e-amount`)?.value) || Math.round(computeFlatDue(id, month).dueThisMonth);
@@ -2454,7 +2955,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderPeriodReport(); renderExpenses();
       }catch(e){
         alert('Could not read that image, please try another file.');
       }
@@ -2468,7 +2969,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderPeriodReport(); renderExpenses();
       });
     }
 
@@ -2602,41 +3103,6 @@ function buildPendingReportText(month){
 }
 
 /* ---------- REPORTS TAB ---------- */
-function renderMonthlyReport(){
-  const month = document.getElementById('rpt-month').value || todayMonth();
-  const s = monthStats(month);
-  const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
-  document.getElementById('rpt-monthly-stats').innerHTML = `
-    <div class="stat"><b>${s.total}</b><span>Flats</span></div>
-    <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
-    <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
-    <div class="stat"><b>${pct}%</b><span>Collected</span></div>
-  `;
-  document.getElementById('rpt-monthly-box').textContent = buildMonthlyReportText(month);
-}
-
-function buildMonthlyReportText(month){
-  const s = monthStats(month);
-  const monthLabel = monthLabelOf(month);
-  let lines = [];
-  lines.push(`${settings.societyName || 'JD Blossom Apartment'} — Monthly Report`);
-  lines.push(`Period: ${monthLabel}`);
-  lines.push(`Collected ${inr(s.collected)} of ${inr(s.expected)} expected (${s.expected ? Math.round(s.collected/s.expected*100) : 0}%)`);
-  lines.push('');
-  lines.push('Flat | Owner | Status | Due | Paid | Balance→next | Date | Proof');
-  lines.push('-'.repeat(70));
-  flats.forEach(f=>{
-    const p = getPayment(f.id, month);
-    const due = computeFlatDue(f.id, month);
-    const status = !p.paid ? 'PENDING' : (p.verified ? 'VERIFIED' : 'SUBMITTED');
-    const proof = p.screenshot ? (p.verified?'checked ✓':'uploaded, unverified') : 'none';
-    const bal = due.carryOut;
-    const balText = bal===0 ? '₹0' : inr(Math.abs(bal)) + (bal>0?' owed':' cr.');
-    lines.push(`${f.flatNo} | ${f.owner || '—'} | ${status} | ${inr(due.dueThisMonth)} | ${p.paid ? inr(p.amount||0) : '—'} | ${balText} | ${p.date||'—'} | ${proof}`);
-  });
-  return lines.join('\n');
-}
-
 function currentQuarter(){ return Math.floor(new Date().getMonth()/3)+1; }
 function currentHalf(){ return new Date().getMonth() < 6 ? 1 : 2; }
 
@@ -2712,10 +3178,9 @@ function getPeriodMonthsAndLabelFor(prefix){
 
 function renderPeriodControls(){ renderPeriodControlsFor('rpt-period'); }
 function getPeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('rpt-period'); }
-function renderExpensePeriodControls(){ renderPeriodControlsFor('exp-period'); }
-function getExpensePeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('exp-period'); }
 
 function renderPeriodReport(){
+  renderReportExpenseSummary();
   const {months} = getPeriodMonthsAndLabel();
   let totalExpected = 0, totalCollected = 0;
   const perMonth = months.map(mo=>{
@@ -2782,100 +3247,110 @@ function renderExpenses(){
   const calc = computeExpenseMonth(month);
 
   document.getElementById('exp-opening').value = (data.openingOverride !== null && data.openingOverride !== undefined) ? data.openingOverride : Math.round(calc.autoOpening);
-  document.getElementById('exp-opening-note').textContent = `Auto (carried from last month's balance): ${inr(calc.autoOpening)}`;
+  document.getElementById('exp-opening-note').textContent = `Auto: ${inr(calc.autoOpening)} (last month's balance)`;
   document.getElementById('exp-maint').value = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? data.maintReceivedOverride : Math.round(calc.autoMaint);
-  document.getElementById('exp-maint-note').textContent = `Auto (from this month's ledger): ${inr(calc.autoMaint)}`;
+  document.getElementById('exp-maint-note').textContent = `Auto: ${inr(calc.autoMaint)} (collected this month)`;
+  document.getElementById('exp-opening-reset').style.visibility = (data.openingOverride !== null && data.openingOverride !== undefined) ? 'visible' : 'hidden';
+  document.getElementById('exp-maint-reset').style.visibility = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? 'visible' : 'hidden';
 
   document.getElementById('exp-receipts-stats').innerHTML = `
-    <div class="stat"><b>${inr(calc.opening)}</b><span>Opening bal.</span></div>
-    <div class="stat"><b>${inr(calc.maintReceived)}</b><span>Maint. received</span></div>
     <div class="stat"><b>${inr(calc.totalReceipts)}</b><span>Total receipts</span></div>
+    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
+    <div class="stat"><b style="color:${calc.closing < 0 ? 'var(--red)' : 'var(--green)'}">${inr(calc.closing)}</b><span>Available funds — balance c/f</span></div>
   `;
 
   renderExpenseItems(month, data);
-
-  document.getElementById('exp-payments-total').innerHTML = `
-    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
-  `;
-
-  document.getElementById('exp-balance-box').innerHTML = `
-    <div class="stat" style="flex:1;"><b style="font-size:1.5rem;color:var(--green)">${inr(calc.closing)}</b><span>Available funds for maintenance — balance c/f</span></div>
-  `;
-
-  renderExpenseSummaryTable(month, data, calc);
-
-  document.getElementById('exp-report-output').innerHTML = '';
 }
 
-function renderExpenseSummaryTable(month, data, calc){
-  const monthLabel = monthLabelOf(month);
-  const itemRows = data.items.length
-    ? data.items.map(it=>`
-      <tr class="item-row">
-        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}</td>
-        <td>${it.paidOn ? new Date(it.paidOn).toLocaleDateString('en-IN') : '—'}</td>
-        <td>${inr(it.amount)}</td>
-      </tr>`).join('')
-    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
-
-  document.getElementById('exp-summary-wrap').innerHTML = `
-    <table class="summary-table">
-      <thead>
-        <tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${monthLabel}</th></tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="3" class="section-label">Receipts</td></tr>
-        <tr><td>Balance b/f from last month</td><td></td><td>${inr(calc.opening)}</td></tr>
-        <tr><td>Maintenance Amt Received</td><td></td><td>${inr(calc.maintReceived)}</td></tr>
-        <tr class="total-row receipts-total"><td>Total Receipts (Maintenance Amt)</td><td></td><td>${inr(calc.totalReceipts)}</td></tr>
-
-        <tr><td colspan="3" class="section-label">Payments</td></tr>
-        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
-        ${itemRows}
-        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(calc.totalPayments)}</td></tr>
-
-        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f</td><td>${inr(calc.closing)}</td></tr>
-      </tbody>
-    </table>
-  `;
+const EXPENSE_CATEGORIES = ['Water bill','Power bill','Diesel','Watchman Salary','Security Salary','BBMP Garbage Exp','Water Tank cleaning','Drainage cleaning','Lift maintenance','Repair & Maintenance','Housekeeping','Pest control','Miscellaneous'];
+const PAY_MODES = ['UPI','Cash','Bank Transfer','Cheque'];
+// New expense rows live here until Category, Paid on and Amount are all filled — only then are they saved.
+const expenseDrafts = {}; // month -> [item]
+function expenseMissing(it){
+  const miss = [];
+  if(!String(it.category||'').trim()) miss.push('Category');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(it.paidOn||'')) miss.push('Paid on');
+  if(!(Number(it.amount) > 0)) miss.push('Amount');
+  return miss;
 }
 
 function renderExpenseItems(month, data){
   const wrap = document.getElementById('exp-items-wrap');
-  const CATEGORY_OPTIONS = ['Water bill','Power bill','Diesel','Watchman Salary','Security Salary','BBMP Garbage Exp','Water Tank cleaning','Drainage cleaning','Lift maintenance','Repair & Maintenance','Housekeeping','Pest control','Miscellaneous'];
-  const rows = data.items.map(it=>{
+  const CATEGORY_OPTIONS = EXPENSE_CATEGORIES;
+  const drafts = expenseDrafts[month] || [];
+  const star = '<span style="color:var(--red);font-weight:700;"> *</span>';
+  const rowHtml = (it, isDraft)=>{
     const isCustom = it.category && !CATEGORY_OPTIONS.includes(it.category);
+    const miss = expenseMissing(it);
+    const invalid = miss.length > 0 && (isDraft ? it._touched : true);
     return `
-    <tr data-id="${it.id}">
+    <tr data-id="${it.id}" data-draft="${isDraft?'1':''}" class="${invalid?'ei-invalid':''}">
       <td>
-        <select class="ei-cat-select">
+        <select class="ei-cat-select" aria-required="true">
           <option value="" ${!it.category?'selected':''}>Select…</option>
           ${CATEGORY_OPTIONS.map(c=>`<option value="${escapeHtml(c)}" ${it.category===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}
           <option value="__other__" ${isCustom?'selected':''}>Other (type below)</option>
         </select>
         <input type="text" class="ei-cat-custom" style="margin-top:4px;${isCustom?'':'display:none;'}" value="${isCustom?escapeHtml(it.category||''):''}" placeholder="Custom category">
+        ${invalid ? `<div class="ei-err">${isDraft ? 'Not saved yet — ' : 'Incomplete — '}fill ${miss.join(', ')}</div>` : (isDraft ? '<div class="ei-err" style="color:#8A5A00;">Not saved yet</div>' : '')}
       </td>
-      <td><input type="date" class="ei-date" value="${it.paidOn||''}"></td>
-      <td><input type="number" class="ei-amt" value="${it.amount||0}" min="0"></td>
-      <td><button class="del-btn ei-del" type="button">✕</button></td>
+      <td><input type="date" class="ei-date" value="${it.paidOn||''}" aria-required="true"></td>
+      <td><input type="number" class="ei-amt" value="${(it.amount||it.amount===0)&&Number(it.amount)!==0?it.amount:''}" min="1" placeholder="0" aria-required="true" style="min-width:100px;"></td>
+      <td>
+        <select class="ei-mode">
+          <option value="">—</option>
+          ${PAY_MODES.map(m=>`<option value="${m}" ${it.mode===m?'selected':''}>${m}</option>`).join('')}
+        </select>
+      </td>
+      <td><input type="text" class="ei-comment" value="${escapeHtml(it.comment||'')}" placeholder="Optional note" maxlength="300" style="min-width:180px;"></td>
+      <td><button class="del-btn ei-del" type="button" title="${isDraft?'Discard':'Delete'}">✕</button></td>
     </tr>`;
-  }).join('');
+  };
+  const rows = data.items.map(it=>rowHtml(it,false)).join('') + drafts.map(it=>rowHtml(it,true)).join('');
   wrap.innerHTML = `
+    <p class="note" style="margin:0 0 8px;"><span style="color:var(--red);font-weight:700;">*</span> Category, Paid on and Amount are mandatory. Mode and Comments are optional.</p>
     <table>
-      <thead><tr><th>Category</th><th>Paid on</th><th>Amount (₹)</th><th></th></tr></thead>
-      <tbody id="exp-items-tbody">${rows || '<tr><td colspan="4" style="text-align:center;color:#94A399;">No expenses added yet for this month.</td></tr>'}</tbody>
+      <thead><tr><th>Category${star}</th><th>Paid on${star}</th><th>Amount (₹)${star}</th><th>Mode</th><th>Comments</th><th></th></tr></thead>
+      <tbody id="exp-items-tbody">${rows || '<tr><td colspan="6" style="text-align:center;color:#94A399;">No expenses added yet for this month.</td></tr>'}</tbody>
+      ${data.items.length ? `<tfoot><tr><td colspan="2" style="font-family:'Space Grotesk',sans-serif;font-weight:700;padding-top:10px;">Total (${data.items.length} item${data.items.length===1?'':'s'})</td><td id="exp-items-total" style="font-family:'JetBrains Mono',monospace;font-weight:700;padding-top:10px;">${inr(data.items.reduce((t,it)=>t+(Number(it.amount)||0),0))}</td><td colspan="3"></td></tr></tfoot>` : ''}
     </table>
   `;
 
   wrap.querySelectorAll('#exp-items-tbody tr[data-id]').forEach(tr=>{
     const id = tr.dataset.id;
-    const item = data.items.find(x=>x.id===id);
+    const isDraft = tr.dataset.draft === '1';
+    const list = isDraft ? drafts : data.items;
+    const item = list.find(x=>x.id===id);
     const select = tr.querySelector('.ei-cat-select');
     const custom = tr.querySelector('.ei-cat-custom');
+    const read = ()=>({
+      ...item,
+      category: (select.value === '__other__') ? custom.value.trim() : select.value,
+      paidOn: tr.querySelector('.ei-date').value,
+      amount: Number(tr.querySelector('.ei-amt').value) || 0,
+      mode: tr.querySelector('.ei-mode').value,
+      comment: tr.querySelector('.ei-comment').value.trim()
+    });
     const save = async ()=>{
-      item.category = (select.value === '__other__') ? custom.value.trim() : select.value;
-      item.paidOn = tr.querySelector('.ei-date').value;
-      item.amount = Number(tr.querySelector('.ei-amt').value) || 0;
+      const next = read();
+      const miss = expenseMissing(next);
+      if(miss.length){
+        // never store an incomplete expense — keep what was typed on screen and say what's missing
+        tr.classList.add('ei-invalid');
+        let err = tr.querySelector('.ei-err');
+        if(!err){ err = document.createElement('div'); err.className = 'ei-err'; tr.querySelector('td').appendChild(err); }
+        err.style.color = '';
+        err.textContent = (isDraft ? 'Not saved yet — ' : 'Not saved — ') + 'fill ' + miss.join(', ');
+        if(isDraft) Object.assign(item, next, {_touched:true});
+        return;
+      }
+      delete next._touched;
+      if(isDraft){
+        expenseDrafts[month] = drafts.filter(x=>x.id!==id);
+        data.items.push(next);
+      } else {
+        Object.assign(item, next);
+      }
       await saveExpenses();
       renderExpenses();
     };
@@ -2891,9 +3366,16 @@ function renderExpenseItems(month, data){
     custom.addEventListener('change', save);
     tr.querySelector('.ei-date').addEventListener('change', save);
     tr.querySelector('.ei-amt').addEventListener('change', save);
+    tr.querySelector('.ei-mode').addEventListener('change', save);
+    tr.querySelector('.ei-comment').addEventListener('change', save);
     tr.querySelector('.ei-del').addEventListener('click', async ()=>{
+      if(isDraft){
+        expenseDrafts[month] = drafts.filter(x=>x.id!==id);
+        renderExpenses();
+        return;
+      }
+      if(!(await customConfirm('Delete this expense?'))) return;
       data.items = data.items.filter(x=>x.id!==id);
-
       await saveExpenses();
       renderExpenses();
     });
@@ -2902,10 +3384,11 @@ function renderExpenseItems(month, data){
 
 async function addExpenseItem(){
   const month = document.getElementById('exp-month').value || todayMonth();
-  const data = getExpenseData(month);
-  data.items.push({id:'it'+Date.now()+Math.floor(Math.random()*1000), category:'', paidOn:'', amount:0});
-  await saveExpenses();
+  getExpenseData(month);
+  (expenseDrafts[month] = expenseDrafts[month] || []).push({id:'it'+Date.now()+Math.floor(Math.random()*1000), category:'', paidOn:'', amount:0, mode:'', comment:''});
   renderExpenses();
+  const rows = document.querySelectorAll('#exp-items-tbody tr[data-draft="1"]');
+  if(rows.length) rows[rows.length-1].querySelector('.ei-cat-select').focus();
 }
 
 async function saveExpenseOpening(){
@@ -2939,132 +3422,157 @@ async function resetExpenseMaint(){
   renderExpenses();
 }
 
-function generateExpenseReport(){
-  const month = document.getElementById('exp-month').value || todayMonth();
-  const text = buildExpenseReportText(month);
-  const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
-  document.getElementById('exp-report-output').innerHTML = `
-    <div class="report-box">${escapeHtml(text)}</div>
-    <div class="actions-row">
-      <button class="wa" id="exp-wa-btn" type="button">Open in WhatsApp</button>
-      <button class="ghost" id="exp-copy-btn" type="button">Copy text</button>
-    </div>
-  `;
-  document.getElementById('exp-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
-  document.getElementById('exp-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-copy-btn'));
-}
-
-function buildExpenseReportText(month){
-  const calc = computeExpenseMonth(month);
-  const data = getExpenseData(month);
-  const monthLabel = monthLabelOf(month);
-  let lines = [];
-  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
-  lines.push(`Maintenance Amt Summary — ${monthLabel}`);
-  lines.push('');
-  lines.push('Receipts:');
-  lines.push(`Balance b/f from last month: ${inr(calc.opening)}`);
-  lines.push(`Maintenance Amt Received: ${inr(calc.maintReceived)}`);
-  lines.push(`Total Receipts: ${inr(calc.totalReceipts)}`);
-  lines.push('');
-  lines.push('Payments:');
-  if(data.items.length === 0){
-    lines.push('No expenses recorded this month.');
-  } else {
-    data.items.forEach(it=>{
-      lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}`);
-    });
-  }
-  lines.push('');
-  lines.push(`Total Payments: ${inr(calc.totalPayments)}`);
-  lines.push('');
-  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(calc.closing)}`);
-  return lines.join('\n');
-}
-
-/* ---------- EXPENSES: time-range summary ---------- */
-function generateExpenseRangeReport(){
-  const out = document.getElementById('exp-range-output');
-  const {months, label} = getExpensePeriodMonthsAndLabel();
-  if(!months || months.length === 0){
-    out.innerHTML = '<p class="note err">Pick a valid period — check that the "from" month is on or before the "to" month.</p>';
-    return;
-  }
+/* ---------- REPORTS: expense summary for the selected period (reuses the monthly accounting) ---------- */
+function buildExpenseRangeSummary(months){
+  if(!months || !months.length) return null;
   const from = months[0], to = months[months.length-1];
-  const openingCalc = computeExpenseMonth(from);
-  const closingCalc = computeExpenseMonth(to);
-  let totalMaint = 0, totalPayments = 0;
-  const categoryTotals = {};
+  const first = computeExpenseMonth(from);
+  const last = computeExpenseMonth(to);
+  let maint = 0, payments = 0;
+  const items = [];
+  const byCat = {};
   months.forEach(mo=>{
     const c = computeExpenseMonth(mo);
-    totalMaint += c.maintReceived;
-    const d = getExpenseData(mo);
-    d.items.forEach(it=>{
+    maint += c.maintReceived;
+    (getExpenseData(mo).items || []).forEach(it=>{
       const amt = Number(it.amount) || 0;
-      totalPayments += amt;
+      payments += amt;
+      items.push({month: mo, ...it, amount: amt});
       const cat = it.category || '(uncategorised)';
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+      byCat[cat] = (byCat[cat] || 0) + amt;
     });
   });
-  const openingBal = openingCalc.opening;
-  const closingBal = closingCalc.closing;
-  const totalReceipts = openingBal + totalMaint;
-  const catKeys = Object.keys(categoryTotals).sort((a,b)=>categoryTotals[b]-categoryTotals[a]);
-  const periodLabel = label;
+  items.sort((x,y)=> (x.paidOn||x.month).localeCompare(y.paidOn||y.month));
+  return {from, to, months, opening: first.opening, maint, receipts: first.opening + maint, payments, closing: last.closing, items, byCat};
+}
+const fmtDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-IN') : '—';
 
-  const catRows = catKeys.length
-    ? catKeys.map(cat=>`<tr class="item-row"><td>${escapeHtml(cat)}</td><td>${inr(categoryTotals[cat])}</td></tr>`).join('')
-    : `<tr class="item-row"><td colspan="2" style="text-align:center;color:#94A399;">No expenses recorded in this period.</td></tr>`;
-
-  const tableHtml = `
-    <table class="summary-table">
-      <thead><tr><th colspan="2">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${periodLabel}</th></tr></thead>
+function renderReportExpenseSummary(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  const box = document.getElementById('rpt-exp-summary');
+  const sum = buildExpenseRangeSummary(months);
+  if(!sum){ box.innerHTML = '<p class="note err">Pick a valid period — the "from" month must be on or before the "to" month.</p>'; return; }
+  const multi = months.length > 1;
+  const itemRows = sum.items.length
+    ? sum.items.map(it=>`
+      <tr class="item-row">
+        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}${(it.comment || it.mode) ? `<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">${escapeHtml([it.mode, it.comment].filter(Boolean).join(' · '))}</div>` : ''}</td>
+        <td>${fmtDate(it.paidOn)}</td>
+        <td>${inr(it.amount)}</td>
+      </tr>`).join('')
+    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
+  const catKeys = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]);
+  const catRows = (multi && catKeys.length) ? `
+        <tr><td colspan="3" class="section-label">Payments by category</td></tr>
+        ${catKeys.map(c=>`<tr class="item-row"><td>${escapeHtml(c)}</td><td></td><td>${inr(sum.byCat[c])}</td></tr>`).join('')}` : '';
+  box.innerHTML = `
+    <table class="summary-table" id="rpt-exp-table">
+      <thead><tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${escapeHtml(label)}</th></tr></thead>
       <tbody>
-        <tr><td colspan="2" class="section-label">Receipts</td></tr>
-        <tr><td>Opening balance (${monthLabelOf(from)})</td><td>${inr(openingBal)}</td></tr>
-        <tr><td>Maintenance Amt Received (total)</td><td>${inr(totalMaint)}</td></tr>
-        <tr class="total-row receipts-total"><td>Total Receipts</td><td>${inr(totalReceipts)}</td></tr>
-
-        <tr><td colspan="2" class="section-label">Payments by category</td></tr>
+        <tr><td colspan="3" class="section-label">Receipts</td></tr>
+        <tr><td>Balance b/f${multi ? ` (${monthLabelOf(sum.from)})` : ' from last month'}</td><td></td><td>${inr(sum.opening)}</td></tr>
+        <tr><td>Maintenance Amt Received${multi ? ' (total)' : ''}</td><td></td><td>${inr(sum.maint)}</td></tr>
+        <tr class="total-row receipts-total"><td>Total Receipts</td><td></td><td>${inr(sum.receipts)}</td></tr>
+        <tr><td colspan="3" class="section-label">Payments</td></tr>
+        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
+        ${itemRows}
+        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(sum.payments)}</td></tr>
         ${catRows}
-        <tr class="total-row payments-total"><td>Total Payments</td><td>${inr(totalPayments)}</td></tr>
-
-        <tr class="total-row balance-row"><td>(A) Available Funds — Closing Balance (${monthLabelOf(to)})</td><td>${inr(closingBal)}</td></tr>
+        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f${multi ? ` (${monthLabelOf(sum.to)})` : ''}</td><td>${inr(sum.closing)}</td></tr>
       </tbody>
-    </table>
-  `;
+    </table>`;
+  document.getElementById('rpt-exp-output').innerHTML = '';
+}
 
-  let lines = [];
+function expenseSummaryText(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  const sum = buildExpenseRangeSummary(months);
+  if(!sum) return '';
+  const lines = [];
   lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
-  lines.push(`Expense Summary — ${periodLabel}`);
+  lines.push(`Maintenance Amt Summary — ${label}`);
   lines.push('');
   lines.push('Receipts:');
-  lines.push(`Opening balance (${monthLabelOf(from)}): ${inr(openingBal)}`);
-  lines.push(`Maintenance Amt Received (total): ${inr(totalMaint)}`);
-  lines.push(`Total Receipts: ${inr(totalReceipts)}`);
+  lines.push(`Balance b/f: ${inr(sum.opening)}`);
+  lines.push(`Maintenance Amt Received: ${inr(sum.maint)}`);
+  lines.push(`Total Receipts: ${inr(sum.receipts)}`);
   lines.push('');
-  lines.push('Payments by category:');
-  if(catKeys.length === 0){
-    lines.push('No expenses recorded in this period.');
-  } else {
-    catKeys.forEach(cat=>lines.push(`${cat}: ${inr(categoryTotals[cat])}`));
-  }
+  lines.push('Payments:');
+  if(!sum.items.length) lines.push('No expenses recorded.');
+  sum.items.forEach(it=> lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}${it.comment ? ' (' + it.comment + ')' : ''}`));
   lines.push('');
-  lines.push(`Total Payments: ${inr(totalPayments)}`);
+  lines.push(`Total Payments: ${inr(sum.payments)}`);
   lines.push('');
-  lines.push(`(A) Available Funds — Closing Balance (${monthLabelOf(to)}): ${inr(closingBal)}`);
-  const text = lines.join('\n');
-
+  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(sum.closing)}`);
+  return lines.join('\n');
+}
+function showExpenseWhatsApp(){
+  renderPeriodReport();
+  const text = expenseSummaryText();
   const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
-  out.innerHTML = `
-    ${tableHtml}
-    <div class="actions-row" style="margin-top:12px;">
-      <button class="wa" id="exp-range-wa-btn" type="button">Open in WhatsApp</button>
-      <button class="ghost" id="exp-range-copy-btn" type="button">Copy text</button>
-    </div>
-  `;
-  document.getElementById('exp-range-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
-  document.getElementById('exp-range-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-range-copy-btn'));
+  document.getElementById('rpt-exp-output').innerHTML = `
+    <div class="report-box">${escapeHtml(text)}</div>
+    <div class="actions-row">
+      <button class="wa" id="rpt-wa-open" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="rpt-wa-copy" type="button">Copy text</button>
+    </div>`;
+  document.getElementById('rpt-wa-open').onclick = ()=>window.open(waLink, '_blank');
+  document.getElementById('rpt-wa-copy').onclick = ()=>copyText(text, 'rpt-wa-copy');
+}
+
+// rows shared by the CSV and Excel downloads (comments included)
+function expenseExportData(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  const sum = buildExpenseRangeSummary(months);
+  if(!sum) return null;
+  const summary = [
+    ['Society', settings.societyName || 'JD Blossom Apartment'],
+    ['Period', label],
+    ['From month', sum.from], ['To month', sum.to],
+    ['Balance b/f', sum.opening],
+    ['Maintenance received', sum.maint],
+    ['Total receipts', sum.receipts],
+    ['Total payments', sum.payments],
+    ['Available funds (balance c/f)', sum.closing]
+  ];
+  const itemsHead = ['Month', 'Paid on', 'Category', 'Mode', 'Comments', 'Amount'];
+  const items = sum.items.map(it=>[it.month, it.paidOn || '', it.category || '', it.mode || '', it.comment || '', it.amount]);
+  const cats = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]).map(c=>[c, sum.byCat[c]]);
+  const maint = months.map(mo=>{ const s = monthStats(mo); return [mo, s.paidCount, s.pendingCount, s.collected, s.expected]; });
+  const fileBase = `Expense_summary_${sum.from}${sum.to !== sum.from ? '_to_' + sum.to : ''}`;
+  return {summary, itemsHead, items, cats, maint, fileBase};
+}
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function downloadExpenseCsv(){
+  renderPeriodReport();
+  const d = expenseExportData();
+  if(!d) return;
+  const rows = [...d.summary, [], d.itemsHead, ...d.items, [], ['Payments by category', 'Amount'], ...d.cats];
+  const csv = '﻿' + rows.map(r=>r.map(v=>csvEscape(v ?? '')).join(',')).join('\r\n');
+  downloadBlob(new Blob([csv], {type:'text/csv;charset=utf-8;'}), d.fileBase + '.csv');
+}
+async function downloadExpenseXlsx(){
+  renderPeriodReport();
+  const d = expenseExportData();
+  if(!d) return;
+  const btn = document.getElementById('rpt-xlsx-btn');
+  try{
+    btn.disabled = true;
+    const XLSX = await loadXlsx();
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...d.summary, [], ['Payments by category', 'Amount'], ...d.cats]), 'Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([d.itemsHead, ...d.items]), 'Expenses');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Month', 'Paid flats', 'Pending flats', 'Collected', 'Expected'], ...d.maint]), 'Maintenance');
+    XLSX.writeFile(wb, d.fileBase + '.xlsx');
+  }catch(e){
+    showSyncError("Couldn't create the Excel file — check your internet connection and try again.");
+  }finally{ btn.disabled = false; }
 }
 
 /* ---------- SETTINGS ---------- */
@@ -3083,7 +3591,7 @@ async function saveSettingsHandler(){
   document.getElementById('settings-saved-note').textContent = applyAll ? `Saved — applied ${inr(settings.defaultAmount)} to all ${flats.length} flats.` : 'Saved.';
   document.getElementById('set-amount-applyall').checked = false;
   setTimeout(()=>{ document.getElementById('settings-saved-note').textContent=''; }, 3000);
-  renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+  renderDashboard(); renderEntry(); renderPeriodReport(); renderExpenses();
 }
 
 /* ---------- PROFILE TAB ---------- */
