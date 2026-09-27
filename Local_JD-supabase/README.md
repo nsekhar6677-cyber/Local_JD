@@ -86,15 +86,26 @@ screen differs by more than 0.1 % of pixels or scrolls sideways.
   duplicates (same month + category + date + amount) skipped unless ticked.
 * **Expense items** now have optional Mode and Comments; Category, Paid on and Amount are mandatory.
 * **Screenshot clean-up** — Edge Function `jdb-cleanup`, called daily at 00:30 IST by pg_cron.
-  Keeps the current month; previous month removed once verified (all of it from the 10th);
-  older months always. Clears only `payments.screenshot_path`; runs are logged in `jdb.cleanup_log`
+  Deletes screenshots uploaded **more than 30 days ago** (from Storage and the dashboard);
+  anything newer is never touched. Clears only `payments.screenshot_path` — amounts, status,
+  verification and history stay. Runs are logged in `jdb.cleanup_log`
   (last run shown in Settings → Run diagnostics).
+
+## Reports & Expenses
+
+* **Reports** — one period picker (monthly / quarterly / half-yearly / annual / custom from–to)
+  drives both the maintenance collection and the **Expense summary** (receipts, itemised payments
+  with mode + comments, category totals, balance c/f). Buttons: Print / Save as PDF (prints only
+  the summary), Download CSV, Download Excel (Summary, Expenses, Maintenance sheets), WhatsApp text.
+* **Expenses** — Receipts (balance b/f, maintenance received, totals incl. *Available funds —
+  balance carried forward*), expense items (add / edit / delete with comments), bulk upload.
 
 ### Applying to a Supabase project (test first, then live)
 1. Run `supabase/migrations/20260928000000_bulk_upload_and_cleanup.sql`.
 2. `select vault.create_secret('https://<project-ref>.supabase.co', 'jdb_project_url');`
 3. Run `supabase/migrations/20260928000100_cleanup_schedule.sql` (turns on pg_cron + pg_net).
-4. Deploy `supabase/functions/jdb-cleanup` with JWT verification **off** (it checks its own key).
+4. Run `supabase/migrations/20260929000000_cleanup_30_days.sql` (30-day rule).
+5. Deploy `supabase/functions/jdb-cleanup` with JWT verification **off** (it checks its own key).
 
 ## Security notes
 

@@ -1,12 +1,11 @@
-// jdb-cleanup — removes payment screenshots from past months.
+// jdb-cleanup — removes payment screenshots older than 30 days.
 //
 // Called by the database scheduler (pg_cron + pg_net) every day at 00:30 IST.
 // Auth: header `x-cleanup-key` must match the Vault secret `jdb_cleanup_key`.
 // What gets removed is decided in SQL (public.jdb_cleanup_prepare):
-//   * current month: never
-//   * previous month: verified payments at once, the rest from the 10th
-//   * older months: always
-//   * unreferenced files of past months
+//   * screenshots uploaded more than 30 days ago (and their database links)
+//   * unreferenced files older than 30 days
+// Anything uploaded within the last 30 days is never touched.
 // Order: database links are cleared first, then files deleted, so a failed file
 // delete only leaves an unreferenced file that the next run removes.
 // Only payments.screenshot_path is cleared — amounts, status, verification and
@@ -45,8 +44,13 @@ Deno.serve(async (req) => {
     ...(prep.rows ?? []).map((r: { path: string }) => r.path),
     ...(prep.orphans ?? []),
   ];
-  // last safety net: never delete a current-month file or anything not matching our naming
-  const paths = [...new Set(candidates)].filter((p) => PATH_RE.test(p) && p.split("/")[1] < cur);
+  // last safety net: only our own naming, and never a file whose name says it is under 30 days old
+  const minAgeMs = 30 * 24 * 3600 * 1000;
+  const paths = [...new Set(candidates)].filter((p) => {
+    if (!PATH_RE.test(p)) return false;
+    const ts = Number((p.split("/")[2].match(/^(\d{13})/) ?? [])[1]);
+    return !ts || Date.now() - ts >= minAgeMs;
+  });
 
   let deleted = 0;
   const failed: string[] = [];

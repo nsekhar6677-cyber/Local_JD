@@ -62,10 +62,13 @@ test('expense: Category, Paid on and Amount are mandatory; comment is optional a
   await expect(saved.locator('.ei-comment')).toHaveValue('Generator oil top-up');
   const it = (await sql(request, `select data->'items'->0 it from jdb.expenses where month='2026-09'`))[0].it;
   expect(it).toMatchObject({ category: 'Diesel', paidOn: '2026-09-12', amount: 750, comment: 'Generator oil top-up' });
-  // shown in the monthly summary and the WhatsApp text
-  await expect(page.locator('#exp-summary-wrap')).toContainText('Generator oil top-up');
-  await page.click('#exp-report-btn');
-  await expect(page.locator('#exp-report-output')).toContainText('(Generator oil top-up)');
+  // shown in the Reports expense summary and its WhatsApp text
+  await tab(page, 'reports');
+  await page.fill('#rpt-period-month', '2026-09'); await page.dispatchEvent('#rpt-period-month', 'change');
+  await expect(page.locator('#rpt-exp-summary')).toContainText('Generator oil top-up');
+  await page.click('#rpt-wa-btn');
+  await expect(page.locator('#rpt-exp-output')).toContainText('(Generator oil top-up)');
+  await tab(page, 'expenses');
   // clearing a mandatory field on a saved row is refused; the stored value stays
   await saved.locator('.ei-amt').fill(''); await saved.locator('.ei-amt').press('Tab');
   await expect(saved.locator('.ei-err')).toContainText('Not saved — fill Amount');
@@ -101,8 +104,9 @@ test('expense bulk upload: preview, validation, month split, duplicates, import'
   expect(w).toMatchObject({ paidOn: '2026-07-29', amount: 15000, comment: 'Deepak', mode: 'Cash' });
   // shows in that month's summary
   await page.fill('#exp-month', '2026-08'); await page.dispatchEvent('#exp-month', 'change');
-  await expect(page.locator('#exp-summary-wrap')).toContainText('Terrace pipe repair');
-  await expect(page.locator('#exp-payments-total')).toContainText('63,754');
+  expect(await page.locator('#exp-items-tbody .ei-comment').evaluateAll(els => els.map(e => e.value))).toContain('Terrace pipe repair');
+  await expect(page.locator('#exp-items-total')).toContainText('63,754');
+  await expect(page.locator('#exp-receipts-stats')).toContainText('63,754');
   // uploading the same file again imports nothing by default
   await page.setInputFiles('#eb-file', EXPENSE_FILE());
   await expect(page.locator('#eb-preview .stats').first()).toContainText('0Will import');
@@ -152,60 +156,70 @@ test('maintenance bulk upload: preview, validation, arrears, import; admin and o
   await expect(page.locator('#mb-preview .stats').first()).toContainText('1Will import');
 });
 
-test('screenshot clean-up removes only past months and keeps every payment detail', async ({ page, request }, testInfo) => {
+test('screenshot clean-up removes only screenshots older than 30 days and keeps every payment detail', async ({ page, request }, testInfo) => {
   only(testInfo);
-  // current-month screenshot from an owner
+  // fresh screenshot from an owner (uploaded now)
   await openApp(page); await loginOwner(page, { flatId: 'id3', pin: '1003' });
   await page.selectOption('#my-pay-mode', 'UPI');
   await ownerUploadShot(page);
   await page.click('#my-mark-paid-btn'); await settle(page);
   const cur = (await sql(request, `select month from jdb.payments where flat_id='id3'`))[0].month;
   const [y, m] = cur.split('-').map(Number);
-  const prev = new Date(y, m - 2, 1); const prevM = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
-  const old = new Date(y, m - 3, 1); const oldM = `${old.getFullYear()}-${String(old.getMonth() + 1).padStart(2, '0')}`;
-  // past-month rows pointing at files (verified previous month, unverified previous month, older month) + an orphan
+  const mk = back => { const t = new Date(y, m - 1 - back, 1); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; };
+  const prevM = mk(1), oldM = mk(2);
+  const gone = `${Date.now() - 40 * 86400000}_x.jpg`; // file already removed; age read from the file name
   await sql(request, `
-    insert into storage.objects(bucket_id, name) values
-      ('jdb-screenshots','id4/${prevM}/a.jpg'), ('jdb-screenshots','id5/${prevM}/b.jpg'),
-      ('jdb-screenshots','id6/${oldM}/c.jpg'), ('jdb-screenshots','id7/${oldM}/orphan.jpg'),
-      ('other-bucket','id6/${oldM}/c.jpg')`);
+    insert into storage.objects(bucket_id, name, created_at) values
+      ('jdb-screenshots','id4/${prevM}/a.jpg', now() - interval '45 days'),
+      ('jdb-screenshots','id5/${prevM}/b.jpg', now() - interval '10 days'),
+      ('jdb-screenshots','id6/${oldM}/c.jpg',  now() - interval '31 days'),
+      ('jdb-screenshots','id7/${oldM}/orphan.jpg', now() - interval '60 days'),
+      ('jdb-screenshots','id9/${oldM}/new-orphan.jpg', now() - interval '5 days'),
+      ('other-bucket','id6/${oldM}/c.jpg', now() - interval '90 days')`);
   await sql(request, `
     insert into jdb.payments(flat_id, month, data, screenshot_path) values
       ('id4','${prevM}','{"paid":true,"amount":2000,"verified":true,"mode":"UPI"}','id4/${prevM}/a.jpg'),
       ('id5','${prevM}','{"paid":true,"amount":2000,"verified":false,"mode":"UPI"}','id5/${prevM}/b.jpg'),
-      ('id6','${oldM}','{"paid":true,"amount":1800,"verified":false,"mode":"Cash"}','id6/${oldM}/c.jpg')`);
+      ('id6','${oldM}','{"paid":true,"amount":1800,"verified":false,"mode":"Cash"}','id6/${oldM}/c.jpg'),
+      ('id8','${oldM}','{"paid":true,"amount":2000,"verified":true,"mode":"UPI"}','id8/${oldM}/${gone}')`);
   const run = async (body) => (await request.post(`${API}/functions/v1/jdb-cleanup`, { headers: { 'x-cleanup-key': 'test-cleanup-key' }, data: body })).json();
-  // wrong key is refused
   expect((await request.post(`${API}/functions/v1/jdb-cleanup`, { headers: { 'x-cleanup-key': 'nope' }, data: {} })).status()).toBe(401);
+  const now = new Date().toISOString();
   // dry run changes nothing
-  const dry = await run({ dryRun: true, now: `${cur}-02T10:00:00+05:30` });
+  const dry = await run({ dryRun: true, now });
   expect(dry.rowsCleared).toBe(0);
-  expect((await sql(request, `select count(screenshot_path)::int c from jdb.payments`))[0].c).toBe(4);
-  // on the 2nd: verified previous month + older month + orphan go; unverified previous month stays (grace until the 10th)
-  const r1 = await run({ dryRun: false, now: `${cur}-02T10:00:00+05:30` });
-  expect(r1.rowsCleared).toBe(2);
+  expect((await sql(request, `select count(screenshot_path)::int c from jdb.payments`))[0].c).toBe(5);
+  // today: the 45-, 31- and 40-day-old screenshots go; the 10-day-old one (last month) and today's stay
+  const r1 = await run({ dryRun: false, now });
+  expect(r1.rowsCleared).toBe(3);
   let rows = await sql(request, `select flat_id, month, screenshot_path, data from jdb.payments order by flat_id`);
   const by = id => rows.find(r => r.flat_id === id);
   expect(by('id4').screenshot_path).toBeNull();
   expect(by('id4').data).toMatchObject({ paid: true, amount: 2000, verified: true, mode: 'UPI' }); // details untouched
-  expect(by('id5').screenshot_path).toBe(`id5/${prevM}/b.jpg`);
   expect(by('id6').screenshot_path).toBeNull();
-  expect(by('id6').data).toMatchObject({ amount: 1800, mode: 'Cash' });
-  expect(by('id3').screenshot_path).toMatch(new RegExp(`^id3/${cur}/`)); // current month kept
-  const objs = (await sql(request, `select bucket_id, name from storage.objects order by name`)).map(o => o.bucket_id + ':' + o.name);
-  expect(objs).toContain(`other-bucket:id6/${oldM}/c.jpg`); // other buckets never touched
+  expect(by('id6').data).toMatchObject({ paid: true, amount: 1800, mode: 'Cash' });
+  expect(by('id8').screenshot_path).toBeNull();
+  expect(by('id5').screenshot_path).toBe(`id5/${prevM}/b.jpg`);
+  expect(by('id3').screenshot_path).toMatch(/^id3\//);
+  let objs = (await sql(request, `select bucket_id, name from storage.objects order by name`)).map(o => o.bucket_id + ':' + o.name);
+  expect(objs).toContain(`other-bucket:id6/${oldM}/c.jpg`);          // other buckets never touched
+  expect(objs).toContain(`jdb-screenshots:id9/${oldM}/new-orphan.jpg`); // <30 days: kept
+  expect(objs).toContain(`jdb-screenshots:id5/${prevM}/b.jpg`);
   expect(objs).not.toContain(`jdb-screenshots:id7/${oldM}/orphan.jpg`);
-  // from the 10th the unverified previous-month screenshot goes too
-  const r2 = await run({ dryRun: false, now: `${cur}-10T10:00:00+05:30` });
+  expect(objs).not.toContain(`jdb-screenshots:id4/${prevM}/a.jpg`);
+  // 25 days later the (then 35-day-old) screenshot goes too; today's upload is still < 30 days
+  const later = new Date(Date.now() + 25 * 86400000).toISOString();
+  const r2 = await run({ dryRun: false, now: later });
   expect(r2.rowsCleared).toBe(1);
-  rows = await sql(request, `select flat_id, screenshot_path from jdb.payments order by flat_id`);
+  rows = await sql(request, `select flat_id, screenshot_path, data from jdb.payments order by flat_id`);
   expect(rows.find(r => r.flat_id === 'id5').screenshot_path).toBeNull();
   expect(rows.find(r => r.flat_id === 'id3').screenshot_path).not.toBeNull();
-  // owner still sees the current screenshot; history rows are unchanged in count
-  expect((await sql(request, `select count(*)::int c from jdb.payments`))[0].c).toBe(4);
-  const logs = await sql(request, `select dry_run, rows_cleared from jdb.cleanup_log order by id`);
-  expect(logs.map(l => l.rows_cleared)).toEqual([0, 2, 1]);
-  // diagnostics show the last run
+  // no payment row is ever removed
+  expect(rows.length).toBe(5);
+  expect(rows.find(r => r.flat_id === 'id5').data).toMatchObject({ paid: true, amount: 2000, mode: 'UPI' });
+  const logs = await sql(request, `select rows_cleared from jdb.cleanup_log order by id`);
+  expect(logs.map(l => l.rows_cleared)).toEqual([0, 3, 1]);
+  // admin dashboard no longer offers the removed screenshot, but the payment stays
   await page.goto('/'); await openApp(page); await loginAdmin(page); await tab(page, 'settings');
   await page.click('#run-diagnostics-btn');
   await expect(page.locator('#diagnostics-output')).toContainText('Last screenshot clean-up');

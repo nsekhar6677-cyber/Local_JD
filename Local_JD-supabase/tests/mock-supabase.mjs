@@ -126,7 +126,12 @@ const server = http.createServer(async (req, res) => {
       const prep = await callRpc('jdb_cleanup_prepare', { p_dry_run: dryRun, ...(body.now ? { p_now: body.now } : {}) }, 'service_role');
       const cur = prep.currentMonth;
       const re = /^[A-Za-z0-9_-]+\/\d{4}-\d{2}\/[^/]+$/;
-      const paths = [...new Set([...(prep.rows || []).map(r => r.path), ...(prep.orphans || [])])].filter(p => re.test(p) && p.split('/')[1] < cur);
+      const nowMs = body.now ? new Date(body.now).getTime() : Date.now();
+      const paths = [...new Set([...(prep.rows || []).map(r => r.path), ...(prep.orphans || [])])].filter(p => {
+        if (!re.test(p)) return false;
+        const ts = Number((p.split('/')[2].match(/^(\d{13})/) || [])[1]);
+        return !ts || nowMs - ts >= 30 * 24 * 3600 * 1000;
+      });
       let deleted = 0;
       if (!dryRun) for (const p of paths) { if (files.delete(p)) deleted++; await q(() => db.query(`delete from storage.objects where bucket_id='jdb-screenshots' and name=$1`, [p])); }
       const summary = { dryRun, currentMonth: cur, rowsCleared: prep.rowsCleared || 0, filesDeleted: deleted, filesFailed: 0, details: { candidates: paths.length, sample: paths.slice(0, 20) } };
@@ -151,7 +156,11 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { rows: r.rows });
     }
     if (url.pathname === '/__reset') {
-      await q(async () => { await db.exec('drop schema jdb cascade; delete from storage.objects;'); await migrate(); });
+      await q(async () => { await db.exec(`drop schema jdb cascade; delete from storage.objects;
+        do $$ declare r record; begin
+          for r in select p.oid::regprocedure sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'jdb\\_%' loop
+            execute 'drop function ' || r.sig || ' cascade';
+          end loop; end $$;`); await migrate(); });
       files.clear(); signed.clear(); delayMs = 0;
       return send(res, 200, { ok: true });
     }

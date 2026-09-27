@@ -239,8 +239,34 @@
   .summary-table td:nth-child(3){text-align:right;}
   @media print{
     body *{visibility:hidden;}
-    #exp-summary-wrap, #exp-summary-wrap *{visibility:visible;}
-    #exp-summary-wrap{position:absolute;left:0;top:0;width:100%;}
+    #rpt-exp-print, #rpt-exp-print *{visibility:visible;}
+    #rpt-exp-print{position:absolute;left:0;top:0;width:100%;}
+    #rpt-exp-summary{overflow:visible !important;}
+  }
+  /* Expenses → Receipts: stacks cleanly on phones, two columns from tablet width */
+  .exp-receipts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:14px;}
+  .exp-field{min-width:0;}
+  .exp-field input{width:100%;}
+  .exp-auto{display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:.76rem;color:#4E6154;line-height:1.4;}
+  .exp-auto .link-btn{width:auto;padding:4px 0;min-height:28px;text-align:right;}
+  .stats.exp-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0;}
+  .stats.exp-totals .stat{min-width:0;}
+  .stats.exp-totals .stat b{overflow-wrap:anywhere;font-size:1.15rem;}
+  .exp-bulk{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;}
+  .exp-bulk summary{cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.86rem;padding:6px 0;min-height:36px;}
+  @media (max-width:600px){
+    .exp-receipts-grid{grid-template-columns:1fr;}
+    .stats.exp-totals{grid-template-columns:1fr;}
+    .stats.exp-totals .stat{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:12px 14px;}
+    .stats.exp-totals .stat b{font-size:1.05rem;order:2;white-space:nowrap;overflow-wrap:normal;flex-shrink:0;}
+    .stats.exp-totals .stat span{order:1;}
+    #rpt-period-stats .stat{min-width:45%;}
+    #rpt-exp-table{font-size:.8rem;}
+    #rpt-exp-table th, #rpt-exp-table td{padding:7px 6px;}
+    #rpt-exp-table tr.item-row td:first-child{padding-left:10px;}
+    #rpt-exp-table td:nth-child(2){white-space:nowrap;font-size:.74rem;}
+    #rpt-exp-table td:last-child{white-space:nowrap;}
+    #rpt-exp-table tr.balance-row td{font-size:.88rem;padding:12px 6px;}
   }
 
   .note{font-size:.78rem;color:#4E6154;line-height:1.5;margin-top:6px;}
@@ -768,42 +794,43 @@
   <!-- ===== ADMIN: REPORTS ===== -->
   <section id="tab-reports">
     <div class="card">
-      <h2>Monthly report</h2>
+      <h2>Maintenance &amp; expense report</h2>
+      <p class="note">Choose a period — the maintenance collection and the expense summary below both follow it.</p>
       <div class="row">
         <div>
-          <label for="rpt-month">Month</label>
-          <input type="month" id="rpt-month">
-        </div>
-      </div>
-      <div id="rpt-monthly-stats" class="stats"></div>
-      <div class="report-box" id="rpt-monthly-box"></div>
-      <div class="actions-row">
-        <button class="ghost" id="copy-monthly-btn" type="button">Copy report</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Period report</h2>
-      <p class="note">Pick a report type — the fields below adjust to match.</p>
-      <div class="row">
-        <div>
-          <label for="rpt-period-type">Report type</label>
+          <label for="rpt-period-type">Period</label>
           <select id="rpt-period-type">
-            <option value="monthly">Monthly</option>
+            <option value="monthly" selected>Monthly</option>
             <option value="quarterly">Quarterly</option>
             <option value="halfyearly">Half-yearly</option>
-            <option value="annually" selected>Annually</option>
-            <option value="custom">Custom time range</option>
+            <option value="annually">Annually</option>
+            <option value="custom">Custom range (from – to month)</option>
           </select>
         </div>
       </div>
       <div class="row" id="rpt-period-controls"></div>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="rpt-period-btn" type="button">Generate report</button>
-      </div>
-      <div id="rpt-period-stats" class="stats" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Maintenance collection</h2>
+      <div id="rpt-period-stats" class="stats"></div>
       <div id="rpt-period-bars" style="margin-top:6px;"></div>
+      <div class="actions-row">
+        <button class="ghost" id="rpt-period-btn" type="button">Show collection details</button>
+      </div>
       <div id="rpt-period-output" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Expense summary</h2>
+      <div id="rpt-exp-print"><div id="rpt-exp-summary" style="overflow-x:auto;"></div></div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="rpt-print-btn" type="button">Print / Save as PDF</button>
+        <button class="ghost" id="rpt-csv-btn" type="button">Download CSV</button>
+        <button class="ghost" id="rpt-xlsx-btn" type="button">Download Excel</button>
+        <button class="ghost" id="rpt-wa-btn" type="button">WhatsApp text</button>
+      </div>
+      <div id="rpt-exp-output" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -817,90 +844,38 @@
         </div>
       </div>
       <h2>Receipts</h2>
-      <div class="row">
-        <div>
+      <div class="exp-receipts-grid">
+        <div class="exp-field">
           <label for="exp-opening">Balance b/f from last month (₹)</label>
-          <input type="number" id="exp-opening">
-          <p class="note" id="exp-opening-note"></p>
-          <button class="link-btn" id="exp-opening-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
+          <input type="number" id="exp-opening" inputmode="numeric">
+          <div class="exp-auto"><span id="exp-opening-note"></span><button class="link-btn" id="exp-opening-reset" type="button">Reset to auto</button></div>
         </div>
-        <div>
+        <div class="exp-field">
           <label for="exp-maint">Maintenance amt received (₹)</label>
-          <input type="number" id="exp-maint" min="0">
-          <p class="note" id="exp-maint-note"></p>
-          <button class="link-btn" id="exp-maint-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
+          <input type="number" id="exp-maint" min="0" inputmode="numeric">
+          <div class="exp-auto"><span id="exp-maint-note"></span><button class="link-btn" id="exp-maint-reset" type="button">Reset to auto</button></div>
         </div>
       </div>
-      <div class="stats" id="exp-receipts-stats"></div>
-      <p class="note">"Auto" opening balance carries forward last month's available funds. "Auto" maintenance received pulls this month's collected total from Dashboard/Entry. Either can be overridden above if you need to correct a figure.</p>
+      <div class="stats exp-totals" id="exp-receipts-stats"></div>
     </div>
 
     <div class="card">
       <h2>Payments</h2>
-      <p class="note">Add every expense for the month — water bill, power bill, diesel, salaries, repairs, and so on. Pick a category from the list, or choose "Other" to type your own.</p>
       <div id="exp-items-wrap" style="overflow-x:auto;"></div>
       <div class="actions-row">
-        <button class="ghost" id="exp-add-item-btn" type="button">+ Add expense</button>
+        <button class="primary" style="width:auto;" id="exp-add-item-btn" type="button">+ Add expense</button>
       </div>
-      <div class="stats" id="exp-payments-total" style="margin-top:14px;"></div>
-    </div>
 
-    <div class="card" id="exp-bulk-card">
-      <h2>Bulk upload expenses (Excel)</h2>
-      <p class="note">Upload an Excel file with the columns <b>Category</b>, <b>Paid on</b> (MM-DD-YYYY) and <b>Amount</b> — optional: Comments, Maintenance month, Mode. Each expense goes into its month automatically (from "Maintenance month", or the Paid on date). Nothing is saved until you check the preview and press Import.</p>
-      <input type="file" id="eb-file" accept=".xlsx,.xls" class="file-input-hidden">
-      <div class="actions-row">
-        <button class="ghost" id="eb-pick" type="button">Choose Excel file</button>
-        <button class="link-btn" id="eb-template" type="button" style="width:auto;padding:10px 4px;">Download template</button>
-      </div>
-      <div id="eb-preview"></div>
-    </div>
-
-    <div class="card">
-      <h2>Available funds — balance carried forward</h2>
-      <div class="stats" id="exp-balance-box"></div>
-    </div>
-
-    <div class="card">
-      <div class="flex-between">
-        <h2 style="margin-bottom:0;">Monthly summary</h2>
-      </div>
-      <p class="note">Updates automatically as you edit the figures above.</p>
-      <div id="exp-summary-wrap" style="overflow-x:auto;margin-top:10px;"></div>
-      <div class="actions-row">
-        <button class="ghost" id="exp-print-btn" type="button">Print / Save as PDF</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Publish monthly summary</h2>
-      <p class="note">Generates a plain-text version of the summary above, ready to paste into WhatsApp or SMS.</p>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="exp-report-btn" type="button">Generate WhatsApp text</button>
-      </div>
-      <div id="exp-report-output" style="margin-top:14px;"></div>
-    </div>
-
-    <div class="card">
-      <h2>Publish time-range summary</h2>
-      <p class="note">Summarize receipts, spending by category, and balance across multiple months — handy for quarterly or annual updates to owners. Pick a report type — the fields below adjust to match.</p>
-      <div class="row">
-        <div>
-          <label for="exp-period-type">Report type</label>
-          <select id="exp-period-type">
-            <option value="monthly">Monthly</option>
-            <option value="quarterly">Quarterly</option>
-            <option value="halfyearly">Half-yearly</option>
-            <option value="annually">Annually</option>
-            <option value="custom" selected>Custom time range</option>
-          </select>
+      <details id="exp-bulk-card" class="exp-bulk">
+        <summary>Bulk upload expenses (Excel)</summary>
+        <p class="note">Columns: <b>Category</b>, <b>Paid on</b> (MM-DD-YYYY), <b>Amount</b> — optional Comments, Maintenance month, Mode. Nothing is saved until you check the preview and press Import.</p>
+        <input type="file" id="eb-file" accept=".xlsx,.xls" class="file-input-hidden">
+        <div class="actions-row">
+          <button class="ghost" id="eb-pick" type="button">Choose Excel file</button>
+          <button class="link-btn" id="eb-template" type="button" style="width:auto;padding:10px 4px;">Download template</button>
         </div>
-      </div>
-      <div class="row" id="exp-period-controls"></div>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="exp-range-btn" type="button">Generate range summary</button>
-      </div>
-      <div id="exp-range-output" style="margin-top:14px;"></div>
+        <div id="eb-preview"></div>
+      </details>
     </div>
   </section>
 
@@ -1346,7 +1321,7 @@ function rerenderAll(){
   if(!currentUser) return;
   document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
   if(currentUser.role === 'admin'){
-    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
   } else {
     renderOwnerView();
   }
@@ -1638,7 +1613,7 @@ async function importBackupCsv(e){
     document.getElementById('set-amount').value = settings.defaultAmount || 2000;
     document.getElementById('set-admin-phone').value = settings.adminPhone || '';
     document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
-    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
 
     note.textContent = 'Backup restored successfully.';
     e.target.value = '';
@@ -2364,6 +2339,8 @@ async function bulkPickFile(input, kind){
   input.value = '';
   if(!file) return;
   const box = document.getElementById(kind === 'maint' ? 'mb-preview' : 'eb-preview');
+  const panel = box.closest('details');
+  if(panel) panel.open = true;
   box.innerHTML = '<p class="note">Reading file…</p>';
   try{
     const rows = await readSheetRows(file);
@@ -2709,15 +2686,13 @@ function initAdminUI(){
   const m = todayMonth();
   document.getElementById('dash-month').value = m;
   document.getElementById('entry-month').value = m;
-  document.getElementById('rpt-month').value = m;
   document.getElementById('exp-month').value = m;
 
   document.getElementById('dash-month').onchange = renderDashboard;
   document.getElementById('entry-month').onchange = renderEntry;
-  document.getElementById('rpt-month').onchange = renderMonthlyReport;
   document.getElementById('exp-month').onchange = renderExpenses;
-  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); generatePeriodReport(); };
-  document.getElementById('exp-period-type').onchange = renderExpensePeriodControls;
+  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); renderPeriodReport(); };
+  document.getElementById('rpt-period-controls').onchange = ()=> renderPeriodReport();
 
   document.getElementById('gen-report-btn').onclick = renderWhatsAppReport;
   document.getElementById('add-flat-btn').onclick = addFlat;
@@ -2727,16 +2702,16 @@ function initAdminUI(){
   document.getElementById('set-recovery-a').value = '';
   document.getElementById('save-recovery-btn').onclick = saveRecoveryHandler;
   updateRecoveryWarning();
-  document.getElementById('copy-monthly-btn').onclick = ()=>copyText(buildMonthlyReportText(document.getElementById('rpt-month').value), 'copy-monthly-btn');
   document.getElementById('rpt-period-btn').onclick = generatePeriodReport;
   document.getElementById('exp-add-item-btn').onclick = addExpenseItem;
   document.getElementById('exp-opening').onchange = saveExpenseOpening;
   document.getElementById('exp-opening-reset').onclick = resetExpenseOpening;
   document.getElementById('exp-maint').onchange = saveExpenseMaint;
   document.getElementById('exp-maint-reset').onclick = resetExpenseMaint;
-  document.getElementById('exp-report-btn').onclick = generateExpenseReport;
-  document.getElementById('exp-range-btn').onclick = generateExpenseRangeReport;
-  document.getElementById('exp-print-btn').onclick = ()=>window.print();
+  document.getElementById('rpt-print-btn').onclick = ()=>{ renderPeriodReport(); window.print(); };
+  document.getElementById('rpt-csv-btn').onclick = downloadExpenseCsv;
+  document.getElementById('rpt-xlsx-btn').onclick = downloadExpenseXlsx;
+  document.getElementById('rpt-wa-btn').onclick = showExpenseWhatsApp;
   document.getElementById('export-backup-btn').onclick = exportBackupCsv;
   document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
   document.getElementById('import-backup-input').onchange = importBackupCsv;
@@ -2750,10 +2725,8 @@ function initAdminUI(){
   renderFlats();
   renderEntry();
   renderDashboard();
-  renderMonthlyReport();
   renderPeriodControls();
   renderPeriodReport();
-  renderExpensePeriodControls();
   renderExpenses();
   renderProfile();
   document.getElementById('creds-output').innerHTML = '';
@@ -2792,7 +2765,7 @@ function renderFlats(){
       else if(field==='flatNo') flat[field] = inp.value.trim() || flat.flatNo;
       else flat[field] = inp.value;
       await saveFlats();
-      renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
+      renderDashboard(); renderEntry(); renderPeriodReport();
     });
   });
   tbody.querySelectorAll('.del-btn').forEach(b=>{
@@ -2800,7 +2773,7 @@ function renderFlats(){
       if(!(await customConfirm('Remove this flat and its login? This does not delete past payment records.'))) return;
       flats = flats.filter(x=>x.id!==b.dataset.id);
       await saveFlats();
-      renderFlats(); renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
+      renderFlats(); renderDashboard(); renderEntry(); renderPeriodReport();
     });
   });
   tbody.querySelectorAll('.wa-share-btn').forEach(b=>{
@@ -2931,7 +2904,7 @@ function renderEntry(){
       payments[payKey(id, month)] = {...existing, paid, amount, date, mode, verified};
       await savePayments(id, month);
       renderEntry();
-      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+      renderDashboard(); renderPeriodReport(); renderExpenses();
     };
     tr.querySelector('.e-paid').addEventListener('change', save);
     tr.querySelector('.e-amount').addEventListener('change', save);
@@ -2956,7 +2929,7 @@ function renderEntry(){
       }
       await savePayments(id, month);
       renderEntry();
-      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+      renderDashboard(); renderPeriodReport(); renderExpenses();
     });
 
     const fileInput = tr.querySelector('.e-shot-input');
@@ -2973,7 +2946,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...existing, screenshot: dataUrl, screenshotPath: shotPath, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderPeriodReport(); renderExpenses();
 
         const flat = flats.find(x=>x.id===id);
         const amtEntered = Number(document.querySelector(`tr[data-id="${id}"] .e-amount`)?.value) || Math.round(computeFlatDue(id, month).dueThisMonth);
@@ -2982,7 +2955,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderPeriodReport(); renderExpenses();
       }catch(e){
         alert('Could not read that image, please try another file.');
       }
@@ -2996,7 +2969,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderPeriodReport(); renderExpenses();
       });
     }
 
@@ -3130,41 +3103,6 @@ function buildPendingReportText(month){
 }
 
 /* ---------- REPORTS TAB ---------- */
-function renderMonthlyReport(){
-  const month = document.getElementById('rpt-month').value || todayMonth();
-  const s = monthStats(month);
-  const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
-  document.getElementById('rpt-monthly-stats').innerHTML = `
-    <div class="stat"><b>${s.total}</b><span>Flats</span></div>
-    <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
-    <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
-    <div class="stat"><b>${pct}%</b><span>Collected</span></div>
-  `;
-  document.getElementById('rpt-monthly-box').textContent = buildMonthlyReportText(month);
-}
-
-function buildMonthlyReportText(month){
-  const s = monthStats(month);
-  const monthLabel = monthLabelOf(month);
-  let lines = [];
-  lines.push(`${settings.societyName || 'JD Blossom Apartment'} — Monthly Report`);
-  lines.push(`Period: ${monthLabel}`);
-  lines.push(`Collected ${inr(s.collected)} of ${inr(s.expected)} expected (${s.expected ? Math.round(s.collected/s.expected*100) : 0}%)`);
-  lines.push('');
-  lines.push('Flat | Owner | Status | Due | Paid | Balance→next | Date | Proof');
-  lines.push('-'.repeat(70));
-  flats.forEach(f=>{
-    const p = getPayment(f.id, month);
-    const due = computeFlatDue(f.id, month);
-    const status = !p.paid ? 'PENDING' : (p.verified ? 'VERIFIED' : 'SUBMITTED');
-    const proof = p.screenshot ? (p.verified?'checked ✓':'uploaded, unverified') : 'none';
-    const bal = due.carryOut;
-    const balText = bal===0 ? '₹0' : inr(Math.abs(bal)) + (bal>0?' owed':' cr.');
-    lines.push(`${f.flatNo} | ${f.owner || '—'} | ${status} | ${inr(due.dueThisMonth)} | ${p.paid ? inr(p.amount||0) : '—'} | ${balText} | ${p.date||'—'} | ${proof}`);
-  });
-  return lines.join('\n');
-}
-
 function currentQuarter(){ return Math.floor(new Date().getMonth()/3)+1; }
 function currentHalf(){ return new Date().getMonth() < 6 ? 1 : 2; }
 
@@ -3240,10 +3178,9 @@ function getPeriodMonthsAndLabelFor(prefix){
 
 function renderPeriodControls(){ renderPeriodControlsFor('rpt-period'); }
 function getPeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('rpt-period'); }
-function renderExpensePeriodControls(){ renderPeriodControlsFor('exp-period'); }
-function getExpensePeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('exp-period'); }
 
 function renderPeriodReport(){
+  renderReportExpenseSummary();
   const {months} = getPeriodMonthsAndLabel();
   let totalExpected = 0, totalCollected = 0;
   const perMonth = months.map(mo=>{
@@ -3310,62 +3247,19 @@ function renderExpenses(){
   const calc = computeExpenseMonth(month);
 
   document.getElementById('exp-opening').value = (data.openingOverride !== null && data.openingOverride !== undefined) ? data.openingOverride : Math.round(calc.autoOpening);
-  document.getElementById('exp-opening-note').textContent = `Auto (carried from last month's balance): ${inr(calc.autoOpening)}`;
+  document.getElementById('exp-opening-note').textContent = `Auto: ${inr(calc.autoOpening)} (last month's balance)`;
   document.getElementById('exp-maint').value = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? data.maintReceivedOverride : Math.round(calc.autoMaint);
-  document.getElementById('exp-maint-note').textContent = `Auto (from this month's ledger): ${inr(calc.autoMaint)}`;
+  document.getElementById('exp-maint-note').textContent = `Auto: ${inr(calc.autoMaint)} (collected this month)`;
+  document.getElementById('exp-opening-reset').style.visibility = (data.openingOverride !== null && data.openingOverride !== undefined) ? 'visible' : 'hidden';
+  document.getElementById('exp-maint-reset').style.visibility = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? 'visible' : 'hidden';
 
   document.getElementById('exp-receipts-stats').innerHTML = `
-    <div class="stat"><b>${inr(calc.opening)}</b><span>Opening bal.</span></div>
-    <div class="stat"><b>${inr(calc.maintReceived)}</b><span>Maint. received</span></div>
     <div class="stat"><b>${inr(calc.totalReceipts)}</b><span>Total receipts</span></div>
+    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
+    <div class="stat"><b style="color:${calc.closing < 0 ? 'var(--red)' : 'var(--green)'}">${inr(calc.closing)}</b><span>Available funds — balance c/f</span></div>
   `;
 
   renderExpenseItems(month, data);
-
-  document.getElementById('exp-payments-total').innerHTML = `
-    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
-  `;
-
-  document.getElementById('exp-balance-box').innerHTML = `
-    <div class="stat" style="flex:1;"><b style="font-size:1.5rem;color:var(--green)">${inr(calc.closing)}</b><span>Available funds for maintenance — balance c/f</span></div>
-  `;
-
-  renderExpenseSummaryTable(month, data, calc);
-
-  document.getElementById('exp-report-output').innerHTML = '';
-}
-
-function renderExpenseSummaryTable(month, data, calc){
-  const monthLabel = monthLabelOf(month);
-  const itemRows = data.items.length
-    ? data.items.map(it=>`
-      <tr class="item-row">
-        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}${it.comment ? `<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">${escapeHtml(it.comment)}</div>` : ''}</td>
-        <td>${it.paidOn ? new Date(it.paidOn).toLocaleDateString('en-IN') : '—'}</td>
-        <td>${inr(it.amount)}</td>
-      </tr>`).join('')
-    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
-
-  document.getElementById('exp-summary-wrap').innerHTML = `
-    <table class="summary-table">
-      <thead>
-        <tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${monthLabel}</th></tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="3" class="section-label">Receipts</td></tr>
-        <tr><td>Balance b/f from last month</td><td></td><td>${inr(calc.opening)}</td></tr>
-        <tr><td>Maintenance Amt Received</td><td></td><td>${inr(calc.maintReceived)}</td></tr>
-        <tr class="total-row receipts-total"><td>Total Receipts (Maintenance Amt)</td><td></td><td>${inr(calc.totalReceipts)}</td></tr>
-
-        <tr><td colspan="3" class="section-label">Payments</td></tr>
-        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
-        ${itemRows}
-        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(calc.totalPayments)}</td></tr>
-
-        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f</td><td>${inr(calc.closing)}</td></tr>
-      </tbody>
-    </table>
-  `;
 }
 
 const EXPENSE_CATEGORIES = ['Water bill','Power bill','Diesel','Watchman Salary','Security Salary','BBMP Garbage Exp','Water Tank cleaning','Drainage cleaning','Lift maintenance','Repair & Maintenance','Housekeeping','Pest control','Miscellaneous'];
@@ -3418,6 +3312,7 @@ function renderExpenseItems(month, data){
     <table>
       <thead><tr><th>Category${star}</th><th>Paid on${star}</th><th>Amount (₹)${star}</th><th>Mode</th><th>Comments</th><th></th></tr></thead>
       <tbody id="exp-items-tbody">${rows || '<tr><td colspan="6" style="text-align:center;color:#94A399;">No expenses added yet for this month.</td></tr>'}</tbody>
+      ${data.items.length ? `<tfoot><tr><td colspan="2" style="font-family:'Space Grotesk',sans-serif;font-weight:700;padding-top:10px;">Total (${data.items.length} item${data.items.length===1?'':'s'})</td><td id="exp-items-total" style="font-family:'JetBrains Mono',monospace;font-weight:700;padding-top:10px;">${inr(data.items.reduce((t,it)=>t+(Number(it.amount)||0),0))}</td><td colspan="3"></td></tr></tfoot>` : ''}
     </table>
   `;
 
@@ -3527,132 +3422,157 @@ async function resetExpenseMaint(){
   renderExpenses();
 }
 
-function generateExpenseReport(){
-  const month = document.getElementById('exp-month').value || todayMonth();
-  const text = buildExpenseReportText(month);
-  const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
-  document.getElementById('exp-report-output').innerHTML = `
-    <div class="report-box">${escapeHtml(text)}</div>
-    <div class="actions-row">
-      <button class="wa" id="exp-wa-btn" type="button">Open in WhatsApp</button>
-      <button class="ghost" id="exp-copy-btn" type="button">Copy text</button>
-    </div>
-  `;
-  document.getElementById('exp-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
-  document.getElementById('exp-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-copy-btn'));
-}
-
-function buildExpenseReportText(month){
-  const calc = computeExpenseMonth(month);
-  const data = getExpenseData(month);
-  const monthLabel = monthLabelOf(month);
-  let lines = [];
-  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
-  lines.push(`Maintenance Amt Summary — ${monthLabel}`);
-  lines.push('');
-  lines.push('Receipts:');
-  lines.push(`Balance b/f from last month: ${inr(calc.opening)}`);
-  lines.push(`Maintenance Amt Received: ${inr(calc.maintReceived)}`);
-  lines.push(`Total Receipts: ${inr(calc.totalReceipts)}`);
-  lines.push('');
-  lines.push('Payments:');
-  if(data.items.length === 0){
-    lines.push('No expenses recorded this month.');
-  } else {
-    data.items.forEach(it=>{
-      lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}${it.comment ? ' (' + it.comment + ')' : ''}`);
-    });
-  }
-  lines.push('');
-  lines.push(`Total Payments: ${inr(calc.totalPayments)}`);
-  lines.push('');
-  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(calc.closing)}`);
-  return lines.join('\n');
-}
-
-/* ---------- EXPENSES: time-range summary ---------- */
-function generateExpenseRangeReport(){
-  const out = document.getElementById('exp-range-output');
-  const {months, label} = getExpensePeriodMonthsAndLabel();
-  if(!months || months.length === 0){
-    out.innerHTML = '<p class="note err">Pick a valid period — check that the "from" month is on or before the "to" month.</p>';
-    return;
-  }
+/* ---------- REPORTS: expense summary for the selected period (reuses the monthly accounting) ---------- */
+function buildExpenseRangeSummary(months){
+  if(!months || !months.length) return null;
   const from = months[0], to = months[months.length-1];
-  const openingCalc = computeExpenseMonth(from);
-  const closingCalc = computeExpenseMonth(to);
-  let totalMaint = 0, totalPayments = 0;
-  const categoryTotals = {};
+  const first = computeExpenseMonth(from);
+  const last = computeExpenseMonth(to);
+  let maint = 0, payments = 0;
+  const items = [];
+  const byCat = {};
   months.forEach(mo=>{
     const c = computeExpenseMonth(mo);
-    totalMaint += c.maintReceived;
-    const d = getExpenseData(mo);
-    d.items.forEach(it=>{
+    maint += c.maintReceived;
+    (getExpenseData(mo).items || []).forEach(it=>{
       const amt = Number(it.amount) || 0;
-      totalPayments += amt;
+      payments += amt;
+      items.push({month: mo, ...it, amount: amt});
       const cat = it.category || '(uncategorised)';
-      categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+      byCat[cat] = (byCat[cat] || 0) + amt;
     });
   });
-  const openingBal = openingCalc.opening;
-  const closingBal = closingCalc.closing;
-  const totalReceipts = openingBal + totalMaint;
-  const catKeys = Object.keys(categoryTotals).sort((a,b)=>categoryTotals[b]-categoryTotals[a]);
-  const periodLabel = label;
+  items.sort((x,y)=> (x.paidOn||x.month).localeCompare(y.paidOn||y.month));
+  return {from, to, months, opening: first.opening, maint, receipts: first.opening + maint, payments, closing: last.closing, items, byCat};
+}
+const fmtDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-IN') : '—';
 
-  const catRows = catKeys.length
-    ? catKeys.map(cat=>`<tr class="item-row"><td>${escapeHtml(cat)}</td><td>${inr(categoryTotals[cat])}</td></tr>`).join('')
-    : `<tr class="item-row"><td colspan="2" style="text-align:center;color:#94A399;">No expenses recorded in this period.</td></tr>`;
-
-  const tableHtml = `
-    <table class="summary-table">
-      <thead><tr><th colspan="2">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${periodLabel}</th></tr></thead>
+function renderReportExpenseSummary(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  const box = document.getElementById('rpt-exp-summary');
+  const sum = buildExpenseRangeSummary(months);
+  if(!sum){ box.innerHTML = '<p class="note err">Pick a valid period — the "from" month must be on or before the "to" month.</p>'; return; }
+  const multi = months.length > 1;
+  const itemRows = sum.items.length
+    ? sum.items.map(it=>`
+      <tr class="item-row">
+        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}${(it.comment || it.mode) ? `<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">${escapeHtml([it.mode, it.comment].filter(Boolean).join(' · '))}</div>` : ''}</td>
+        <td>${fmtDate(it.paidOn)}</td>
+        <td>${inr(it.amount)}</td>
+      </tr>`).join('')
+    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
+  const catKeys = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]);
+  const catRows = (multi && catKeys.length) ? `
+        <tr><td colspan="3" class="section-label">Payments by category</td></tr>
+        ${catKeys.map(c=>`<tr class="item-row"><td>${escapeHtml(c)}</td><td></td><td>${inr(sum.byCat[c])}</td></tr>`).join('')}` : '';
+  box.innerHTML = `
+    <table class="summary-table" id="rpt-exp-table">
+      <thead><tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${escapeHtml(label)}</th></tr></thead>
       <tbody>
-        <tr><td colspan="2" class="section-label">Receipts</td></tr>
-        <tr><td>Opening balance (${monthLabelOf(from)})</td><td>${inr(openingBal)}</td></tr>
-        <tr><td>Maintenance Amt Received (total)</td><td>${inr(totalMaint)}</td></tr>
-        <tr class="total-row receipts-total"><td>Total Receipts</td><td>${inr(totalReceipts)}</td></tr>
-
-        <tr><td colspan="2" class="section-label">Payments by category</td></tr>
+        <tr><td colspan="3" class="section-label">Receipts</td></tr>
+        <tr><td>Balance b/f${multi ? ` (${monthLabelOf(sum.from)})` : ' from last month'}</td><td></td><td>${inr(sum.opening)}</td></tr>
+        <tr><td>Maintenance Amt Received${multi ? ' (total)' : ''}</td><td></td><td>${inr(sum.maint)}</td></tr>
+        <tr class="total-row receipts-total"><td>Total Receipts</td><td></td><td>${inr(sum.receipts)}</td></tr>
+        <tr><td colspan="3" class="section-label">Payments</td></tr>
+        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
+        ${itemRows}
+        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(sum.payments)}</td></tr>
         ${catRows}
-        <tr class="total-row payments-total"><td>Total Payments</td><td>${inr(totalPayments)}</td></tr>
-
-        <tr class="total-row balance-row"><td>(A) Available Funds — Closing Balance (${monthLabelOf(to)})</td><td>${inr(closingBal)}</td></tr>
+        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f${multi ? ` (${monthLabelOf(sum.to)})` : ''}</td><td>${inr(sum.closing)}</td></tr>
       </tbody>
-    </table>
-  `;
+    </table>`;
+  document.getElementById('rpt-exp-output').innerHTML = '';
+}
 
-  let lines = [];
+function expenseSummaryText(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  const sum = buildExpenseRangeSummary(months);
+  if(!sum) return '';
+  const lines = [];
   lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
-  lines.push(`Expense Summary — ${periodLabel}`);
+  lines.push(`Maintenance Amt Summary — ${label}`);
   lines.push('');
   lines.push('Receipts:');
-  lines.push(`Opening balance (${monthLabelOf(from)}): ${inr(openingBal)}`);
-  lines.push(`Maintenance Amt Received (total): ${inr(totalMaint)}`);
-  lines.push(`Total Receipts: ${inr(totalReceipts)}`);
+  lines.push(`Balance b/f: ${inr(sum.opening)}`);
+  lines.push(`Maintenance Amt Received: ${inr(sum.maint)}`);
+  lines.push(`Total Receipts: ${inr(sum.receipts)}`);
   lines.push('');
-  lines.push('Payments by category:');
-  if(catKeys.length === 0){
-    lines.push('No expenses recorded in this period.');
-  } else {
-    catKeys.forEach(cat=>lines.push(`${cat}: ${inr(categoryTotals[cat])}`));
-  }
+  lines.push('Payments:');
+  if(!sum.items.length) lines.push('No expenses recorded.');
+  sum.items.forEach(it=> lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}${it.comment ? ' (' + it.comment + ')' : ''}`));
   lines.push('');
-  lines.push(`Total Payments: ${inr(totalPayments)}`);
+  lines.push(`Total Payments: ${inr(sum.payments)}`);
   lines.push('');
-  lines.push(`(A) Available Funds — Closing Balance (${monthLabelOf(to)}): ${inr(closingBal)}`);
-  const text = lines.join('\n');
-
+  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(sum.closing)}`);
+  return lines.join('\n');
+}
+function showExpenseWhatsApp(){
+  renderPeriodReport();
+  const text = expenseSummaryText();
   const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
-  out.innerHTML = `
-    ${tableHtml}
-    <div class="actions-row" style="margin-top:12px;">
-      <button class="wa" id="exp-range-wa-btn" type="button">Open in WhatsApp</button>
-      <button class="ghost" id="exp-range-copy-btn" type="button">Copy text</button>
-    </div>
-  `;
-  document.getElementById('exp-range-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
-  document.getElementById('exp-range-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-range-copy-btn'));
+  document.getElementById('rpt-exp-output').innerHTML = `
+    <div class="report-box">${escapeHtml(text)}</div>
+    <div class="actions-row">
+      <button class="wa" id="rpt-wa-open" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="rpt-wa-copy" type="button">Copy text</button>
+    </div>`;
+  document.getElementById('rpt-wa-open').onclick = ()=>window.open(waLink, '_blank');
+  document.getElementById('rpt-wa-copy').onclick = ()=>copyText(text, 'rpt-wa-copy');
+}
+
+// rows shared by the CSV and Excel downloads (comments included)
+function expenseExportData(){
+  const {months, label} = getPeriodMonthsAndLabel();
+  const sum = buildExpenseRangeSummary(months);
+  if(!sum) return null;
+  const summary = [
+    ['Society', settings.societyName || 'JD Blossom Apartment'],
+    ['Period', label],
+    ['From month', sum.from], ['To month', sum.to],
+    ['Balance b/f', sum.opening],
+    ['Maintenance received', sum.maint],
+    ['Total receipts', sum.receipts],
+    ['Total payments', sum.payments],
+    ['Available funds (balance c/f)', sum.closing]
+  ];
+  const itemsHead = ['Month', 'Paid on', 'Category', 'Mode', 'Comments', 'Amount'];
+  const items = sum.items.map(it=>[it.month, it.paidOn || '', it.category || '', it.mode || '', it.comment || '', it.amount]);
+  const cats = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]).map(c=>[c, sum.byCat[c]]);
+  const maint = months.map(mo=>{ const s = monthStats(mo); return [mo, s.paidCount, s.pendingCount, s.collected, s.expected]; });
+  const fileBase = `Expense_summary_${sum.from}${sum.to !== sum.from ? '_to_' + sum.to : ''}`;
+  return {summary, itemsHead, items, cats, maint, fileBase};
+}
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+function downloadExpenseCsv(){
+  renderPeriodReport();
+  const d = expenseExportData();
+  if(!d) return;
+  const rows = [...d.summary, [], d.itemsHead, ...d.items, [], ['Payments by category', 'Amount'], ...d.cats];
+  const csv = '﻿' + rows.map(r=>r.map(v=>csvEscape(v ?? '')).join(',')).join('\r\n');
+  downloadBlob(new Blob([csv], {type:'text/csv;charset=utf-8;'}), d.fileBase + '.csv');
+}
+async function downloadExpenseXlsx(){
+  renderPeriodReport();
+  const d = expenseExportData();
+  if(!d) return;
+  const btn = document.getElementById('rpt-xlsx-btn');
+  try{
+    btn.disabled = true;
+    const XLSX = await loadXlsx();
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...d.summary, [], ['Payments by category', 'Amount'], ...d.cats]), 'Summary');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([d.itemsHead, ...d.items]), 'Expenses');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Month', 'Paid flats', 'Pending flats', 'Collected', 'Expected'], ...d.maint]), 'Maintenance');
+    XLSX.writeFile(wb, d.fileBase + '.xlsx');
+  }catch(e){
+    showSyncError("Couldn't create the Excel file — check your internet connection and try again.");
+  }finally{ btn.disabled = false; }
 }
 
 /* ---------- SETTINGS ---------- */
@@ -3671,7 +3591,7 @@ async function saveSettingsHandler(){
   document.getElementById('settings-saved-note').textContent = applyAll ? `Saved — applied ${inr(settings.defaultAmount)} to all ${flats.length} flats.` : 'Saved.';
   document.getElementById('set-amount-applyall').checked = false;
   setTimeout(()=>{ document.getElementById('settings-saved-note').textContent=''; }, 3000);
-  renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
+  renderDashboard(); renderEntry(); renderPeriodReport(); renderExpenses();
 }
 
 /* ---------- PROFILE TAB ---------- */
