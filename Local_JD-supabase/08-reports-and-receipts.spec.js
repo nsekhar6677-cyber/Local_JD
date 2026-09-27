@@ -173,3 +173,22 @@ test('reports: an unpaid balance carried month to month is counted once in the p
   await page.click('#rpt-period-btn');
   await expect(page.locator('#rpt-period-output')).toContainText('TOTAL');
 });
+
+test('reports: a hand-edited Balance b/f in a later month shows as an adjustment so the summary reconciles', async ({ page, request }, testInfo) => {
+  only(testInfo);
+  await seed(request); // Jul closes at ₹48,713
+  await sql(request, `update jdb.expenses set data = jsonb_set(data, '{openingOverride}', '40000') where month='2026-08'`);
+  await openApp(page); await loginAdmin(page);
+  await customRange(page, '2026-07', '2026-08');
+  const box = page.locator('#rpt-exp-summary');
+  await expect(box).toContainText('Balance b/f edited in August 2026');
+  await expect(box.locator('tr.adj-row')).toContainText('−₹8,713');
+  // 1,48,000 receipts − 74,685 payments − 8,713 = 64,602
+  await expect(box.locator('tr.balance-row')).toContainText('64,602');
+  // no adjustment row when balances flow on automatically
+  await sql(request, `update jdb.expenses set data = jsonb_set(data, '{openingOverride}', 'null') where month='2026-08'`);
+  await page.reload(); await openApp(page); await loginAdmin(page);
+  await customRange(page, '2026-07', '2026-08');
+  await expect(box.locator('tr.balance-row')).toContainText('73,315');
+  await expect(box.locator('tr.adj-row')).toHaveCount(0);
+});

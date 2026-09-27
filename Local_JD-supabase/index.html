@@ -3440,7 +3440,14 @@ function buildExpenseRangeSummary(months){
     });
   });
   items.sort((x,y)=> (x.paidOn||x.month).localeCompare(y.paidOn||y.month));
-  return {from, to, months, opening: first.opening, maint, receipts: first.opening + maint, payments, closing: last.closing, items, byCat};
+  // a later month's "Balance b/f" typed in by hand (not the previous month's c/f)
+  const adjustments = [];
+  months.slice(1).forEach((mo, i)=>{
+    const diff = computeExpenseMonth(mo).opening - computeExpenseMonth(months[i]).closing;
+    if(Math.abs(diff) >= 0.5) adjustments.push({month: mo, amount: diff});
+  });
+  const adjust = adjustments.reduce((t,a)=>t+a.amount, 0);
+  return {from, to, months, opening: first.opening, maint, receipts: first.opening + maint, payments, closing: last.closing, adjustments, adjust, items, byCat};
 }
 const fmtDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-IN') : '—';
 
@@ -3475,6 +3482,10 @@ function renderReportExpenseSummary(){
         ${itemRows}
         <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(sum.payments)}</td></tr>
         ${catRows}
+        ${sum.adjustments.length ? `
+        <tr><td colspan="3" class="section-label">Balance adjustments</td></tr>
+        ${sum.adjustments.map(a=>`<tr class="item-row adj-row"><td>Balance b/f edited in ${monthLabelOf(a.month)}<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">differs from ${monthLabelOf(prevMonthKeyGlobal(a.month))}'s balance c/f</div></td><td></td><td>${a.amount > 0 ? '+' : '−'}${inr(Math.abs(a.amount))}</td></tr>`).join('')}
+        <tr class="item-row"><td colspan="2" style="font-size:.78rem;color:#4E6154;">Total receipts ${inr(sum.receipts)} − payments ${inr(sum.payments)} ${sum.adjust >= 0 ? '+' : '−'} adjustments ${inr(Math.abs(sum.adjust))} = balance c/f</td><td></td></tr>` : ''}
         <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f${multi ? ` (${monthLabelOf(sum.to)})` : ''}</td><td>${inr(sum.closing)}</td></tr>
       </tbody>
     </table>`;
@@ -3500,6 +3511,11 @@ function expenseSummaryText(){
   lines.push('');
   lines.push(`Total Payments: ${inr(sum.payments)}`);
   lines.push('');
+  if(sum.adjustments.length){
+    lines.push('Balance adjustments:');
+    sum.adjustments.forEach(a=>lines.push(`Balance b/f edited in ${monthLabelOf(a.month)}: ${a.amount > 0 ? '+' : '−'}${inr(Math.abs(a.amount))}`));
+    lines.push('');
+  }
   lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(sum.closing)}`);
   return lines.join('\n');
 }
@@ -3530,6 +3546,7 @@ function expenseExportData(){
     ['Maintenance received', sum.maint],
     ['Total receipts', sum.receipts],
     ['Total payments', sum.payments],
+    ...sum.adjustments.map(a=>[`Balance adjustment (b/f edited in ${monthLabelOf(a.month)})`, a.amount]),
     ['Available funds (balance c/f)', sum.closing]
   ];
   const itemsHead = ['Month', 'Paid on', 'Category', 'Mode', 'Comments', 'Amount'];
