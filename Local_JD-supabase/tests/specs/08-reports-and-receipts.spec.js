@@ -142,3 +142,34 @@ test('receipts on phones: fields stack, totals fit on one line each, no sideways
   const fit = await page.$eval('#rpt-exp-summary', e => e.scrollWidth <= e.clientWidth + 1);
   expect(fit).toBe(true);
 });
+
+test('reports: an unpaid balance carried month to month is counted once in the period Expected', async ({ page, request }, testInfo) => {
+  only(testInfo);
+  // every flat pays its ₹2,000 share for Apr–Sep; flat id11 starts April with ₹3,000 old arrears
+  // that stay open; flat id20 skips April and pays ₹4,000 in May
+  const rows = [];
+  const flats = await sql(request, `select id from jdb.flats order by id`);
+  for (const mo of ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09']) {
+    for (const { id } of flats) {
+      let amount = 2000;
+      if (id === 'id20' && mo === '2026-04') amount = 0;
+      if (id === 'id20' && mo === '2026-05') amount = 4000;
+      const data = { paid: amount > 0, amount, verified: amount > 0, mode: 'UPI', baseOverride: 2000, imported: true };
+      if (id === 'id11' && mo === '2026-04') data.carryInOverride = 3000;
+      rows.push(`('${id}','${mo}','${JSON.stringify(data)}')`);
+    }
+  }
+  await sql(request, `insert into jdb.payments(flat_id, month, data) values ${rows.join(',')}`);
+  const shares = flats.length * 2000 * 6;
+  const fmt = n => n.toLocaleString('en-IN');
+  await openApp(page); await loginAdmin(page);
+  await customRange(page, '2026-04', '2026-09');
+  const stats = page.locator('#rpt-period-stats');
+  await expect(stats).toContainText(`₹${fmt(shares)}Collected`);
+  await expect(stats).toContainText(`₹${fmt(shares + 3000)}Expected`); // shares + ₹3,000 once (not ₹20,000 extra)
+  // single months still show that month's due including the balance brought in
+  await customRange(page, '2026-05', '2026-05');
+  await expect(stats).toContainText(`₹${fmt(flats.length * 2000 + 3000 + 2000)}Expected`);
+  await page.click('#rpt-period-btn');
+  await expect(page.locator('#rpt-period-output')).toContainText('TOTAL');
+});

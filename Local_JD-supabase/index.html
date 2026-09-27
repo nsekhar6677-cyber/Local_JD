@@ -3179,15 +3179,32 @@ function getPeriodMonthsAndLabelFor(prefix){
 function renderPeriodControls(){ renderPeriodControlsFor('rpt-period'); }
 function getPeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('rpt-period'); }
 
+// Expected for a whole period = each flat's balance brought into the first month
+// + its maintenance share for every month of the period (waived months excluded).
+// Worked out as (paid in the period) + (balance left after the last month), so an
+// unpaid amount that stays open is counted once, not again in every month.
+function periodExpected(months){
+  if(!months.length) return 0;
+  const sorted = [...months].sort();
+  const last = sorted[sorted.length - 1];
+  let total = 0;
+  flats.forEach(f=>{
+    sorted.forEach(mo=>{ total += computeFlatDue(f.id, mo).paid; });
+    total += computeFlatDue(f.id, last).carryOut;
+  });
+  return total;
+}
+
 function renderPeriodReport(){
   renderReportExpenseSummary();
   const {months} = getPeriodMonthsAndLabel();
   let totalExpected = 0, totalCollected = 0;
   const perMonth = months.map(mo=>{
     const s = monthStats(mo);
-    totalExpected += s.expected; totalCollected += s.collected;
+    totalCollected += s.collected;
     return {mo, s};
   });
+  totalExpected = periodExpected(months);
   const pct = totalExpected ? Math.round(totalCollected/totalExpected*100) : 0;
   document.getElementById('rpt-period-stats').innerHTML = `
     <div class="stat"><b>${inr(totalCollected)}</b><span>Collected</span></div>
@@ -3217,13 +3234,15 @@ function buildPeriodReportText(){
   let totalExpected = 0, totalCollected = 0;
   months.forEach(mo=>{
     const s = monthStats(mo);
-    totalExpected += s.expected; totalCollected += s.collected;
+    totalCollected += s.collected;
     const pct = s.total ? Math.round(s.paidCount/s.total*100) : 0;
     lines.push(`${monthLabelOf(mo)} | ${s.paidCount} | ${s.pendingCount} | ${inr(s.collected)} | ${inr(s.expected)} | ${pct}%`);
   });
   lines.push('-'.repeat(55));
+  totalExpected = periodExpected(months);
   const overall = totalExpected ? Math.round(totalCollected/totalExpected*100) : 0;
   lines.push(`TOTAL | | | ${inr(totalCollected)} | ${inr(totalExpected)} | ${overall}%`);
+  if(months.length > 1) lines.push(`(Total expected = maintenance for the period + balance brought in at the start; a month's Expected includes any balance carried into it, so month rows don't add up to the total.)`);
   return lines.join('\n');
 }
 
