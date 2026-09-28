@@ -1632,23 +1632,45 @@ function getExpenseData(month){
   if(!expenses[month]) expenses[month] = {openingOverride:null, maintReceivedOverride:null, items:[]};
   return expenses[month];
 }
-function computeExpenseMonth(month, depth){
-  depth = depth || 0;
-  const data = getExpenseData(month);
-  let autoOpening = 0;
-  if(depth < 24){
-    const prev = prevMonthKeyGlobal(month);
-    if(expenses[prev]){
-      autoOpening = computeExpenseMonth(prev, depth+1).closing;
-    }
-  }
+// read-only view of a month's expense data (does not create an empty month)
+function peekExpenseData(month){
+  return expenses[month] || {openingOverride:null, maintReceivedOverride:null, items:[]};
+}
+const hasOverride = v => v !== null && v !== undefined && v !== '';
+// first month that really has expense data (items or a typed-in figure)
+function firstExpenseMonth(){
+  return Object.keys(expenses).filter(m=>{
+    const d = expenses[m];
+    return d && ((d.items && d.items.length) || hasOverride(d.openingOverride) || hasOverride(d.maintReceivedOverride));
+  }).sort()[0] || null;
+}
+function expenseMonthFigures(month, autoOpening){
+  const data = peekExpenseData(month);
   const autoMaint = monthStats(month).collected;
-  const opening = (data.openingOverride !== null && data.openingOverride !== undefined) ? Number(data.openingOverride) : autoOpening;
-  const maintReceived = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? Number(data.maintReceivedOverride) : autoMaint;
+  const opening = hasOverride(data.openingOverride) ? Number(data.openingOverride) : autoOpening;
+  const maintReceived = hasOverride(data.maintReceivedOverride) ? Number(data.maintReceivedOverride) : autoMaint;
   const totalReceipts = opening + maintReceived;
-  const totalPayments = data.items.reduce((s,it)=>s+(Number(it.amount)||0),0);
+  const totalPayments = (data.items || []).reduce((s,it)=>s+(Number(it.amount)||0),0);
   const closing = totalReceipts - totalPayments;
   return {opening, maintReceived, totalReceipts, totalPayments, closing, autoOpening, autoMaint};
+}
+// Balance b/f carries forward month by month from the first month with expense data,
+// including through months that have no expenses recorded.
+function computeExpenseMonth(month){
+  const first = firstExpenseMonth();
+  if(!first || month <= first) return expenseMonthFigures(month, 0);
+  let m = first, carry = expenseMonthFigures(first, 0).closing;
+  while(true){
+    const next = nextMonthKey(m);
+    if(next === month) return expenseMonthFigures(month, carry);
+    carry = expenseMonthFigures(next, carry).closing;
+    m = next;
+  }
+}
+function nextMonthKey(month){
+  const [y,mo] = month.split('-').map(Number);
+  const d = new Date(y, mo, 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 }
 
 function payKey(flatId, month){ return flatId + ':' + month; }
@@ -3431,7 +3453,7 @@ function buildExpenseRangeSummary(months){
   months.forEach(mo=>{
     const c = computeExpenseMonth(mo);
     maint += c.maintReceived;
-    (getExpenseData(mo).items || []).forEach(it=>{
+    (peekExpenseData(mo).items || []).forEach(it=>{
       const amt = Number(it.amount) || 0;
       payments += amt;
       items.push({month: mo, ...it, amount: amt});
@@ -3553,6 +3575,7 @@ function expenseExportData(){
   const items = sum.items.map(it=>[it.month, it.paidOn || '', it.category || '', it.mode || '', it.comment || '', it.amount]);
   const cats = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]).map(c=>[c, sum.byCat[c]]);
   const maint = months.map(mo=>{ const s = monthStats(mo); return [mo, s.paidCount, s.pendingCount, s.collected, s.expected]; });
+  if(months.length > 1) maint.push(['Total (period)', '', '', maint.reduce((t,r)=>t+(Number(r[3])||0),0), periodExpected(months)]);
   const fileBase = `Expense_summary_${sum.from}${sum.to !== sum.from ? '_to_' + sum.to : ''}`;
   return {summary, itemsHead, items, cats, maint, fileBase};
 }
