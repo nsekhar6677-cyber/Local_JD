@@ -249,6 +249,10 @@
   .exp-field input{width:100%;}
   .exp-auto{display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:.76rem;color:#4E6154;line-height:1.4;}
   .exp-auto .link-btn{width:auto;padding:4px 0;min-height:28px;text-align:right;}
+  .stats.society-funds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0;}
+  .stats.society-funds .stat{min-width:0;}
+  .stats.society-funds .stat b{font-size:1.1rem;white-space:nowrap;}
+  @media (max-width:600px){ .stats.society-funds{grid-template-columns:1fr 1fr;} .stats.society-funds .stat b{font-size:1rem;} }
   .set-check{display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--ink);margin-bottom:14px;}
   .stats.exp-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0;}
   .stats.exp-totals .stat{min-width:0;}
@@ -1004,6 +1008,11 @@
       <h2>Society overview</h2>
       <p class="note">Read-only — collection status for the building this month.</p>
       <div class="stats" id="my-society-stats"></div>
+      <div id="my-society-funds-wrap" style="display:none;">
+        <p class="note" style="margin:16px 0 8px;"><b id="my-society-funds-title">Society funds</b></p>
+        <div class="stats society-funds" id="my-society-funds"></div>
+        <p class="note" id="my-society-funds-note" style="margin-top:8px;"></p>
+      </div>
     </div>
 
     <div class="card">
@@ -3814,6 +3823,23 @@ function initOwnerUI(){
   renderOwnerView();
 }
 
+// Owner page: the society's fund position this month (same figures as Admin → Expenses → Receipts)
+function renderOwnerSocietyFunds(month){
+  const wrap = document.getElementById('my-society-funds-wrap');
+  if(!firstExpenseMonth()){ wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const c = computeExpenseMonth(month);
+  document.getElementById('my-society-funds-title').textContent = `Society funds — ${monthLabelOf(month)}`;
+  document.getElementById('my-society-funds').innerHTML = `
+    <div class="stat"><b>${inr(c.opening)}</b><span>Previous month balance</span></div>
+    <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span>Collected this month</span></div>
+    <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span>Expenses this month</span></div>
+    <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span>Available balance</span></div>
+  `;
+  document.getElementById('my-society-funds-note').textContent =
+    `${inr(c.opening)} + ${inr(c.maintReceived)} − ${inr(c.totalPayments)} = ${inr(c.closing)}. Expenses are added by the committee during the month.`;
+}
+
 function renderOwnerView(){
   const flat = flats.find(f=>f.id===currentUser.flatId);
   if(!flat){ logout(); return; }
@@ -4021,7 +4047,9 @@ function renderOwnerView(){
     <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
     <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
     <div class="stat"><b>${pct}%</b><span>Collected</span></div>
+    <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(s.collected)}</b><span>Amount collected</span></div>
   `;
+  renderOwnerSocietyFunds(month);
 
   // history
   const months = last12Months();
