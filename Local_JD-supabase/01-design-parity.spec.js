@@ -57,7 +57,10 @@ test.describe('design parity with the original app', () => {
       // Entry was deliberately widened for screens 768px+ (see 04-entry-layout); phones must stay identical.
       // Entry was deliberately improved (04-entry-layout: wide screens; 05: phone field alignment).
       test.skip(screen.name === 'admin-entry', 'Entry layout intentionally changed — covered by 04/05 specs');
+      test.skip(screen.name === 'admin-expenses', 'Expenses page intentionally changed (comments, mandatory fields, bulk upload) — covered by 07 spec');
       test.skip(screen.name === 'owner-ledger', 'Owner form intentionally changed (mandatory fields) — covered by 06 spec');
+      test.skip(screen.name === 'admin-reports', 'Reports intentionally changed (combined maintenance + expense summary) — covered by 08 spec');
+      test.skip(['admin-settings', 'admin-profile'].includes(screen.name), 'Settings and Profile intentionally simplified — covered by 09 spec');
       const before = await capture(browser, testInfo, 'original', screen);
       const after = await capture(browser, testInfo, 'supabase', screen);
       const a = PNG.sync.read(before.png);

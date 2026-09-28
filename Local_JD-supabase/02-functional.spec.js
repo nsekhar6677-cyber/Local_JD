@@ -194,6 +194,8 @@ test('expenses, settings and reports persist', async ({ page, request }, testInf
   await item.locator('.ei-cat-select').selectOption('Diesel');
   await page.locator('#exp-items-tbody tr[data-id] .ei-amt').first().fill('1500');
   await page.locator('#exp-items-tbody tr[data-id] .ei-amt').first().press('Tab');
+  await page.locator('#exp-items-tbody tr[data-id] .ei-date').first().fill(`${m}-10`); // Paid on is mandatory
+  await page.locator('#exp-items-tbody tr[data-id] .ei-date').first().press('Tab');
   await settle(page);
   const e = await sql(request, `select data from jdb.expenses where month='${m}'`);
   expect(e[0].data.items[0]).toMatchObject({ category: 'Diesel', amount: 1500 });
@@ -209,9 +211,10 @@ test('expenses, settings and reports persist', async ({ page, request }, testInf
   await expect(page.locator('#login-society-title')).toHaveText('JD Blossom Apartment Phase 1');
   await loginAdmin(page);
   await tab(page, 'expenses');
-  await expect(page.locator('#exp-summary-wrap')).toContainText('Diesel');
-  await expect(page.locator('#exp-payments-total')).toContainText('1,500');
+  await expect(page.locator('#exp-items-tbody')).toContainText('Diesel');
+  await expect(page.locator('#exp-items-total')).toContainText('1,500');
   await tab(page, 'reports');
+  await expect(page.locator('#rpt-exp-summary')).toContainText('Diesel');
   await page.click('#rpt-period-btn');
   await expect(page.locator('#rpt-period-output')).toContainText('Period Report');
 });

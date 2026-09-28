@@ -239,39 +239,8 @@
   .summary-table td:nth-child(3){text-align:right;}
   @media print{
     body *{visibility:hidden;}
-    #rpt-exp-print, #rpt-exp-print *{visibility:visible;}
-    #rpt-exp-print{position:absolute;left:0;top:0;width:100%;}
-    #rpt-exp-summary{overflow:visible !important;}
-  }
-  /* Expenses → Receipts: stacks cleanly on phones, two columns from tablet width */
-  .exp-receipts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:14px;}
-  .exp-field{min-width:0;}
-  .exp-field input{width:100%;}
-  .exp-auto{display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:.76rem;color:#4E6154;line-height:1.4;}
-  .exp-auto .link-btn{width:auto;padding:4px 0;min-height:28px;text-align:right;}
-  .stats.society-funds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0;}
-  .stats.society-funds .stat{min-width:0;}
-  .stats.society-funds .stat b{font-size:1.1rem;white-space:nowrap;}
-  @media (max-width:600px){ .stats.society-funds{grid-template-columns:1fr 1fr;} .stats.society-funds .stat b{font-size:1rem;} }
-  .set-check{display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--ink);margin-bottom:14px;}
-  .stats.exp-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0;}
-  .stats.exp-totals .stat{min-width:0;}
-  .stats.exp-totals .stat b{overflow-wrap:anywhere;font-size:1.15rem;}
-  .exp-bulk{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;}
-  .exp-bulk summary{cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.86rem;padding:6px 0;min-height:36px;}
-  @media (max-width:600px){
-    .exp-receipts-grid{grid-template-columns:1fr;}
-    .stats.exp-totals{grid-template-columns:1fr;}
-    .stats.exp-totals .stat{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:12px 14px;}
-    .stats.exp-totals .stat b{font-size:1.05rem;order:2;white-space:nowrap;overflow-wrap:normal;flex-shrink:0;}
-    .stats.exp-totals .stat span{order:1;}
-    #rpt-period-stats .stat{min-width:45%;}
-    #rpt-exp-table{font-size:.8rem;}
-    #rpt-exp-table th, #rpt-exp-table td{padding:7px 6px;}
-    #rpt-exp-table tr.item-row td:first-child{padding-left:10px;}
-    #rpt-exp-table td:nth-child(2){white-space:nowrap;font-size:.74rem;}
-    #rpt-exp-table td:last-child{white-space:nowrap;}
-    #rpt-exp-table tr.balance-row td{font-size:.88rem;padding:12px 6px;}
+    #exp-summary-wrap, #exp-summary-wrap *{visibility:visible;}
+    #exp-summary-wrap{position:absolute;left:0;top:0;width:100%;}
   }
 
   .note{font-size:.78rem;color:#4E6154;line-height:1.5;margin-top:6px;}
@@ -313,82 +282,12 @@
     color:var(--white);font-family:'JetBrains Mono',monospace;font-size:.75rem;text-align:center;
   }
 
-  .bulk-table-wrap{overflow:auto;max-height:70vh;border:1px solid var(--paper-2);margin-top:10px;-webkit-overflow-scrolling:touch;}
-  .bulk-table{min-width:980px;}
-  .bulk-table thead th{position:sticky;top:0;background:var(--white);z-index:1;box-shadow:inset 0 -1px 0 var(--line);}
-  .bulk-table td{vertical-align:top;}
   #entry-table-wrap, #flats-table-wrap, #admins-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #entry-table-wrap table{min-width:1140px;}
-
-  /* Entry on laptops/desktops/tablets: use the screen's full width so the whole
-     row fits, and scroll the table inside a screen-high box so its header, the
-     Flat column and the sideways scrollbar are always in view.
-     Phones (under 768px) keep the original behaviour. */
-  @media (min-width:768px){
-    #tab-entry{
-      width:max(100%, min(1240px, calc(100vw - 64px)));
-      margin-left:calc((100% - max(100%, min(1240px, calc(100vw - 64px)))) / 2);
-    }
-    #entry-table-wrap{
-      max-height:calc(100vh - 150px);
-      max-height:calc(100dvh - 150px);
-      overflow:auto;
-      border:1px solid var(--paper-2);
-      overscroll-behavior:contain;
-    }
-    #entry-table-wrap table{border-collapse:separate;border-spacing:0;}
-    #entry-table-wrap thead th{
-      position:sticky;top:0;z-index:3;background:var(--white);
-      box-shadow:inset 0 -1px 0 var(--line);
-    }
-    #entry-table-wrap td:first-child, #entry-table-wrap th:first-child{
-      position:sticky;left:0;z-index:2;background:var(--white);
-      box-shadow:inset -1px 0 0 var(--paper-2);
-    }
-    #entry-table-wrap thead th:first-child{z-index:4;}
-    #entry-table-wrap tbody tr:hover td:first-child{background:var(--paper);}
-    #entry-table-wrap tbody tr[style*="background"] td:first-child{background:var(--paper);}
-  }
-
-  /* Entry on phones: iPhone/Android draw date and dropdown fields with their own
-     sizes (and zoom the page when a field under 16px is tapped), which knocked the
-     Amount / Date / Mode fields out of line. Give them one fixed size and style. */
-  @media (max-width:767px){
-    #entry-table-wrap .e-amount,
-    #entry-table-wrap .e-date,
-    #entry-table-wrap .e-mode{
-      -webkit-appearance:none; appearance:none;
-      box-sizing:border-box; display:block; margin:0;
-      height:40px; min-height:40px; line-height:1.2;
-      padding:0 10px; font-size:16px; border-radius:2px;
-      background-color:var(--paper); color:var(--ink);
-    }
-    #entry-table-wrap .e-date{ width:156px; min-width:156px; text-align:left; }
-    #entry-table-wrap .e-date::-webkit-date-and-time-value{ text-align:left; margin:0; }
-    #entry-table-wrap .e-date::-webkit-datetime-edit{ padding:0; }
-    #entry-table-wrap .e-mode{
-      width:156px; padding-right:30px;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%231E2E24' stroke-width='1.6'/%3E%3C/svg%3E");
-      background-repeat:no-repeat; background-position:right 10px center; background-size:10px 6px;
-    }
-    #entry-table-wrap .e-date:disabled,
-    #entry-table-wrap .e-mode:disabled,
-    #entry-table-wrap .e-amount:disabled{ opacity:.55; }
-  }
   #flats-table-wrap table{min-width:640px;}
   #admins-table-wrap table{min-width:480px;}
-  #exp-items-wrap table{min-width:860px;}
-  #exp-items-wrap tr.ei-invalid td{background:#FBEDEA;}
-  #exp-items-wrap .ei-err{color:var(--red);font-size:.72rem;margin-top:4px;}
+  #exp-items-wrap table{min-width:520px;}
   #admins-table-wrap td:last-child{white-space:nowrap;}
-  @media (max-width:600px){
-    #admins-table-wrap table{min-width:0;}
-    #admins-table-wrap thead{display:none;}
-    #admins-table-wrap tr[data-id]{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);}
-    #admins-table-wrap tr[data-id] td{display:block;border:0;padding:0;min-width:0 !important;}
-    #admins-table-wrap tr[data-id] td:last-child{grid-column:1 / -1;display:flex;gap:8px;align-items:center;}
-    #admins-table-wrap tr.admin-reset-row td{display:block;}
-  }
 
   /* ---- login screen ---- */
   #login-screen{
@@ -791,59 +690,47 @@
       <p class="note">Owners' payment screenshots go in the Proof column — tap the thumbnail to view full size. Tick <b>Verified</b> once you've checked the screenshot matches the amount and flat. Tick <b>Waived</b> to cancel a month's due entirely so nothing carries forward — this is disabled once a payment is verified; un-verify it first if you need to waive it.</p>
       <div id="entry-table-wrap"></div>
     </div>
-
-    <div class="card" id="entry-bulk-card">
-      <h2>Bulk upload maintenance (Excel)</h2>
-      <p class="note">Upload an Excel file with the columns <b>Flat No</b>, <b>Maintenance month</b>, <b>Paid Amt</b>, <b>Paid on</b> (MM-DD-YYYY) and <b>Mode</b> — optional: Name (Owner), Maintenance Share, Previous balance. Records are sorted into months automatically. Nothing is saved until you check the preview and press Import; screenshots are not needed. Imported payments appear for admins and in each owner's My Ledger.</p>
-      <input type="file" id="mb-file" accept=".xlsx,.xls" class="file-input-hidden">
-      <div class="actions-row">
-        <button class="ghost" id="mb-pick" type="button">Choose Excel file</button>
-        <button class="link-btn" id="mb-template" type="button" style="width:auto;padding:10px 4px;">Download template</button>
-      </div>
-      <div id="mb-preview"></div>
-    </div>
   </section>
 
   <!-- ===== ADMIN: REPORTS ===== -->
   <section id="tab-reports">
     <div class="card">
-      <h2>Maintenance &amp; expense report</h2>
-      <p class="note">Choose a period — the maintenance collection and the expense summary below both follow it.</p>
+      <h2>Monthly report</h2>
       <div class="row">
         <div>
-          <label for="rpt-period-type">Period</label>
+          <label for="rpt-month">Month</label>
+          <input type="month" id="rpt-month">
+        </div>
+      </div>
+      <div id="rpt-monthly-stats" class="stats"></div>
+      <div class="report-box" id="rpt-monthly-box"></div>
+      <div class="actions-row">
+        <button class="ghost" id="copy-monthly-btn" type="button">Copy report</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Period report</h2>
+      <p class="note">Pick a report type — the fields below adjust to match.</p>
+      <div class="row">
+        <div>
+          <label for="rpt-period-type">Report type</label>
           <select id="rpt-period-type">
-            <option value="monthly" selected>Monthly</option>
+            <option value="monthly">Monthly</option>
             <option value="quarterly">Quarterly</option>
             <option value="halfyearly">Half-yearly</option>
-            <option value="annually">Annually</option>
-            <option value="custom">Custom range (from – to month)</option>
+            <option value="annually" selected>Annually</option>
+            <option value="custom">Custom time range</option>
           </select>
         </div>
       </div>
       <div class="row" id="rpt-period-controls"></div>
-    </div>
-
-    <div class="card">
-      <h2>Maintenance collection</h2>
-      <div id="rpt-period-stats" class="stats"></div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="rpt-period-btn" type="button">Generate report</button>
+      </div>
+      <div id="rpt-period-stats" class="stats" style="margin-top:14px;"></div>
       <div id="rpt-period-bars" style="margin-top:6px;"></div>
-      <div class="actions-row">
-        <button class="ghost" id="rpt-period-btn" type="button">Show collection details</button>
-      </div>
       <div id="rpt-period-output" style="margin-top:14px;"></div>
-    </div>
-
-    <div class="card">
-      <h2>Expense summary</h2>
-      <div id="rpt-exp-print"><div id="rpt-exp-summary" style="overflow-x:auto;"></div></div>
-      <div class="actions-row">
-        <button class="primary" style="width:auto;" id="rpt-print-btn" type="button">Print / Save as PDF</button>
-        <button class="ghost" id="rpt-csv-btn" type="button">Download CSV</button>
-        <button class="ghost" id="rpt-xlsx-btn" type="button">Download Excel</button>
-        <button class="ghost" id="rpt-wa-btn" type="button">WhatsApp text</button>
-      </div>
-      <div id="rpt-exp-output" style="margin-top:14px;"></div>
     </div>
   </section>
 
@@ -857,97 +744,156 @@
         </div>
       </div>
       <h2>Receipts</h2>
-      <div class="exp-receipts-grid">
-        <div class="exp-field">
+      <div class="row">
+        <div>
           <label for="exp-opening">Balance b/f from last month (₹)</label>
-          <input type="number" id="exp-opening" inputmode="numeric">
-          <div class="exp-auto"><span id="exp-opening-note"></span><button class="link-btn" id="exp-opening-reset" type="button">Reset to auto</button></div>
+          <input type="number" id="exp-opening">
+          <p class="note" id="exp-opening-note"></p>
+          <button class="link-btn" id="exp-opening-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
         </div>
-        <div class="exp-field">
+        <div>
           <label for="exp-maint">Maintenance amt received (₹)</label>
-          <input type="number" id="exp-maint" min="0" inputmode="numeric">
-          <div class="exp-auto"><span id="exp-maint-note"></span><button class="link-btn" id="exp-maint-reset" type="button">Reset to auto</button></div>
+          <input type="number" id="exp-maint" min="0">
+          <p class="note" id="exp-maint-note"></p>
+          <button class="link-btn" id="exp-maint-reset" type="button" style="text-align:left;padding-top:2px;">Reset to auto</button>
         </div>
       </div>
-      <div class="stats exp-totals" id="exp-receipts-stats"></div>
+      <div class="stats" id="exp-receipts-stats"></div>
+      <p class="note">"Auto" opening balance carries forward last month's available funds. "Auto" maintenance received pulls this month's collected total from Dashboard/Entry. Either can be overridden above if you need to correct a figure.</p>
     </div>
 
     <div class="card">
       <h2>Payments</h2>
+      <p class="note">Add every expense for the month — water bill, power bill, diesel, salaries, repairs, and so on. Pick a category from the list, or choose "Other" to type your own.</p>
       <div id="exp-items-wrap" style="overflow-x:auto;"></div>
       <div class="actions-row">
-        <button class="primary" style="width:auto;" id="exp-add-item-btn" type="button">+ Add expense</button>
+        <button class="ghost" id="exp-add-item-btn" type="button">+ Add expense</button>
       </div>
+      <div class="stats" id="exp-payments-total" style="margin-top:14px;"></div>
+    </div>
 
-      <details id="exp-bulk-card" class="exp-bulk">
-        <summary>Bulk upload expenses (Excel)</summary>
-        <p class="note">Columns: <b>Category</b>, <b>Paid on</b> (MM-DD-YYYY), <b>Amount</b> — optional Comments, Maintenance month, Mode. Nothing is saved until you check the preview and press Import.</p>
-        <input type="file" id="eb-file" accept=".xlsx,.xls" class="file-input-hidden">
-        <div class="actions-row">
-          <button class="ghost" id="eb-pick" type="button">Choose Excel file</button>
-          <button class="link-btn" id="eb-template" type="button" style="width:auto;padding:10px 4px;">Download template</button>
+    <div class="card">
+      <h2>Available funds — balance carried forward</h2>
+      <div class="stats" id="exp-balance-box"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin-bottom:0;">Monthly summary</h2>
+      </div>
+      <p class="note">Updates automatically as you edit the figures above.</p>
+      <div id="exp-summary-wrap" style="overflow-x:auto;margin-top:10px;"></div>
+      <div class="actions-row">
+        <button class="ghost" id="exp-print-btn" type="button">Print / Save as PDF</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Publish monthly summary</h2>
+      <p class="note">Generates a plain-text version of the summary above, ready to paste into WhatsApp or SMS.</p>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="exp-report-btn" type="button">Generate WhatsApp text</button>
+      </div>
+      <div id="exp-report-output" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Publish time-range summary</h2>
+      <p class="note">Summarize receipts, spending by category, and balance across multiple months — handy for quarterly or annual updates to owners. Pick a report type — the fields below adjust to match.</p>
+      <div class="row">
+        <div>
+          <label for="exp-period-type">Report type</label>
+          <select id="exp-period-type">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="halfyearly">Half-yearly</option>
+            <option value="annually">Annually</option>
+            <option value="custom" selected>Custom time range</option>
+          </select>
         </div>
-        <div id="eb-preview"></div>
-      </details>
+      </div>
+      <div class="row" id="exp-period-controls"></div>
+      <div class="actions-row">
+        <button class="primary" style="width:auto;" id="exp-range-btn" type="button">Generate range summary</button>
+      </div>
+      <div id="exp-range-output" style="margin-top:14px;"></div>
     </div>
   </section>
 
   <!-- ===== ADMIN: SETTINGS ===== -->
   <section id="tab-settings">
     <div class="card">
-      <h2>Society</h2>
+      <h2>Society settings</h2>
       <div class="row">
         <div>
           <label for="set-name">Society name</label>
           <input type="text" id="set-name" placeholder="e.g. JD Blossom Apartment">
         </div>
         <div>
-          <label for="set-amount">Monthly maintenance (₹)</label>
+          <label for="set-amount">Default monthly maintenance (₹)</label>
           <input type="number" id="set-amount" min="0" step="1">
         </div>
       </div>
-      <label class="set-check">
+      <label style="display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--ink);margin-bottom:14px;">
         <input type="checkbox" class="chk" id="set-amount-applyall" style="width:18px;height:18px;">
-        Apply to all 35 flats (otherwise only flats without their own amount)
+        Apply this amount to all 35 flats now
       </label>
       <div class="row">
         <div>
-          <label for="set-admin-phone">Admin WhatsApp number (optional)</label>
+          <label for="set-admin-phone">Admin WhatsApp number</label>
           <input type="tel" id="set-admin-phone" placeholder="+91...">
         </div>
       </div>
-      <button class="primary" style="width:auto;" id="save-settings-btn" type="button">Save</button>
+      <p class="note">Optional — a general contact number for the committee. Owner PIN resets no longer need this; they're verified with a security question each owner sets themselves in My Ledger.</p>
+      <button class="primary" style="width:auto;" id="save-settings-btn" type="button">Save settings</button>
       <p class="note" id="settings-saved-note"></p>
+      <p class="note">Each flat can also have its own amount set individually from Flats &amp; Access (e.g. for a larger unit) — the default here is only used for flats that don't have a custom amount, unless you tick the box above to apply it to everyone.</p>
     </div>
 
     <div class="card">
-      <h2>Forgot-password question</h2>
-      <p class="note">Lets an admin reset a forgotten password from the sign-in screen.</p>
+      <h2>Account recovery</h2>
+      <p class="note">Set a recovery question so a "Forgot password?" admin can reset any admin profile's password from the sign-in screen. Pick something only an admin would know the answer to. Individual admin passwords and profiles are managed on the new Profile tab.</p>
       <div class="row">
         <div>
-          <label for="set-recovery-q">Question</label>
+          <label for="set-recovery-q">Recovery question</label>
           <input type="text" id="set-recovery-q" placeholder="e.g. What street is the society office on?">
         </div>
+      </div>
+      <div class="row">
         <div>
           <label for="set-recovery-a">Answer</label>
           <input type="text" id="set-recovery-a" placeholder="Answer">
         </div>
       </div>
-      <button class="ghost" id="save-recovery-btn" type="button">Save</button>
+      <button class="ghost" id="save-recovery-btn" type="button">Save recovery question</button>
       <p class="note" id="recovery-saved-note"></p>
-      <p class="note warn" id="recovery-warn" style="display:none;">Not set yet.</p>
+      <p class="note warn" id="recovery-warn" style="display:none;">Not set up yet — an admin who forgets the password can't self-recover until this is saved.</p>
     </div>
 
     <div class="card">
-      <h2>Data</h2>
-      <p class="note">Backup saves everything in one CSV file. Restore replaces all current data with the file.</p>
+      <h2>About this app &amp; data</h2>
+      <p class="note">All flat, owner, PIN and payment data is stored for this society and shared with anyone who signs in here — owners only see their own flat's ledger, admins see everything. This runs as a web app (works on iPhone, Android and desktop browsers); for an app-like icon, open it in your phone's browser and use "Add to Home Screen".</p>
+      <p class="note warn">Heads-up on security: PINs and admin passwords give convenient, lightweight access control suited to a trusted residents' community — they are not bank-grade encryption. Don't reuse a sensitive personal password here.</p>
+    </div>
+
+    <div class="card">
+      <h2>Data backup</h2>
+      <p class="note">Download a full backup of everything in this app — flats, owners, PINs, payments, expenses, admin profiles, and settings — as a single CSV file. Keep it somewhere safe; if you ever need to restore, upload it back here.</p>
       <div class="actions-row">
-        <button class="primary" style="width:auto;" id="export-backup-btn" type="button">Download backup</button>
-        <button class="ghost" id="import-backup-btn" type="button">Restore backup</button>
-        <button class="ghost" id="run-diagnostics-btn" type="button">Check saved data</button>
+        <button class="primary" style="width:auto;" id="export-backup-btn" type="button">Download backup (CSV)</button>
+        <button class="ghost" id="import-backup-btn" type="button">Restore from backup</button>
         <input type="file" id="import-backup-input" accept=".csv" class="file-input-hidden">
       </div>
       <p class="note" id="backup-note"></p>
+      <p class="note warn">Restoring a backup replaces all current data in this app with what's in the file — do this only if you're sure.</p>
+    </div>
+
+    <div class="card">
+      <h2>Storage diagnostics</h2>
+      <p class="note">Read-only — inspects what's actually saved right now without changing anything. Useful for confirming all your data is present and accounted for.</p>
+      <div class="actions-row">
+        <button class="ghost" id="run-diagnostics-btn" type="button">Run diagnostics</button>
+      </div>
       <div id="diagnostics-output" style="margin-top:14px;"></div>
     </div>
   </section>
@@ -955,7 +901,7 @@
   <!-- ===== ADMIN: PROFILE ===== -->
   <section id="tab-profile">
     <div class="card">
-      <h2>My account</h2>
+      <h2>My profile</h2>
       <div class="row">
         <div>
           <label for="my-admin-name">Name</label>
@@ -966,24 +912,28 @@
           <input type="tel" id="my-admin-phone" placeholder="+91...">
         </div>
       </div>
-      <button class="ghost" id="save-my-profile-btn" type="button">Save</button>
+      <button class="ghost" id="save-my-profile-btn" type="button">Save profile</button>
       <p class="note" id="my-profile-saved-note"></p>
-      <div class="row" style="margin-top:8px;">
+    </div>
+
+    <div class="card">
+      <h2>Change my password</h2>
+      <div class="row">
         <div>
           <label for="my-admin-newpass">New password</label>
           <input type="password" id="my-admin-newpass" placeholder="At least 4 characters">
         </div>
       </div>
-      <button class="ghost" id="save-my-password-btn" type="button">Change password</button>
+      <button class="ghost" id="save-my-password-btn" type="button">Update password</button>
       <p class="note" id="my-password-saved-note"></p>
     </div>
 
     <div class="card">
-      <h2>Admins</h2>
-      <p class="note">All admins have full access. Use "Reset password" if someone forgets theirs.</p>
+      <h2>Admin profiles</h2>
+      <p class="note">Each profile signs in separately from the login screen and has the same full admin access — this is for giving committee members their own named login, not for restricting what any admin can do. Any admin can reset another admin's password from here — this is your backup if someone forgets both their password and their recovery answer.</p>
       <div id="admins-table-wrap" style="overflow-x:auto;"></div>
       <div class="actions-row">
-        <button class="ghost" id="add-admin-btn" type="button">+ Add admin</button>
+        <button class="ghost" id="add-admin-btn" type="button">+ Add admin profile</button>
       </div>
       <p class="note" id="admins-note"></p>
     </div>
@@ -1008,11 +958,6 @@
       <h2>Society overview</h2>
       <p class="note">Read-only — collection status for the building this month.</p>
       <div class="stats" id="my-society-stats"></div>
-      <div id="my-society-funds-wrap" style="display:none;">
-        <p class="note" style="margin:16px 0 8px;"><b id="my-society-funds-title">Society funds</b></p>
-        <div class="stats society-funds" id="my-society-funds"></div>
-        <p class="note" id="my-society-funds-note" style="margin-top:8px;"></p>
-      </div>
     </div>
 
     <div class="card">
@@ -1086,16 +1031,13 @@ const TABS_OWNER = [
 
 let flats = [];
 let payments = {}; // key: `${flatId}:${YYYY-MM}` -> {paid,amount,date,mode,screenshot,verified}
-let settings = {societyName:'JD Blossom Apartment', defaultAmount:2000, lastCheck:null, adminRecoveryQuestion:'', adminPhone:''};
+let settings = {societyName:'JD Blossom Apartment', defaultAmount:2000, lastCheck:null, adminPassword:'admin123', adminRecoveryQuestion:'', adminRecoveryAnswer:'', adminPhone:''};
 let expenses = {}; // key: 'YYYY-MM' -> {openingOverride, maintReceivedOverride, items:[{id,category,paidOn,amount}]}
 let admins = []; // [{id, name, phone, password}]
 let currentUser = null; // {role:'admin', adminId} | {role:'owner', flatId}
 
-// Dates use the phone/computer's own (local, e.g. IST) calendar. Using UTC here made
-// the current month/day lag behind between midnight and 5:30 AM IST.
-function localMonthKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
-function todayMonth(){ return localMonthKey(new Date()); }
-function todayDate(){ const d = new Date(); return localMonthKey(d) + '-' + String(d.getDate()).padStart(2,'0'); }
+function todayMonth(){ return new Date().toISOString().slice(0,7); }
+function todayDate(){ return new Date().toISOString().slice(0,10); }
 function inr(n){ return '₹' + Number(n||0).toLocaleString('en-IN'); }
 function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
 function monthLabelOf(month){
@@ -1104,409 +1046,280 @@ function monthLabelOf(month){
 }
 function last12Months(){
   const out = [];
-  const now = new Date();
+  const d = new Date();
+  d.setDate(1);
   for(let i=0;i<12;i++){
-    out.push(localMonthKey(new Date(now.getFullYear(), now.getMonth()-i, 1)));
+    out.push(d.toISOString().slice(0,7));
+    d.setMonth(d.getMonth()-1);
   }
   return out;
 }
-/* ===================== SUPABASE BACKEND =====================
-   All data is stored in Supabase (Postgres + private Storage bucket).
-   The browser only calls the public.jdb_* RPC functions with an app
-   session token that is issued on PIN/password sign-in; every rule
-   (who can read/modify what) is enforced in the database. Payment
-   screenshots go to a private bucket through the jdb-files Edge Function
-   and are shown via short-lived signed URLs. */
-// Two databases: the LIVE one is used only on the live web addresses below.
-// Every other address (Vercel preview links for test branches, your own
-// computer, etc.) uses the separate TEST database, so trying out changes can
-// never touch real payments. If you add a custom domain, add it here too.
-const LIVE_HOSTS = ['jdblossom-maintenance-tracker.vercel.app', 'local-jd-nsekhar6677-cyber.vercel.app'];
-const DB_ENV = {
-  live: { url: 'https://dzjedqxhtxacchwkwhof.supabase.co', key: 'sb_publishable_iP-cIUpZnQUlCCeTkdRfMg_dkrMQyPw' },
-  test: { url: 'https://omxdowsjtcyslfnrxouc.supabase.co', key: 'sb_publishable_X2Xp9O84EeQrZ3-7zZjmoQ_hAH2bKBI' }
-};
-const IS_LIVE = LIVE_HOSTS.includes(location.hostname);
-const SUPABASE_URL = (IS_LIVE ? DB_ENV.live : DB_ENV.test).url;
-const SUPABASE_PUBLISHABLE_KEY = (IS_LIVE ? DB_ENV.live : DB_ENV.test).key;
-// On test copies, label the tab and show a small corner tag so nobody mistakes it for the live site.
-if(!IS_LIVE && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){
-  document.title = '[TEST] ' + document.title;
-  const tag = document.createElement('div');
-  tag.textContent = 'TEST DATABASE';
-  tag.style.cssText = 'position:fixed;top:calc(6px + env(safe-area-inset-top));left:6px;z-index:1001;background:#B23A2E;color:#fff;font:700 10px/1 "JetBrains Mono",monospace;letter-spacing:.08em;padding:5px 7px;border-radius:2px;pointer-events:none;opacity:.92;';
-  document.body.appendChild(tag);
-}
-let sessionToken = null;
-let synced = {flats:{}, admins:{}, expenses:{}, settings:{}}; // last state confirmed by the server (for diff-saves)
-let saveChain = Promise.resolve();
-let lastLoadJson = '';
 
-class ApiError extends Error{ constructor(code, status){ super(code); this.code = code; this.status = status; } }
-
-async function rpc(fn, args){
-  let res;
-  try{
-    res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-      method:'POST',
-      headers:{'apikey': SUPABASE_PUBLISHABLE_KEY, 'Content-Type':'application/json'},
-      body: JSON.stringify(args || {})
-    });
-  }catch(e){ throw new ApiError('NETWORK', 0); }
-  const text = await res.text();
-  let data = null;
-  try{ data = text ? JSON.parse(text) : null; }catch(e){ data = text; }
-  if(!res.ok){
-    const msg = (data && (data.message || data.error)) || ('HTTP_' + res.status);
-    const code = /SESSION_EXPIRED/.test(msg) ? 'SESSION_EXPIRED' : String(msg);
-    if(code === 'SESSION_EXPIRED') handleSessionExpired();
-    throw new ApiError(code, res.status);
-  }
-  return data;
-}
-
-async function filesApi(body){
-  let res;
-  try{
-    res = await fetch(`${SUPABASE_URL}/functions/v1/jdb-files`, {
-      method:'POST',
-      headers:{'apikey': SUPABASE_PUBLISHABLE_KEY, 'Content-Type':'application/json'},
-      body: JSON.stringify({...body, token: sessionToken})
-    });
-  }catch(e){ throw new ApiError('NETWORK', 0); }
-  let data = null;
-  try{ data = await res.json(); }catch(e){ data = null; }
-  if(!res.ok){
-    const code = (data && data.error) || ('HTTP_' + res.status);
-    if(code === 'SESSION_EXPIRED') handleSessionExpired();
-    throw new ApiError(code, res.status);
-  }
-  return data;
-}
-
-// Stores a compressed screenshot in Supabase Storage; returns its storage path.
-async function uploadScreenshot(flatId, month, dataUrl){
-  const r = await filesApi({action:'upload', flatId, month, dataUrl});
-  return r.path;
-}
-
-// Swaps stored screenshot paths for viewable (signed) URLs (cached for a few hours).
-const signedUrlCache = {};
-async function signScreenshots(){
-  const now = Date.now();
-  const need = [];
-  for(const k in payments){
-    const p = payments[k];
-    if(p && p.screenshotPath){
-      const c = signedUrlCache[p.screenshotPath];
-      if(c && now - c.at < 6*3600*1000) p.screenshot = c.url; else need.push(p.screenshotPath);
-    }
-  }
-  if(need.length === 0) return;
-  try{
-    const r = await filesApi({action:'sign', paths: need});
-    const urls = (r && r.urls) || {};
-    for(const path in urls) signedUrlCache[path] = {url: urls[path], at: now};
-    for(const k in payments){ const p = payments[k]; if(p && p.screenshotPath && !p.screenshot) p.screenshot = urls[p.screenshotPath] || null; }
-  }catch(e){
-    if(e.code !== 'SESSION_EXPIRED') showSyncError("Couldn't load payment screenshots — check your connection and refresh.");
-  }
-}
-
-// Small, non-intrusive error banner (reuses the app's existing .note.err style).
-function showSyncError(message){
-  let el = document.getElementById('sync-error');
-  if(!el){
-    el = document.createElement('div');
-    el.id = 'sync-error';
-    el.className = 'note err';
-    el.setAttribute('role','alert');
-    el.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));z-index:1000;max-width:min(92vw,520px);box-shadow:0 8px 24px -10px rgba(15,26,20,.45);margin:0;';
-    document.body.appendChild(el);
-  }
-  el.textContent = message;
-  el.style.display = 'block';
-  clearTimeout(showSyncError._t);
-  showSyncError._t = setTimeout(()=>{ el.style.display = 'none'; }, 6000);
-}
-function friendlySaveError(e){
-  if(e && e.code === 'NETWORK') return "Couldn't save — you appear to be offline. Check your connection and try again.";
-  if(e && e.code === 'LOCKED_VERIFIED') return 'This payment was just verified by the admin, so it can no longer be edited here.';
-  if(e && e.code === 'LOCKED_WAIVED') return "This month's due was waived by the admin — there's nothing to submit.";
-  if(e && e.code === 'CANNOT_DELETE_SELF') return "You can't remove your own profile while logged in.";
-  if(e && e.code === 'LAST_ADMIN') return 'At least one admin profile must remain.';
-  if(e && e.code === 'INCOMPLETE_SUBMISSION') return 'Please add the amount, payment mode and a payment screenshot before submitting.';
-  return "Couldn't save that change — please refresh and try again.";
-}
-
-// Every write goes through one queue so saves reach the server in the order they were made.
-function queueSave(task){
-  const run = saveChain.then(task);
-  saveChain = run.catch(()=>{});
-  return run.catch(async e=>{
-    if(e && e.code === 'SESSION_EXPIRED') return;
-    showSyncError(friendlySaveError(e));
-    // re-sync with the server so the screen never shows data that wasn't saved
-    try{ await refreshData(true); }catch(_){}
-  });
-}
-
-let sessionExpiredHandled = false;
-function handleSessionExpired(){
-  if(!currentUser || sessionExpiredHandled) return;
-  sessionExpiredHandled = true;
-  logout().then(()=>{
-    document.getElementById('owner-login-err').innerHTML = '<p class="note err">Your session has expired — please sign in again.</p>';
-    document.getElementById('admin-login-err').innerHTML = '<p class="note err">Your session has expired — please sign in again.</p>';
-    sessionExpiredHandled = false;
-  });
-}
-
-const clone = o => JSON.parse(JSON.stringify(o));
-function snapshotSynced(){
-  synced = {flats:{}, admins:{}, expenses:{}, settings: clone(settings)};
-  flats.forEach((f,i)=>{ synced.flats[f.id] = {...clone(f), sort:i}; });
-  admins.forEach((a,i)=>{ synced.admins[a.id] = {...clone(a), sort:i}; });
-  for(const m in expenses) synced.expenses[m] = JSON.stringify(expenses[m]);
-}
-
-/* ---------- LOAD ---------- */
-// Before sign-in: only what the login screen needs (flat numbers/owner names, admin names).
-async function loadPublicInfo(){
-  const info = await rpc('jdb_public_info');
-  flats = info.flats || [];
-  admins = info.admins || [];
-  payments = {}; expenses = {};
-  settings = {...settings, societyName: info.societyName || 'JD Blossom Apartment', adminRecoveryQuestion: info.adminRecoveryQuestion || ''};
-}
-
-// After sign-in: everything this user is allowed to see.
-async function loadSessionData(){
-  const d = await rpc('jdb_load', {p_token: sessionToken});
-  const json = JSON.stringify(d);
-  const changed = json !== lastLoadJson;
-  lastLoadJson = json;
-  flats = d.flats || [];
-  payments = d.payments || {};
-  expenses = d.expenses || {};
-  admins = d.admins || [];
-  settings = {...settings, ...(d.settings || {})};
-  currentUser = d.role === 'admin' ? {role:'admin', adminId: d.subject} : {role:'owner', flatId: d.subject};
-  await signScreenshots();
-  snapshotSynced();
-  return changed;
-}
-
-// Pulls the latest data from the server (other devices' changes) and re-renders
-// the open screens — skipped while someone is typing so nothing they're doing is disturbed.
-let refreshing = false;
-async function refreshData(force){
-  if(!sessionToken || refreshing) return;
-  refreshing = true;
-  try{
-    await saveChain;
-    const changed = await loadSessionData();
-    if(!changed && !force) return;
-    const active = document.activeElement;
-    if(!force && active && active.closest && active.closest('#app-screen') && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) return;
-    rerenderAll();
-  }catch(e){ /* offline: keep showing what we have */ }
-  finally{ refreshing = false; }
-}
-function rerenderAll(){
-  if(!currentUser) return;
-  document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
-  if(currentUser.role === 'admin'){
-    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
-  } else {
-    renderOwnerView();
-  }
-}
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible') refreshData(false); });
-// Keep an open screen current (e.g. an owner's ledger after the admin verifies a payment on another device).
-const AUTO_REFRESH_MS = 60 * 1000;
-setInterval(()=>{ if(document.visibilityState === 'visible') refreshData(false); }, AUTO_REFRESH_MS);
+/* ===================== LOAD / SAVE (shared across all users) ===================== */
+const DEFAULT_OWNERS = [
+  {name:'Kundan Kumar Sigh', phone:'+917795681920'},
+  {name:'Manish Kumar', phone:'+919108416357'},
+  {name:'Anushree M.', phone:'+919148873188'},
+  {name:'Shanmukh Rao Subudhi', phone:'+918951323159'},
+  {name:'Virender Solanki - Sudeshna', phone:'+918095679091'},
+  {name:'Abha Singh', phone:'+918707743302'},
+  {name:'Maheshwara N.', phone:'+919620183269'},
+  {name:'Munisekhar Nimmala', phone:'+918197426677'},
+  {name:'Subhish J Pillai', phone:'+919620183269'},
+  {name:'O. Kathiri Chetty', phone:'+919845064751'},
+  {name:'Kheem Singh Bisht', phone:'+918553093745'},
+  {name:'Deepak Kumar', phone:'+919561725494'},
+  {name:'Sindhu Raghavendra', phone:'+919686356006'},
+  {name:'Munikrishna N.', phone:'+918892208983'},
+  {name:'Pallavi', phone:'+919663358058'},
+  {name:'Krishnamurthy Kurakula', phone:'+919731098098'},
+  {name:'Saran Kumar Reddy V.', phone:'+917259824248'},
+  {name:'Anima Remesh', phone:'+919449661228'},
+  {name:'LR. Umarani Ramesh', phone:'+919449446845'},
+  {name:'Anitha Balakrishna', phone:'+918317377800'},
+  {name:'Sai Manohar Boidapu', phone:'+919686239385'},
+  {name:'Swapnil Sunny', phone:'+918884898221'},
+  {name:'Mohan Kumar', phone:'+919620183269'},
+  {name:'Hari Dindukurthi', phone:'+917702115644'},
+  {name:'Vineel Kumar G', phone:'+919867197773'},
+  {name:'Harendra Kumar', phone:'+919035203994'},
+  {name:'Venu Bandi', phone:'+914025476081'},
+  {name:'Sumukan Setty', phone:'+919886655802'},
+  {name:'Shantakumar Banappanavar', phone:'+918497009775'},
+  {name:'Lavanya Kumar T', phone:'+919480437016'},
+  {name:'Avinash Kumar Reddy Eluru', phone:'+919533766101'},
+  {name:'Vinjamoori Shankar', phone:'+918095323902'},
+  {name:'Deepa Bharath Raj', phone:'+919731314929'},
+  {name:'Tejeswar Vasupally', phone:'+918792646237'},
+  {name:'Chaitanya P', phone:'+919620377357'}
+];
 
 async function loadAll(){
   try{
-    await loadPublicInfo();
-  }catch(e){
-    flats = []; admins = [];
-    initLoginScreen();
-    document.getElementById('owner-login-err').innerHTML = '<p class="note err">Couldn\'t reach the server — check your internet connection and refresh the page.</p>';
-    document.getElementById('admin-login-err').innerHTML = '<p class="note err">Couldn\'t reach the server — check your internet connection and refresh the page.</p>';
-    return;
+    const f = await window.storage.get('flats', true);
+    flats = f ? JSON.parse(f.value) : [];
+  }catch(e){ flats = []; }
+  try{
+    await loadPayments();
+  }catch(e){ payments = {}; }
+  try{
+    const s = await window.storage.get('settings', true);
+    if(s) settings = {...settings, ...JSON.parse(s.value)};
+  }catch(e){}
+  try{
+    const ex = await window.storage.get('expenses', true);
+    expenses = ex ? JSON.parse(ex.value) : {};
+  }catch(e){ expenses = {}; }
+  try{
+    const ad = await window.storage.get('admins', true);
+    admins = ad ? JSON.parse(ad.value) : [];
+  }catch(e){ admins = []; }
+
+  if(admins.length === 0){
+    // migrate the old single admin password into the first named profile
+    admins.push({id:'admin1', name:'Admin', phone:'', password: settings.adminPassword || 'admin123'});
+    await saveAdmins();
   }
+
+  if(flats.length === 0){
+    let i = 1;
+    for(let floor=0; floor<=4; floor++){
+      for(let unit=1; unit<=7; unit++){
+        const flatNo = 'f' + floor + String(unit).padStart(2,'0');
+        const owner = DEFAULT_OWNERS[i-1] || {name:'', phone:''};
+        flats.push({id:'id'+i, flatNo, owner: owner.name, phone: owner.phone, amount: settings.defaultAmount, pin: String(1000+i)});
+        i++;
+      }
+    }
+    await saveFlats();
+    await saveSettings();
+  }
+  // backfill pins for older data that might not have them
+  let needSave = false;
+  flats.forEach((f,idx)=>{ if(!f.pin){ f.pin = String(1000+idx+1); needSave = true; } });
+
+  // migrate flat numbers to the f001..f407 (floor+unit) scheme if they don't already match
+  const flatNoPattern = /^f[0-4]0[1-7]$/;
+  if(flats.length === 35 && !flats.every(f=>flatNoPattern.test(f.flatNo))){
+    flats.forEach((f,idx)=>{
+      const floor = Math.floor(idx/7);
+      const unit = (idx%7)+1;
+      f.flatNo = 'f' + floor + String(unit).padStart(2,'0');
+    });
+    needSave = true;
+  }
+  if(needSave) await saveFlats();
+
   document.getElementById('login-society-title').textContent = settings.societyName || 'JD Blossom Apartment';
   initLoginScreen();
 }
 
-/* ---------- SAVE (only what actually changed is sent) ---------- */
-const FLAT_FIELDS = ['flatNo','owner','phone','amount','pin','sort'];
-async function saveFlats(){
-  if(!currentUser || currentUser.role !== 'admin') return;
-  const upserts = [];
-  const seen = new Set();
-  flats.forEach((f,i)=>{
-    seen.add(f.id);
-    const cur = {...f, sort:i};
-    const prev = synced.flats[f.id];
-    if(!prev){ upserts.push({id:f.id, flatNo:f.flatNo, owner:f.owner||'', phone:f.phone||'', amount:f.amount, pin:String(f.pin||''), sort:i}); return; }
-    const patch = {id:f.id};
-    let dirty = false;
-    FLAT_FIELDS.forEach(k=>{ if(String(cur[k] ?? '') !== String(prev[k] ?? '')){ patch[k] = k==='pin' ? String(cur[k]) : cur[k]; dirty = true; } });
-    if(dirty) upserts.push(patch);
-  });
-  const deletes = Object.keys(synced.flats).filter(id=>!seen.has(id));
-  if(upserts.length === 0 && deletes.length === 0) return;
-  return queueSave(async ()=>{
-    await rpc('jdb_save_flats', {p_token: sessionToken, p_upserts: upserts, p_deletes: deletes});
-    flats.forEach((f,i)=>{ synced.flats[f.id] = {...clone(f), sort:i}; });
-    deletes.forEach(id=>{ delete synced.flats[id]; });
-  });
-}
+async function saveFlats(){ try{ await window.storage.set('flats', JSON.stringify(flats), true); }catch(e){} }
 
-async function saveAdmins(){
-  if(!currentUser || currentUser.role !== 'admin') return;
-  const upserts = [];
-  const seen = new Set();
-  const withPasswords = [];
-  admins.forEach((a,i)=>{
-    seen.add(a.id);
-    const prev = synced.admins[a.id];
-    const patch = {id:a.id};
-    let dirty = !prev;
-    if(!prev){ patch.name = a.name; patch.phone = a.phone || ''; patch.sort = i; }
-    else {
-      if((a.name||'') !== (prev.name||'')){ patch.name = a.name; dirty = true; }
-      if((a.phone||'') !== (prev.phone||'')){ patch.phone = a.phone || ''; dirty = true; }
-      if(i !== prev.sort){ patch.sort = i; dirty = true; }
-    }
-    if(a.password){ patch.password = a.password; dirty = true; withPasswords.push(a); }
-    if(dirty) upserts.push(patch);
-  });
-  const deletes = Object.keys(synced.admins).filter(id=>!seen.has(id));
-  // passwords are only ever sent to the server (hashed there) — never kept in memory
-  withPasswords.forEach(a=>{ delete a.password; });
-  if(upserts.length === 0 && deletes.length === 0) return;
-  return queueSave(async ()=>{
-    await rpc('jdb_save_admins', {p_token: sessionToken, p_upserts: upserts, p_deletes: deletes});
-    admins.forEach((a,i)=>{ synced.admins[a.id] = {...clone(a), sort:i}; });
-    deletes.forEach(id=>{ delete synced.admins[id]; });
-  });
-}
-
-const SETTINGS_FIELDS = ['societyName','defaultAmount','lastCheck','adminRecoveryQuestion','adminPhone'];
-async function saveSettings(){
-  if(!currentUser || currentUser.role !== 'admin') return;
-  const patch = {};
-  SETTINGS_FIELDS.forEach(k=>{ if(String(settings[k] ?? '') !== String(synced.settings[k] ?? '')) patch[k] = settings[k]; });
-  if(settings.adminRecoveryAnswer){ patch.adminRecoveryAnswer = settings.adminRecoveryAnswer; delete settings.adminRecoveryAnswer; }
-  if(Object.keys(patch).length === 0) return;
-  return queueSave(async ()=>{
-    await rpc('jdb_save_settings', {p_token: sessionToken, p_patch: patch});
-    SETTINGS_FIELDS.forEach(k=>{ if(k in patch) synced.settings[k] = patch[k]; });
-  });
-}
-
-async function saveExpenses(){
-  if(!currentUser || currentUser.role !== 'admin') return;
-  const months = {};
-  for(const m in expenses){
-    const j = JSON.stringify(expenses[m]);
-    if(j !== synced.expenses[m]) months[m] = clone(expenses[m]);
-  }
-  if(Object.keys(months).length === 0) return;
-  return queueSave(async ()=>{
-    await rpc('jdb_save_expenses', {p_token: sessionToken, p_months: months});
-    for(const m in months) synced.expenses[m] = JSON.stringify(months[m]);
-  });
-}
-
-/* ---------- payments: one row per flat per month on the server, so a save for one flat can never overwrite another's ---------- */
+/* ---------- payments: per-month storage keys, with fetch-merge-write to avoid concurrent overwrite loss ---------- */
 function splitPayKey(key){
   const idx = key.lastIndexOf(':');
   return { flatId: key.slice(0, idx), month: key.slice(idx+1) };
 }
 
-// Saves ONE flat's record for ONE month.
+// Explicit, authoritative index of "which months have data" — kept in its own small key.
+// This is the primary way loadPayments() discovers what to fetch. It does NOT depend on
+// window.storage.list() behaving a particular way, since that's an assumption we can't
+// fully verify against the real backend from here. list() is still used as a best-effort
+// supplementary check in loadPayments(), but the index is the source of truth.
+async function addMonthToIndex(month){
+  let idx = [];
+  try{
+    const cur = await window.storage.get('payments_index', true);
+    if(cur && cur.value) idx = JSON.parse(cur.value);
+  }catch(e){ idx = []; }
+  if(!Array.isArray(idx)) idx = [];
+  if(!idx.includes(month)){
+    idx.push(month);
+    idx.sort();
+    try{ await window.storage.set('payments_index', JSON.stringify(idx), true); }catch(e){}
+  }
+}
+
+// One-time (idempotent) migration: old versions stored everything in a single 'payments' key.
+// Split that into one key per month, then remove the old key. Safe to call every load —
+// it's a no-op once the old key is gone. Already-existing per-month data always wins over
+// data reconstructed from the old legacy blob, so a second device migrating late can never
+// silently roll back a fresher submission that was already saved under the new format.
+// One-time-per-fact (but safely repeatable) migration: old versions stored everything in a
+// single 'payments' key. This copies that data into per-month keys. It deliberately NEVER
+// deletes the old key — that's the fix for a real bug where an earlier version deleted it
+// unconditionally, even if some of the per-month writes had silently failed, permanently
+// losing whatever hadn't been copied yet. Leaving the old key in place costs a little storage
+// space but removes that entire risk, and makes this function safe to re-run on every load:
+// each run re-merges, so any data that failed to copy before gets another chance next time,
+// while already-migrated/fresher data always wins over the legacy copy for the same record.
+async function migrateOldPaymentsIfNeeded(){
+  let old = null;
+  try{ old = await window.storage.get('payments', true); }catch(e){ return; }
+  if(!old || !old.value) return;
+  let oldPayments = {};
+  try{ oldPayments = JSON.parse(old.value); }catch(e){ oldPayments = {}; }
+  const byMonth = {};
+  for(const key in oldPayments){
+    const { flatId, month } = splitPayKey(key);
+    if(!byMonth[month]) byMonth[month] = {};
+    byMonth[month][flatId] = oldPayments[key];
+  }
+  for(const month in byMonth){
+    let existing = {};
+    try{
+      const cur = await window.storage.get('payments_'+month, true);
+      if(cur && cur.value) existing = JSON.parse(cur.value);
+    }catch(e){}
+    // existing (already-migrated / freshly-saved) data wins over the old legacy blob
+    const merged = {...byMonth[month], ...existing};
+    try{ await window.storage.set('payments_'+month, JSON.stringify(merged), true); }catch(e){}
+    await addMonthToIndex(month);
+  }
+  // Deliberately no delete of the old 'payments' key here — see comment above.
+}
+
+async function loadPayments(){
+  await migrateOldPaymentsIfNeeded();
+  payments = {};
+  const monthsToLoad = new Set();
+
+  // Primary source: the explicit index (doesn't depend on list() behaving a particular way)
+  try{
+    const idxRec = await window.storage.get('payments_index', true);
+    if(idxRec && idxRec.value){
+      const idx = JSON.parse(idxRec.value);
+      if(Array.isArray(idx)) idx.forEach(m => monthsToLoad.add(m));
+    }
+  }catch(e){}
+
+  // Supplementary/best-effort: list() discovery, in case the index is ever missing an entry
+  try{
+    const list = await window.storage.list('payments_', true);
+    const rawKeys = (list && list.keys) ? list.keys : [];
+    rawKeys.forEach(k=>{
+      const keyStr = typeof k === 'string' ? k : (k && k.key ? k.key : null);
+      if(keyStr && keyStr !== 'payments_index') monthsToLoad.add(keyStr.slice('payments_'.length));
+    });
+  }catch(e){}
+
+  for(const month of monthsToLoad){
+    try{
+      const rec = await window.storage.get('payments_'+month, true);
+      if(rec && rec.value){
+        const monthObj = JSON.parse(rec.value);
+        for(const flatId in monthObj){
+          payments[payKey(flatId, month)] = monthObj[flatId];
+        }
+      }
+    }catch(e){ /* skip this month on read error, don't lose the rest */ }
+  }
+}
+
+// Saves ONE flat's record for ONE month. Fetches the latest copy of that month's key
+// immediately before writing, so a concurrent save (from another device) to a DIFFERENT
+// flat in the same month is preserved instead of being overwritten wholesale.
 async function savePayments(flatId, month){
   if(!flatId || !month) return; // guard against accidental no-arg calls
-  const p = payments[payKey(flatId, month)] || {};
-  const data = {...p};
-  delete data.screenshot;
-  data.screenshotPath = p.screenshotPath || null;
-  return queueSave(async ()=>{
-    await rpc('jdb_save_payment', {p_token: sessionToken, p_flat_id: flatId, p_month: month, p_data: data});
-  });
+  const storageKey = 'payments_' + month;
+  let monthObj = {};
+  try{
+    const cur = await window.storage.get(storageKey, true);
+    if(cur && cur.value) monthObj = JSON.parse(cur.value);
+  }catch(e){ monthObj = {}; }
+  monthObj[flatId] = payments[payKey(flatId, month)];
+  try{ await window.storage.set(storageKey, JSON.stringify(monthObj), true); }catch(e){}
+  await addMonthToIndex(month);
 }
+
+// Used only for full-state operations (CSV restore) where every month is being replaced at once.
+async function saveAllPaymentsBulk(){
+  const byMonth = {};
+  for(const key in payments){
+    const { flatId, month } = splitPayKey(key);
+    if(!byMonth[month]) byMonth[month] = {};
+    byMonth[month][flatId] = payments[key];
+  }
+  const months = Object.keys(byMonth);
+  for(const month of months){
+    try{ await window.storage.set('payments_'+month, JSON.stringify(byMonth[month]), true); }catch(e){}
+  }
+  try{ await window.storage.set('payments_index', JSON.stringify(months.sort()), true); }catch(e){}
+}
+
+async function saveSettings(){ try{ await window.storage.set('settings', JSON.stringify(settings), true); }catch(e){} }
+async function saveExpenses(){ try{ await window.storage.set('expenses', JSON.stringify(expenses), true); }catch(e){} }
+async function saveAdmins(){ try{ await window.storage.set('admins', JSON.stringify(admins), true); }catch(e){} }
 
 /* ---------- DATA BACKUP: single CSV export/import ---------- */
 function csvEscape(value){
   return '"' + String(value).replace(/"/g, '""') + '"';
 }
 
-function blobToDataUrl(blob){
-  return new Promise((resolve, reject)=>{
-    const r = new FileReader();
-    r.onload = ()=>resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(blob);
-  });
-}
-
 async function exportBackupCsv(){
+  const rows = [
+    ['key','value'],
+    ['meta_app', settings.societyName || 'JD Blossom Apartment'],
+    ['meta_exportedAt', new Date().toISOString()],
+    ['flats', JSON.stringify(flats)],
+    ['payments', JSON.stringify(payments)],
+    ['settings', JSON.stringify(settings)],
+    ['expenses', JSON.stringify(expenses)],
+    ['admins', JSON.stringify(admins)]
+  ];
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Jdb_data.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   const note = document.getElementById('backup-note');
-  note.textContent = 'Preparing backup…';
-  try{
-    await saveChain;
-    await loadSessionData();
-    const secrets = await rpc('jdb_export', {p_token: sessionToken});
-    // self-contained backup: screenshots are embedded so the file alone is enough to restore
-    const paymentsOut = {};
-    for(const key in payments){
-      const p = {...payments[key]};
-      if(p.screenshot && p.screenshotPath){
-        try{
-          const res = await fetch(p.screenshot);
-          if(res.ok) p.screenshot = await blobToDataUrl(await res.blob());
-        }catch(e){ /* keep the path; the image stays in cloud storage */ }
-      }
-      paymentsOut[key] = p;
-    }
-    const flatsOut = flats.map(f=>{
-      const o = {...f};
-      delete o.hasRecoveryAnswer;
-      if(secrets.flatSecrets && secrets.flatSecrets[f.id]) o.recoveryAnswerHash = secrets.flatSecrets[f.id];
-      return o;
-    });
-    const adminsOut = admins.map(a=>({...a, passwordHash: secrets.adminSecrets ? secrets.adminSecrets[a.id] : undefined}));
-    const settingsOut = {...settings};
-    if(secrets.adminRecoveryAnswerHash) settingsOut.adminRecoveryAnswerHash = secrets.adminRecoveryAnswerHash;
-    const rows = [
-      ['key','value'],
-      ['meta_app', settings.societyName || 'JD Blossom Apartment'],
-      ['meta_exportedAt', new Date().toISOString()],
-      ['flats', JSON.stringify(flatsOut)],
-      ['payments', JSON.stringify(paymentsOut)],
-      ['settings', JSON.stringify(settingsOut)],
-      ['expenses', JSON.stringify(expenses)],
-      ['admins', JSON.stringify(adminsOut)]
-    ];
-    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Jdb_data.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-    note.textContent = 'Backup downloaded to your browser\'s downloads folder — move it wherever you\'d like to keep it.';
-  }catch(e){
-    note.textContent = e && e.code === 'NETWORK' ? 'Could not create the backup — you appear to be offline.' : 'Could not create the backup — please try again.';
-  }
+  note.textContent = 'Backup downloaded to your browser\'s downloads folder — move it wherever you\'d like to keep it.';
   setTimeout(()=>{ note.textContent=''; }, 5000);
 }
 
@@ -1532,25 +1345,74 @@ function parseBackupCsv(text){
   return rows;
 }
 
-/* ---------- read-only diagnostics — never writes, deletes, or migrates anything ---------- */
+/* ---------- read-only storage diagnostics — never writes, deletes, or migrates anything ---------- */
 async function runStorageDiagnostics(){
   const out = document.getElementById('diagnostics-output');
   out.innerHTML = '<p class="note">Running…</p>';
   const lines = [];
+
+  // 1. The legacy single-blob key, if it still exists
+  let legacyCount = null;
   try{
-    const t0 = performance.now();
-    const d = await rpc('jdb_diagnostics', {p_token: sessionToken});
-    const ms = Math.round(performance.now() - t0);
-    lines.push(`Database: Supabase — connected (${ms} ms).`);
-    lines.push(`Flats currently on file: ${d.flats}`);
-    lines.push(`Payment records: ${d.payments} (${(d.months||[]).length} month(s), ${d.screenshots} screenshot(s))`);
-    lines.push(`Expense months: ${d.expenseMonths} · Admins: ${d.admins}`);
-    lines.push(`Last payment change: ${d.lastPaymentChange ? new Date(d.lastPaymentChange).toLocaleString('en-IN') : 'never'}`);
-    const lc = d.lastCleanup;
-    lines.push(`Last screenshot clean-up: ${lc ? `${new Date(lc.at).toLocaleString('en-IN')}${lc.dryRun ? ' (test run)' : ''} — ${lc.filesDeleted} deleted${lc.filesFailed ? `, ${lc.filesFailed} failed` : ''}` : 'not run yet'}`);
+    const old = await window.storage.get('payments', true);
+    if(old && old.value){
+      const parsed = JSON.parse(old.value);
+      legacyCount = Object.keys(parsed).length;
+      lines.push(`Legacy 'payments' key: PRESENT — ${legacyCount} record(s) inside.`);
+    } else {
+      lines.push(`Legacy 'payments' key: not present.`);
+    }
   }catch(e){
-    lines.push(`Database: could not be reached (${e && e.code ? e.code : 'error'}).`);
+    lines.push(`Legacy 'payments' key: could not read (${e && e.message ? e.message : 'error'}).`);
   }
+
+  // 2. The index
+  let indexMonths = [];
+  try{
+    const idxRec = await window.storage.get('payments_index', true);
+    if(idxRec && idxRec.value){
+      const idx = JSON.parse(idxRec.value);
+      if(Array.isArray(idx)) indexMonths = idx;
+    }
+    lines.push(`payments_index: ${indexMonths.length ? indexMonths.join(', ') : '(empty or missing)'}`);
+  }catch(e){
+    lines.push(`payments_index: could not read (${e && e.message ? e.message : 'error'}).`);
+  }
+
+  // 3. What list() itself reports, for comparison
+  let listedMonths = [];
+  try{
+    const list = await window.storage.list('payments_', true);
+    const rawKeys = (list && list.keys) ? list.keys : [];
+    listedMonths = rawKeys
+      .map(k => typeof k === 'string' ? k : (k && k.key ? k.key : null))
+      .filter(k => k && k !== 'payments_index')
+      .map(k => k.slice('payments_'.length));
+    lines.push(`window.storage.list() reports: ${listedMonths.length ? listedMonths.join(', ') : '(empty or unavailable)'}`);
+  }catch(e){
+    lines.push(`window.storage.list(): failed (${e && e.message ? e.message : 'error'}).`);
+  }
+
+  // 4. Record count per month key found by EITHER method (union), so nothing is missed
+  const allMonths = Array.from(new Set([...indexMonths, ...listedMonths])).sort();
+  lines.push('');
+  lines.push(`Per-month record counts (${allMonths.length} month key(s) found):`);
+  let totalRecords = 0;
+  for(const month of allMonths){
+    try{
+      const rec = await window.storage.get('payments_'+month, true);
+      const count = (rec && rec.value) ? Object.keys(JSON.parse(rec.value)).length : 0;
+      totalRecords += count;
+      lines.push(`  ${month}: ${count} record(s)`);
+    }catch(e){
+      lines.push(`  ${month}: could not read`);
+    }
+  }
+  lines.push('');
+  lines.push(`Total records found across all months: ${totalRecords}`);
+  lines.push(`Currently loaded into this session's memory: ${Object.keys(payments).length}`);
+  lines.push(`Flats currently on file: ${flats.length}`);
+
   out.innerHTML = `<div class="report-box">${escapeHtml(lines.join('\n'))}</div>`;
 }
 
@@ -1572,43 +1434,23 @@ async function importBackupCsv(e){
       e.target.value = '';
       return;
     }
-    const inFlats = JSON.parse(data.flats);
-    const inPayments = JSON.parse(data.payments);
-    const inSettings = JSON.parse(data.settings);
-    const inExpenses = data.expenses ? JSON.parse(data.expenses) : {};
-    const inAdmins = data.admins ? JSON.parse(data.admins) : [];
-
-    // move any embedded screenshots into cloud storage first
-    const keys = Object.keys(inPayments);
-    const toUpload = keys.filter(k=>{ const p = inPayments[k]; return p && !p.screenshotPath && typeof p.screenshot === 'string' && p.screenshot.startsWith('data:'); });
-    let done = 0;
-    for(const key of toUpload){
-      const { flatId, month } = splitPayKey(key);
-      note.textContent = `Uploading screenshots… ${done+1} of ${toUpload.length}`;
-      inPayments[key].screenshotPath = await uploadScreenshot(flatId, month, inPayments[key].screenshot);
-      done++;
-    }
-    const cleanPayments = {};
-    keys.forEach(k=>{ const p = {...inPayments[k]}; delete p.screenshot; if(!p.screenshotPath) p.screenshotPath = null; cleanPayments[k] = p; });
-
-    note.textContent = 'Restoring…';
-    await saveChain;
-    await rpc('jdb_restore', {p_token: sessionToken, p: {flats: inFlats, payments: cleanPayments, settings: inSettings, expenses: inExpenses, admins: inAdmins}});
-    await loadSessionData();
+    flats = JSON.parse(data.flats);
+    payments = JSON.parse(data.payments);
+    settings = {...settings, ...JSON.parse(data.settings)};
+    expenses = data.expenses ? JSON.parse(data.expenses) : {};
+    admins = data.admins ? JSON.parse(data.admins) : admins;
+    await saveFlats(); await saveAllPaymentsBulk(); await saveSettings(); await saveExpenses(); await saveAdmins();
 
     document.getElementById('set-name').value = settings.societyName || '';
     document.getElementById('set-amount').value = settings.defaultAmount || 2000;
     document.getElementById('set-admin-phone').value = settings.adminPhone || '';
     document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
-    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses(); renderProfile();
 
     note.textContent = 'Backup restored successfully.';
     e.target.value = '';
   }catch(err){
-    if(err && err.code === 'SESSION_EXPIRED') return;
-    note.textContent = err && err.code === 'NETWORK'
-      ? "Could not restore — you appear to be offline. Nothing was changed."
-      : "Could not read that file — make sure it's a backup CSV exported from this app.";
+    note.textContent = "Could not read that file — make sure it's a backup CSV exported from this app.";
     e.target.value = '';
   }
 }
@@ -1641,45 +1483,23 @@ function getExpenseData(month){
   if(!expenses[month]) expenses[month] = {openingOverride:null, maintReceivedOverride:null, items:[]};
   return expenses[month];
 }
-// read-only view of a month's expense data (does not create an empty month)
-function peekExpenseData(month){
-  return expenses[month] || {openingOverride:null, maintReceivedOverride:null, items:[]};
-}
-const hasOverride = v => v !== null && v !== undefined && v !== '';
-// first month that really has expense data (items or a typed-in figure)
-function firstExpenseMonth(){
-  return Object.keys(expenses).filter(m=>{
-    const d = expenses[m];
-    return d && ((d.items && d.items.length) || hasOverride(d.openingOverride) || hasOverride(d.maintReceivedOverride));
-  }).sort()[0] || null;
-}
-function expenseMonthFigures(month, autoOpening){
-  const data = peekExpenseData(month);
+function computeExpenseMonth(month, depth){
+  depth = depth || 0;
+  const data = getExpenseData(month);
+  let autoOpening = 0;
+  if(depth < 24){
+    const prev = prevMonthKeyGlobal(month);
+    if(expenses[prev]){
+      autoOpening = computeExpenseMonth(prev, depth+1).closing;
+    }
+  }
   const autoMaint = monthStats(month).collected;
-  const opening = hasOverride(data.openingOverride) ? Number(data.openingOverride) : autoOpening;
-  const maintReceived = hasOverride(data.maintReceivedOverride) ? Number(data.maintReceivedOverride) : autoMaint;
+  const opening = (data.openingOverride !== null && data.openingOverride !== undefined) ? Number(data.openingOverride) : autoOpening;
+  const maintReceived = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? Number(data.maintReceivedOverride) : autoMaint;
   const totalReceipts = opening + maintReceived;
-  const totalPayments = (data.items || []).reduce((s,it)=>s+(Number(it.amount)||0),0);
+  const totalPayments = data.items.reduce((s,it)=>s+(Number(it.amount)||0),0);
   const closing = totalReceipts - totalPayments;
   return {opening, maintReceived, totalReceipts, totalPayments, closing, autoOpening, autoMaint};
-}
-// Balance b/f carries forward month by month from the first month with expense data,
-// including through months that have no expenses recorded.
-function computeExpenseMonth(month){
-  const first = firstExpenseMonth();
-  if(!first || month <= first) return expenseMonthFigures(month, 0);
-  let m = first, carry = expenseMonthFigures(first, 0).closing;
-  while(true){
-    const next = nextMonthKey(m);
-    if(next === month) return expenseMonthFigures(month, carry);
-    carry = expenseMonthFigures(next, carry).closing;
-    m = next;
-  }
-}
-function nextMonthKey(month){
-  const [y,mo] = month.split('-').map(Number);
-  const d = new Date(y, mo, 1);
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 }
 
 function payKey(flatId, month){ return flatId + ':' + month; }
@@ -1705,18 +1525,14 @@ function flatFirstMonth(flatId){
 function computeFlatDue(flatId, month, depth){
   depth = depth || 0;
   const flat = flats.find(f=>f.id===flatId);
-  const p = getPayment(flatId, month);
-  // imported months can carry that month's own maintenance share and opening arrears
-  const hasNum = v => v !== null && v !== undefined && v !== '' && !isNaN(Number(v));
-  const base = hasNum(p.baseOverride) ? Number(p.baseOverride) : (flat ? Number(flat.amount ?? settings.defaultAmount) : Number(settings.defaultAmount));
+  const base = flat ? Number(flat.amount ?? settings.defaultAmount) : Number(settings.defaultAmount);
   const firstMonth = flatFirstMonth(flatId);
   let carryIn = 0;
-  if(hasNum(p.carryInOverride)){
-    carryIn = Number(p.carryInOverride);
-  } else if(depth < 36 && firstMonth && month > firstMonth){
+  if(depth < 36 && firstMonth && month > firstMonth){
     const prev = prevMonthKeyGlobal(month);
     carryIn = computeFlatDue(flatId, prev, depth+1).carryOut;
   }
+  const p = getPayment(flatId, month);
   if(p.waived){
     // Waived by admin: this month's due is cancelled outright and nothing carries forward from it.
     return {base, carryIn, dueThisMonth: 0, paid: 0, carryOut: 0, waived: true};
@@ -1890,501 +1706,6 @@ function customConfirm(message){
   });
 }
 
-/* ===================== BULK UPLOAD (Excel) =====================
-   Admin-only. The file is read in the browser (SheetJS, loaded on first use),
-   checked row by row and shown as a preview. Nothing is saved until the admin
-   presses Import; the import itself is one all-or-nothing database call. */
-const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-let xlsxPromise = null;
-function loadXlsx(){
-  if(window.XLSX) return Promise.resolve(window.XLSX);
-  if(!xlsxPromise){
-    xlsxPromise = new Promise((resolve, reject)=>{
-      const sc = document.createElement('script');
-      sc.src = XLSX_URL;
-      sc.onload = ()=> window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX_LOAD'));
-      sc.onerror = ()=>{ xlsxPromise = null; reject(new Error('XLSX_LOAD')); };
-      document.head.appendChild(sc);
-    });
-  }
-  return xlsxPromise;
-}
-async function readSheetRows(file){
-  const XLSX = await loadXlsx();
-  const wb = XLSX.read(await file.arrayBuffer(), {type:'array', cellDates:false});
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null, blankrows:false});
-}
-
-const bulkKey = v => String(v ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
-const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-const pad2 = n => String(n).padStart(2,'0');
-function validYmd(y, m, d){
-  if(!(y >= 2000 && y <= 2100 && m >= 1 && m <= 12 && d >= 1)) return false;
-  return d <= new Date(y, m, 0).getDate();
-}
-// Excel date cell, or text as MM-DD-YYYY (also MM/DD/YY, YYYY-MM-DD). Returns {iso} | {error} | {} (blank)
-function bulkParseDate(v){
-  if(v === null || v === undefined || String(v).trim() === '') return {};
-  if(typeof v === 'number' && isFinite(v)){
-    if(v < 20000 || v > 80000) return {error:'not a valid date'};
-    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
-    return {iso: `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`};
-  }
-  if(v instanceof Date && !isNaN(v)) return {iso: `${v.getFullYear()}-${pad2(v.getMonth()+1)}-${pad2(v.getDate())}`};
-  const t = String(v).trim();
-  let m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
-  if(m){ const [y,mo,d] = [Number(m[1]),Number(m[2]),Number(m[3])]; return validYmd(y,mo,d) ? {iso:`${y}-${pad2(mo)}-${pad2(d)}`} : {error:`"${t}" is not a real date`}; }
-  m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/);
-  if(m){
-    const mo = Number(m[1]), d = Number(m[2]); let y = Number(m[3]); if(y < 100) y += 2000;
-    return validYmd(y,mo,d) ? {iso:`${y}-${pad2(mo)}-${pad2(d)}`} : {error:`"${t}" is not a valid MM-DD-YYYY date`};
-  }
-  return {error:`"${t}" is not a date (use MM-DD-YYYY)`};
-}
-// "August", "Aug", "08", "2026-08", "Aug 2026", "08/2026", or an Excel date. Year taken from the value,
-// else from the Paid-on date (a month more than one ahead of it belongs to the previous year), else this year.
-function bulkParseMonth(v, paidOnIso){
-  if(v === null || v === undefined || String(v).trim() === '') return {};
-  if(typeof v === 'number' && v > 31){ const d = bulkParseDate(v); return d.iso ? {month: d.iso.slice(0,7)} : {error:'not a valid month'}; }
-  const t = String(v).trim();
-  let y = null, mo = null, m;
-  if((m = t.match(/^(\d{4})[-\/.](\d{1,2})$/))){ y = Number(m[1]); mo = Number(m[2]); }
-  else if((m = t.match(/^(\d{1,2})[-\/.](\d{4})$/))){ mo = Number(m[1]); y = Number(m[2]); }
-  else if((m = t.match(/^(\d{1,2})$/))){ mo = Number(m[1]); }
-  else if((m = t.match(/^([A-Za-z]+)[\s\-\/,']*(\d{2}|\d{4})?$/))){
-    const name = m[1].toLowerCase();
-    const idx = MONTH_NAMES.findIndex(n => n === name || (name.length >= 3 && n.startsWith(name)));
-    if(idx >= 0) mo = idx + 1;
-    if(m[2]){ y = Number(m[2]); if(y < 100) y += 2000; }
-  }
-  if(!(mo >= 1 && mo <= 12)) return {error:`"${t}" is not a month`};
-  let guessed = false;
-  if(!y){
-    if(paidOnIso){
-      const py = Number(paidOnIso.slice(0,4)), pm = Number(paidOnIso.slice(5,7));
-      y = (mo > pm + 1) ? py - 1 : py;
-    } else { y = new Date().getFullYear(); guessed = true; }
-  }
-  if(!(y >= 2000 && y <= 2100)) return {error:`"${t}" has an invalid year`};
-  return {month: `${y}-${pad2(mo)}`, guessed};
-}
-function bulkMoney(v){
-  if(v === null || v === undefined || String(v).trim() === '') return null;
-  if(typeof v === 'number') return v;
-  const t = String(v).replace(/[₹,\s]/g, '').replace(/^rs\.?/i, '');
-  if(t === '-' ) return null;
-  const n = Number(t);
-  return isFinite(n) ? n : NaN;
-}
-function bulkMode(v){
-  const k = bulkKey(v);
-  if(!k) return {mode:''};
-  if(['upi','gpay','googlepay','phonepe','paytm'].includes(k)) return {mode:'UPI'};
-  if(k === 'cash') return {mode:'Cash'};
-  if(['banktransfer','bank','neft','imps','rtgs','netbanking','transfer','online'].includes(k)) return {mode:'Bank Transfer'};
-  if(['cheque','check','chq'].includes(k)) return {mode:'Cheque'};
-  return {error:`unknown mode "${String(v).trim()}" (use UPI, Cash, Bank Transfer or Cheque)`};
-}
-function bulkFindFlat(v){
-  const raw = String(v ?? '').trim();
-  if(!raw) return null;
-  const k = bulkKey(raw);
-  const direct = flats.find(f => bulkKey(f.flatNo) === k);
-  if(direct) return direct;
-  const digits = k.replace(/^flat/, '').replace(/^f/, '');
-  if(/^\d{1,3}$/.test(digits)){
-    const want = 'f' + digits.padStart(3,'0');
-    return flats.find(f => bulkKey(f.flatNo) === want) || null;
-  }
-  return null;
-}
-function bulkCategory(v){
-  const t = String(v ?? '').trim().replace(/\s+/g,' ');
-  if(!t) return {category:''};
-  const k = bulkKey(t);
-  const exact = EXPENSE_CATEGORIES.find(c => bulkKey(c) === k);
-  if(exact) return exact === t ? {category: exact} : {category: exact, note:`category "${t}" → "${exact}"`};
-  // "Watchman Salary - Deepak" → category "Watchman Salary", comment "Deepak"
-  const pre = EXPENSE_CATEGORIES.find(c => k.startsWith(bulkKey(c)) && /[-–:(]/.test(t.slice(c.length, c.length + 3)));
-  if(pre){
-    const extra = t.slice(pre.length).replace(/^[\s\-–:(]+/, '').replace(/\)\s*$/, '').trim();
-    return {category: pre, extraComment: extra, note:`category "${t}" → "${pre}" (+ comment "${extra}")`};
-  }
-  return {category: t, note:`"${t}" isn't in the category list — will be saved as a custom category`};
-}
-// Finds the header row (first 10 rows) and maps columns by name.
-function bulkHeaders(rows, spec){
-  for(let r = 0; r < Math.min(rows.length, 10); r++){
-    const cols = {};
-    (rows[r] || []).forEach((cell, i)=>{
-      const k = bulkKey(cell);
-      if(!k) return;
-      for(const field in spec){ if(cols[field] === undefined && spec[field].includes(k)) cols[field] = i; }
-    });
-    if(Object.keys(cols).length >= 3) return {headerRow: r, cols};
-  }
-  return null;
-}
-const statusBadge = (row)=> row.errors.length ? '<span class="badge pending">Error</span>'
-  : (row.warnings.length ? '<span class="badge submitted">Check</span>' : '<span class="badge paid">Ready</span>');
-const notesHtml = (row)=> [...row.errors.map(e=>`<div style="color:var(--red);">✖ ${escapeHtml(e)}</div>`), ...row.warnings.map(w=>`<div style="color:#8A5A00;">⚠ ${escapeHtml(w)}</div>`), ...(row.infos||[]).map(w=>`<div style="color:#4E6154;">ℹ ${escapeHtml(w)}</div>`)].join('') || '—';
-
-/* ---------------------------------------------------------------- maintenance */
-const MAINT_SPEC = {
-  flat: ['flatno','flat','flatnumber','flatnum'],
-  owner: ['nameowner','owner','ownername','name'],
-  share: ['maintanaceshare','maintananceshare','maintenanceshare','share','maintenance','amountdue','due'],
-  prev: ['previousbalance','prevbalance','previousdue','arrears','balancebf'],
-  paid: ['paidamt','paidamount','amountpaid','paid'],
-  paidOn: ['paidon','paiddate','paymentdate','date'],
-  month: ['maintenancemonth','maintanancemonth','maintanacemonth','month'],
-  mode: ['mode','paymentmode','modeofpayment']
-};
-let maintPreview = null;
-
-function buildMaintPreview(rows){
-  const h = bulkHeaders(rows, MAINT_SPEC);
-  if(!h || h.cols.flat === undefined) return {fileError:'Could not find the header row — the sheet needs at least "Flat No", "Maintenance month" and "Paid Amt" columns.'};
-  const missing = ['flat','month','paid'].filter(f => h.cols[f] === undefined);
-  if(missing.length) return {fileError:`Missing column(s): ${missing.map(f=>({flat:'Flat No',month:'Maintenance month',paid:'Paid Amt'})[f]).join(', ')}.`};
-  const get = (r, f)=> h.cols[f] === undefined ? null : r[h.cols[f]];
-  const out = [];
-  for(let i = h.headerRow + 1; i < rows.length; i++){
-    const r = rows[i] || [];
-    if(r.every(c => c === null || String(c).trim() === '')) continue;
-    const row = {rowNo: i + 1, errors: [], warnings: [], infos: [], overwrite: false};
-    const flat = bulkFindFlat(get(r,'flat'));
-    row.flatRaw = String(get(r,'flat') ?? '').trim();
-    if(!row.flatRaw) row.errors.push('Flat No is missing');
-    else if(!flat) row.errors.push(`flat "${row.flatRaw}" not found in Flats & Access`);
-    row.flat = flat;
-    row.ownerFile = String(get(r,'owner') ?? '').trim();
-    if(flat && row.ownerFile && bulkKey(row.ownerFile) !== bulkKey(flat.owner)) row.warnings.push(`owner in file "${row.ownerFile}" differs from app "${flat.owner || '—'}" (app name kept)`);
-    const pd = bulkParseDate(get(r,'paidOn'));
-    if(pd.error) row.errors.push(`Paid on: ${pd.error}`);
-    row.paidOn = pd.iso || '';
-    const mo = bulkParseMonth(get(r,'month'), row.paidOn);
-    if(mo.error) row.errors.push(`Maintenance month: ${mo.error}`);
-    else if(!mo.month) row.errors.push('Maintenance month is missing');
-    if(mo.guessed) row.warnings.push(`no year given — assumed ${mo.month.slice(0,4)}`);
-    row.month = mo.month || '';
-    const paid = bulkMoney(get(r,'paid'));
-    if(Number.isNaN(paid)) row.errors.push('Paid Amt is not a number');
-    else if(paid !== null && paid < 0) row.errors.push('Paid Amt cannot be negative');
-    row.paid = (paid === null || Number.isNaN(paid)) ? 0 : paid;
-    const share = bulkMoney(get(r,'share'));
-    if(Number.isNaN(share) || (share !== null && share < 0)) row.errors.push('Maintenance Share is not a valid amount');
-    row.share = (share === null || Number.isNaN(share)) ? null : share;
-    const prev = bulkMoney(get(r,'prev'));
-    if(Number.isNaN(prev)) row.errors.push('Previous balance is not a number');
-    row.prev = (prev === null || Number.isNaN(prev)) ? null : prev;
-    const md = bulkMode(get(r,'mode'));
-    if(md.error) row.errors.push(md.error);
-    row.mode = md.mode || '';
-    if(row.paid > 0 && !row.paidOn) row.warnings.push('paid but no "Paid on" date');
-    if(row.paid > 0 && !row.mode) row.warnings.push('paid but no payment mode');
-    if(flat && row.share !== null && Number(row.share) !== Number(flat.amount ?? settings.defaultAmount)) row.infos.push(`share ${inr(row.share)} differs from the flat's current ${inr(flat.amount ?? settings.defaultAmount)} — kept for this month`);
-    out.push(row);
-  }
-  // duplicates inside the file
-  const seen = {};
-  out.forEach(r => { if(r.flat && r.month){ const k = r.flat.id + ':' + r.month; (seen[k] = seen[k] || []).push(r); } });
-  Object.values(seen).forEach(list => { if(list.length > 1) list.forEach(r => r.errors.push(`same flat and month also on row(s) ${list.filter(x=>x!==r).map(x=>x.rowNo).join(', ')}`)); });
-  // existing records
-  out.forEach(r => {
-    if(!r.flat || !r.month) return;
-    const ex = payments[payKey(r.flat.id, r.month)];
-    if(ex){ r.existing = ex; r.warnings.push(`${monthLabelOf(r.month)} already recorded for ${r.flat.flatNo} (${ex.paid ? 'paid ' + inr(ex.amount||0) : (ex.waived ? 'waived' : 'pending')}) — skipped unless you tick Overwrite`); }
-  });
-  maintApplyBalances(out);
-  return {rows: out};
-}
-// Previous balance: opening arrears on the flat's earliest month; later months are checked against the calculation.
-function maintApplyBalances(rows){
-  const good = rows.filter(r => !r.errors.length && r.flat && r.month);
-  const byFlat = {};
-  good.forEach(r => (byFlat[r.flat.id] = byFlat[r.flat.id] || []).push(r));
-  const merged = {...payments};
-  good.forEach(r => { r.carryInOverride = undefined; if(!r.existing || r.overwrite) merged[payKey(r.flat.id, r.month)] = maintRowData(r); });
-  for(const fid in byFlat){
-    const existingMonths = Object.keys(payments).filter(k => k.startsWith(fid + ':')).map(k => k.split(':')[1]);
-    const earliest = [...existingMonths, ...byFlat[fid].map(r => r.month)].sort()[0];
-    byFlat[fid].forEach(r => {
-      if(r.month === earliest && r.prev){
-        r.carryInOverride = r.prev;
-        if(!r.infos.some(x=>x.startsWith('opening'))) r.infos.push(`opening arrears ${inr(r.prev)} carried into ${monthLabelOf(r.month)}`);
-        if(!r.existing || r.overwrite) merged[payKey(fid, r.month)] = maintRowData(r);
-      }
-    });
-  }
-  const saved = payments; payments = merged;
-  try{
-    good.forEach(r => {
-      r.warnings = r.warnings.filter(w => !w.startsWith('Previous balance'));
-      if(r.carryInOverride !== undefined || r.prev === null) return;
-      const calc = computeFlatDue(r.flat.id, r.month).carryIn;
-      if(Math.round(calc) !== Math.round(r.prev)) r.warnings.push(`Previous balance ${inr(r.prev)} in file, but the app works out ${inr(calc)} from earlier months`);
-    });
-  } finally { payments = saved; }
-}
-function maintRowData(r){
-  const d = {paid: r.paid > 0, amount: r.paid, date: r.paidOn, mode: r.mode, verified: r.paid > 0, waived: false, autoCheck: null};
-  if(r.share !== null) d.baseOverride = r.share;
-  if(r.carryInOverride !== undefined) d.carryInOverride = r.carryInOverride;
-  return d;
-}
-const maintIncluded = r => !r.errors.length && (!r.existing || r.overwrite);
-
-function renderMaintPreview(){
-  const box = document.getElementById('mb-preview');
-  if(!maintPreview){ box.innerHTML = ''; return; }
-  if(maintPreview.fileError){ box.innerHTML = `<p class="note err">${escapeHtml(maintPreview.fileError)}</p>`; return; }
-  const rows = maintPreview.rows;
-  const inc = rows.filter(maintIncluded);
-  const nErr = rows.filter(r=>r.errors.length).length;
-  const nWarn = rows.filter(r=>!r.errors.length && r.warnings.length).length;
-  const byMonth = {};
-  inc.forEach(r => { const m = byMonth[r.month] = byMonth[r.month] || {n:0, paid:0}; m.n++; m.paid += r.paid; });
-  const monthsHtml = Object.keys(byMonth).sort().map(m => `<div class="stat"><b style="font-size:1rem;">${byMonth[m].n} · ${inr(byMonth[m].paid)}</b><span>${monthLabelOf(m)}</span></div>`).join('');
-  box.innerHTML = `
-    <div class="stats" style="margin-top:12px;">
-      <div class="stat"><b>${rows.length}</b><span>Rows in file</span></div>
-      <div class="stat"><b style="color:var(--green)">${inc.length}</b><span>Will import</span></div>
-      <div class="stat"><b style="color:#8A5A00">${nWarn}</b><span>To check</span></div>
-      <div class="stat"><b style="color:var(--red)">${nErr}</b><span>Errors</span></div>
-    </div>
-    ${monthsHtml ? `<div class="stats">${monthsHtml}</div>` : ''}
-    <div class="bulk-table-wrap"><table class="bulk-table">
-      <thead><tr><th>Row</th><th>Status</th><th>Flat</th><th>Owner (app)</th><th>Month</th><th>Due</th><th>Prev. bal</th><th>Paid</th><th>Paid on</th><th>Mode</th><th>Notes</th><th>Overwrite</th></tr></thead>
-      <tbody>${rows.map((r, i) => `
-        <tr data-i="${i}" style="${maintIncluded(r) ? '' : 'opacity:.62;'}">
-          <td>${r.rowNo}</td><td>${statusBadge(r)}</td>
-          <td>${escapeHtml(r.flat ? r.flat.flatNo : r.flatRaw)}</td>
-          <td>${escapeHtml(r.flat ? (r.flat.owner || '—') : (r.ownerFile || '—'))}</td>
-          <td>${r.month ? monthLabelOf(r.month) : '—'}</td>
-          <td>${r.share !== null ? inr(r.share) : '—'}</td>
-          <td>${r.prev !== null ? inr(r.prev) : '—'}</td>
-          <td>${inr(r.paid)}</td>
-          <td>${escapeHtml(r.paidOn || '—')}</td>
-          <td>${escapeHtml(r.mode || '—')}</td>
-          <td style="min-width:240px;font-size:.76rem;line-height:1.4;">${notesHtml(r)}</td>
-          <td style="text-align:center;">${r.existing && !r.errors.length ? `<input type="checkbox" class="chk mb-over" ${r.overwrite?'checked':''} aria-label="Overwrite row ${r.rowNo}">` : ''}</td>
-        </tr>`).join('')}</tbody>
-    </table></div>
-    <div id="mb-result"></div>
-    <div class="actions-row">
-      <button class="primary" style="width:auto;" id="mb-import" type="button" ${inc.length ? '' : 'disabled'}>Import ${inc.length} record${inc.length===1?'':'s'}</button>
-      <button class="ghost" id="mb-cancel" type="button">Cancel</button>
-    </div>
-    ${nErr ? '<p class="note">Rows with errors are never imported — fix them in Excel and upload again, or import the rest now.</p>' : ''}`;
-  box.querySelectorAll('.mb-over').forEach(cb => cb.addEventListener('change', ()=>{
-    const r = rows[Number(cb.closest('tr').dataset.i)];
-    r.overwrite = cb.checked;
-    maintApplyBalances(rows);
-    renderMaintPreview();
-  }));
-  document.getElementById('mb-cancel').onclick = ()=>{ maintPreview = null; renderMaintPreview(); };
-  document.getElementById('mb-import').onclick = importMaintPreview;
-}
-
-async function importMaintPreview(){
-  const btn = document.getElementById('mb-import');
-  const inc = maintPreview.rows.filter(maintIncluded);
-  if(!inc.length) return;
-  if(!(await customConfirm(`Import ${inc.length} maintenance record${inc.length===1?'':'s'}? Owners will see them in My Ledger.`))) return;
-  btn.disabled = true; btn.textContent = 'Importing…';
-  try{
-    await saveChain;
-    const res = await rpc('jdb_bulk_import_payments', {p_token: sessionToken, p_rows: inc.map(r => ({flatId: r.flat.id, month: r.month, overwrite: !!r.existing, data: maintRowData(r)}))});
-    await loadSessionData();
-    maintPreview = null;
-    rerenderAll();
-    document.getElementById('mb-preview').innerHTML = `<p class="note" style="color:var(--green);"><b>Imported.</b> ${res.inserted} new, ${res.updated} overwritten${res.skipped ? `, ${res.skipped} skipped (already recorded)` : ''}.</p>`;
-  }catch(e){
-    if(e.code === 'SESSION_EXPIRED') return;
-    btn.disabled = false; btn.textContent = `Import ${inc.length} records`;
-    document.getElementById('mb-result').innerHTML = `<p class="note err">Import failed — nothing was saved. ${e.code === 'NETWORK' ? 'You appear to be offline.' : escapeHtml(e.code || '')}</p>`;
-  }
-}
-
-/* ---------------------------------------------------------------- expenses */
-const EXP_SPEC = {
-  category: ['category','expense','expensecategory','head'],
-  paidOn: ['paidon','paiddate','date','paymentdate'],
-  amount: ['amount','amt','paidamt','paidamount'],
-  comment: ['comments','comment','remarks','remark','notes','note','description'],
-  month: ['maintenancemonth','maintanancemonth','month','expensemonth'],
-  mode: ['mode','paymentmode','modeofpayment']
-};
-let expPreview = null;
-
-function buildExpPreview(rows){
-  const h = bulkHeaders(rows, EXP_SPEC);
-  if(!h) return {fileError:'Could not find the header row — the sheet needs "Category", "Paid on" and "Amount" columns.'};
-  const missing = ['category','paidOn','amount'].filter(f => h.cols[f] === undefined);
-  if(missing.length) return {fileError:`Missing column(s): ${missing.map(f=>({category:'Category',paidOn:'Paid on',amount:'Amount'})[f]).join(', ')}.`};
-  const get = (r, f)=> h.cols[f] === undefined ? null : r[h.cols[f]];
-  const out = [];
-  for(let i = h.headerRow + 1; i < rows.length; i++){
-    const r = rows[i] || [];
-    if(r.every(c => c === null || String(c).trim() === '')) continue;
-    const row = {rowNo: i + 1, errors: [], warnings: [], infos: [], force: false};
-    const cat = bulkCategory(get(r,'category'));
-    row.category = cat.category;
-    if(!row.category) row.errors.push('Category is missing');
-    if(cat.note) row.infos.push(cat.note);
-    const pd = bulkParseDate(get(r,'paidOn'));
-    if(pd.error) row.errors.push(`Paid on: ${pd.error}`);
-    else if(!pd.iso) row.errors.push('Paid on is missing');
-    row.paidOn = pd.iso || '';
-    const amt = bulkMoney(get(r,'amount'));
-    if(amt === null) row.errors.push('Amount is missing');
-    else if(Number.isNaN(amt)) row.errors.push('Amount is not a number');
-    else if(amt <= 0) row.errors.push('Amount must be more than ₹0');
-    row.amount = (amt === null || Number.isNaN(amt)) ? 0 : Math.round(amt * 100) / 100;
-    const comment = String(get(r,'comment') ?? '').trim();
-    row.comment = [cat.extraComment, comment].filter(Boolean).join(' — ');
-    const md = bulkMode(get(r,'mode'));
-    if(md.error) row.errors.push(md.error);
-    row.mode = md.mode || '';
-    const mo = bulkParseMonth(get(r,'month'), row.paidOn);
-    if(mo.error) row.errors.push(`Month: ${mo.error}`);
-    row.month = mo.month || (row.paidOn ? row.paidOn.slice(0,7) : '');
-    if(mo.month && row.paidOn && mo.month !== row.paidOn.slice(0,7)) row.infos.push(`paid on ${row.paidOn} — recorded under ${monthLabelOf(mo.month)} as in the file`);
-    if(!row.month && !row.errors.length) row.errors.push('no month or Paid on date');
-    out.push(row);
-  }
-  const k = r => [r.month, bulkKey(r.category), r.paidOn, r.amount].join('|');
-  const firstSeen = {};
-  out.forEach(r => {
-    if(r.errors.length) return;
-    const key = k(r);
-    if(firstSeen[key]){ r.dup = true; r.warnings.push(`looks like a duplicate of row ${firstSeen[key].rowNo} — skipped unless you tick Import anyway`); }
-    else firstSeen[key] = r;
-    const saved = (expenses[r.month] && expenses[r.month].items) || [];
-    if(!r.dup && saved.some(it => bulkKey(it.category) === bulkKey(r.category) && it.paidOn === r.paidOn && Number(it.amount) === r.amount)){
-      r.dup = true; r.warnings.push(`already saved in ${monthLabelOf(r.month)} — skipped unless you tick Import anyway`);
-    }
-  });
-  return {rows: out};
-}
-const expIncluded = r => !r.errors.length && (!r.dup || r.force);
-
-function renderExpPreview(){
-  const box = document.getElementById('eb-preview');
-  if(!expPreview){ box.innerHTML = ''; return; }
-  if(expPreview.fileError){ box.innerHTML = `<p class="note err">${escapeHtml(expPreview.fileError)}</p>`; return; }
-  const rows = expPreview.rows;
-  const inc = rows.filter(expIncluded);
-  const nErr = rows.filter(r=>r.errors.length).length;
-  const nWarn = rows.filter(r=>!r.errors.length && r.warnings.length).length;
-  const byMonth = {};
-  inc.forEach(r => { const m = byMonth[r.month] = byMonth[r.month] || {n:0, amt:0}; m.n++; m.amt += r.amount; });
-  const monthsHtml = Object.keys(byMonth).sort().map(m => `<div class="stat"><b style="font-size:1rem;">${byMonth[m].n} · ${inr(byMonth[m].amt)}</b><span>${monthLabelOf(m)}</span></div>`).join('');
-  box.innerHTML = `
-    <div class="stats" style="margin-top:12px;">
-      <div class="stat"><b>${rows.length}</b><span>Rows in file</span></div>
-      <div class="stat"><b style="color:var(--green)">${inc.length}</b><span>Will import</span></div>
-      <div class="stat"><b style="color:#8A5A00">${nWarn}</b><span>To check</span></div>
-      <div class="stat"><b style="color:var(--red)">${nErr}</b><span>Errors</span></div>
-    </div>
-    ${monthsHtml ? `<div class="stats">${monthsHtml}</div>` : ''}
-    <div class="bulk-table-wrap"><table class="bulk-table">
-      <thead><tr><th>Row</th><th>Status</th><th>Month</th><th>Category</th><th>Paid on</th><th>Amount</th><th>Mode</th><th>Comments</th><th>Notes</th><th>Import anyway</th></tr></thead>
-      <tbody>${rows.map((r, i) => `
-        <tr data-i="${i}" style="${expIncluded(r) ? '' : 'opacity:.62;'}">
-          <td>${r.rowNo}</td><td>${statusBadge(r)}</td>
-          <td>${r.month ? monthLabelOf(r.month) : '—'}</td>
-          <td>${escapeHtml(r.category || '—')}</td>
-          <td>${escapeHtml(r.paidOn || '—')}</td>
-          <td>${inr(r.amount)}</td>
-          <td>${escapeHtml(r.mode || '—')}</td>
-          <td>${escapeHtml(r.comment || '—')}</td>
-          <td style="min-width:220px;font-size:.76rem;line-height:1.4;">${notesHtml(r)}</td>
-          <td style="text-align:center;">${r.dup && !r.errors.length ? `<input type="checkbox" class="chk eb-force" ${r.force?'checked':''} aria-label="Import row ${r.rowNo} anyway">` : ''}</td>
-        </tr>`).join('')}</tbody>
-    </table></div>
-    <div id="eb-result"></div>
-    <div class="actions-row">
-      <button class="primary" style="width:auto;" id="eb-import" type="button" ${inc.length ? '' : 'disabled'}>Import ${inc.length} expense${inc.length===1?'':'s'}</button>
-      <button class="ghost" id="eb-cancel" type="button">Cancel</button>
-    </div>
-    ${nErr ? '<p class="note">Rows with errors are never imported — fix them in Excel and upload again, or import the rest now.</p>' : ''}`;
-  box.querySelectorAll('.eb-force').forEach(cb => cb.addEventListener('change', ()=>{
-    rows[Number(cb.closest('tr').dataset.i)].force = cb.checked;
-    renderExpPreview();
-  }));
-  document.getElementById('eb-cancel').onclick = ()=>{ expPreview = null; renderExpPreview(); };
-  document.getElementById('eb-import').onclick = importExpPreview;
-}
-
-async function importExpPreview(){
-  const btn = document.getElementById('eb-import');
-  const inc = expPreview.rows.filter(expIncluded);
-  if(!inc.length) return;
-  if(!(await customConfirm(`Import ${inc.length} expense${inc.length===1?'':'s'}? They are added to each month's existing list.`))) return;
-  btn.disabled = true; btn.textContent = 'Importing…';
-  try{
-    await saveChain;
-    const res = await rpc('jdb_bulk_add_expenses', {p_token: sessionToken, p_items: inc.map((r, i) => ({
-      month: r.month, force: !!r.force,
-      item: {id: 'it' + Date.now() + String(i).padStart(4,'0') + Math.floor(Math.random()*100), category: r.category, paidOn: r.paidOn, amount: r.amount, mode: r.mode, comment: r.comment}
-    }))});
-    await loadSessionData();
-    expPreview = null;
-    rerenderAll();
-    document.getElementById('eb-preview').innerHTML = `<p class="note" style="color:var(--green);"><b>Imported.</b> ${res.added} expense${res.added===1?'':'s'} added${res.skipped ? `, ${res.skipped} skipped (already saved)` : ''}.</p>`;
-  }catch(e){
-    if(e.code === 'SESSION_EXPIRED') return;
-    btn.disabled = false; btn.textContent = `Import ${inc.length} expenses`;
-    document.getElementById('eb-result').innerHTML = `<p class="note err">Import failed — nothing was saved. ${e.code === 'NETWORK' ? 'You appear to be offline.' : escapeHtml(e.code || '')}</p>`;
-  }
-}
-
-/* ---------------------------------------------------------------- wiring + templates */
-async function bulkPickFile(input, kind){
-  const file = input.files[0];
-  input.value = '';
-  if(!file) return;
-  const box = document.getElementById(kind === 'maint' ? 'mb-preview' : 'eb-preview');
-  const panel = box.closest('details');
-  if(panel) panel.open = true;
-  box.innerHTML = '<p class="note">Reading file…</p>';
-  try{
-    const rows = await readSheetRows(file);
-    if(kind === 'maint'){ maintPreview = buildMaintPreview(rows); renderMaintPreview(); }
-    else { expPreview = buildExpPreview(rows); renderExpPreview(); }
-    box.scrollIntoView({block:'start', behavior:'smooth'});
-  }catch(e){
-    box.innerHTML = `<p class="note err">${e.message === 'XLSX_LOAD' ? "Couldn't load the Excel reader — check your internet connection and try again." : "Couldn't read that file — please upload an Excel .xlsx file."}</p>`;
-  }
-}
-async function bulkTemplate(kind){
-  try{
-    const XLSX = await loadXlsx();
-    const aoa = kind === 'maint'
-      ? [['Name (Owner)','Flat No','Maintenance Share','Previous balance','Paid Amt','Paid on','Maintenance month','Mode'],
-         ['Owner name','001',2000,'',2000,'08-05-2026','August','UPI']]
-      : [['Category','Paid on','Amount','Comments','Maintenance month','Mode'],
-         ['Power bill','08-21-2026',41898,'','August','UPI']];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Sheet1');
-    XLSX.writeFile(wb, kind === 'maint' ? 'Maintenance_template.xlsx' : 'Expense_template.xlsx');
-  }catch(e){ showSyncError("Couldn't create the template — check your internet connection."); }
-}
-function initBulkUpload(){
-  const mf = document.getElementById('mb-file'), ef = document.getElementById('eb-file');
-  document.getElementById('mb-pick').onclick = ()=> mf.click();
-  document.getElementById('eb-pick').onclick = ()=> ef.click();
-  mf.onchange = ()=> bulkPickFile(mf, 'maint');
-  ef.onchange = ()=> bulkPickFile(ef, 'exp');
-  document.getElementById('mb-template').onclick = ()=> bulkTemplate('maint');
-  document.getElementById('eb-template').onclick = ()=> bulkTemplate('exp');
-  maintPreview = null; expPreview = null;
-  renderMaintPreview(); renderExpPreview();
-}
-
 /* ===================== LOGIN SCREEN ===================== */
 function initLoginScreen(){
   const sel = document.getElementById('owner-flat-select');
@@ -2407,9 +1728,9 @@ function initLoginScreen(){
   };
 
   document.getElementById('owner-login-btn').onclick = ownerLogin;
-  document.getElementById('owner-pin').onkeydown = e=>{ if(e.key==='Enter') ownerLogin(); };
+  document.getElementById('owner-pin').addEventListener('keydown', e=>{ if(e.key==='Enter') ownerLogin(); });
   document.getElementById('admin-login-btn').onclick = adminLogin;
-  document.getElementById('admin-pass').onkeydown = e=>{ if(e.key==='Enter') adminLogin(); };
+  document.getElementById('admin-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') adminLogin(); });
 
   document.getElementById('owner-forgot-link').onclick = ()=>toggleOwnerRecover(true);
   document.getElementById('owner-guide-link').onclick = ()=>openGuideModal('Flat Owner User Guide', OWNER_GUIDE_STEPS);
@@ -2450,52 +1771,38 @@ function toggleOwnerRecover(show){
   ownerRecoverFlatId = null;
 }
 
-let ownerRecoverPhone = '';
-let ownerRecoverAnswer = '';
-
-function loginErrorHtml(e, fallback){
-  if(e && e.code === 'NETWORK') return '<p class="note err">Couldn\'t reach the server — check your internet connection and try again.</p>';
-  if(e && e.code === 'LOCKED') return '<p class="note err">Too many incorrect attempts — please wait 15 minutes and try again.</p>';
-  return `<p class="note err">${fallback}</p>`;
-}
-
-async function verifyOwnerRecoverPhone(){
+function verifyOwnerRecoverPhone(){
   const flatId = document.getElementById('owner-flat-select').value;
   const flat = flats.find(f=>f.id===flatId);
   const phone = document.getElementById('recover-phone').value.trim();
   const msg = document.getElementById('owner-recover-msg');
   if(!flat){ msg.innerHTML = '<p class="note err">Select your flat above first.</p>'; return; }
-  if(!phone){ msg.innerHTML = '<p class="note err">That phone number doesn\'t match our records for this flat.</p>'; return; }
-  let r;
-  try{ r = await rpc('jdb_owner_recover_question', {p_flat_id: flat.id, p_phone: phone}); }
-  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
-  if(!r.ok){
-    if(r.error === 'NO_PHONE'){ msg.innerHTML = '<p class="note err">No phone number is on file for this flat yet, so we can\'t verify you here — ask your admin to reset your PIN from Flats & Access.</p>'; return; }
-    if(r.error === 'NO_QUESTION'){ msg.innerHTML = '<p class="note err">No security question has been set up for this flat yet — ask your admin to reset your PIN directly from Flats & Access, or set one up yourself next time you sign in.</p>'; return; }
-    msg.innerHTML = loginErrorHtml({code:r.error}, 'That phone number doesn\'t match our records for this flat.');
+  if(!flat.phone){ msg.innerHTML = '<p class="note err">No phone number is on file for this flat yet, so we can\'t verify you here — ask your admin to reset your PIN from Flats & Access.</p>'; return; }
+  const norm = s => (s||'').replace(/[^0-9]/g,'');
+  if(!phone || norm(phone) !== norm(flat.phone)){ msg.innerHTML = '<p class="note err">That phone number doesn\'t match our records for this flat.</p>'; return; }
+  if(!flat.recoveryQuestion){
+    msg.innerHTML = '<p class="note err">No security question has been set up for this flat yet — ask your admin to reset your PIN directly from Flats & Access, or set one up yourself next time you sign in.</p>';
     return;
   }
 
   msg.innerHTML = '';
   ownerRecoverFlatId = flat.id;
-  ownerRecoverPhone = phone;
-  document.getElementById('owner-recover-question').textContent = r.question;
+  document.getElementById('owner-recover-question').textContent = flat.recoveryQuestion;
   document.getElementById('owner-recover-answer').value = '';
   document.getElementById('owner-recover-msg2').innerHTML = '';
   document.getElementById('owner-recover-step1').style.display = 'none';
   document.getElementById('owner-recover-step2').style.display = 'block';
 }
 
-async function verifyOwnerRecoverAnswer(){
+function verifyOwnerRecoverAnswer(){
   const msg = document.getElementById('owner-recover-msg2');
-  if(!ownerRecoverFlatId){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
+  const flat = flats.find(f=>f.id===ownerRecoverFlatId);
+  if(!flat){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
   const answer = document.getElementById('owner-recover-answer').value.trim();
-  if(!answer){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
-  let r;
-  try{ r = await rpc('jdb_owner_recover_reset', {p_flat_id: ownerRecoverFlatId, p_phone: ownerRecoverPhone, p_answer: answer, p_new_pin: null}); }
-  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
-  if(!r.ok){ msg.innerHTML = loginErrorHtml({code:r.error}, 'That answer doesn\'t match.'); return; }
-  ownerRecoverAnswer = answer;
+  if(!answer || answer.toLowerCase() !== (flat.recoveryAnswer || '').trim().toLowerCase()){
+    msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>';
+    return;
+  }
   msg.innerHTML = '';
   document.getElementById('recover-newpin').value = '';
   document.getElementById('owner-recover-msg3').innerHTML = '';
@@ -2505,16 +1812,15 @@ async function verifyOwnerRecoverAnswer(){
 
 async function submitOwnerRecoverNewPin(){
   const msg = document.getElementById('owner-recover-msg3');
-  if(!ownerRecoverFlatId){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
+  const flat = flats.find(f=>f.id===ownerRecoverFlatId);
+  if(!flat){ msg.innerHTML = '<p class="note err">Something went wrong — please close this and try again.</p>'; return; }
   const newPin = document.getElementById('recover-newpin').value.trim();
   if(!newPin || newPin.length < 4){ msg.innerHTML = '<p class="note err">Choose a PIN of at least 4 characters.</p>'; return; }
-  let r;
-  try{ r = await rpc('jdb_owner_recover_reset', {p_flat_id: ownerRecoverFlatId, p_phone: ownerRecoverPhone, p_answer: ownerRecoverAnswer, p_new_pin: newPin}); }
-  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
-  if(!r.ok){ msg.innerHTML = loginErrorHtml({code:r.error}, r.error === 'PIN_TOO_SHORT' ? 'Choose a PIN of at least 4 characters.' : 'Something went wrong — please close this and try again.'); return; }
+  flat.pin = newPin;
+  await saveFlats();
   document.getElementById('owner-recover-panel').style.display = 'none';
   document.getElementById('owner-recover-success').style.display = 'block';
-  ownerRecoverFlatId = null; ownerRecoverPhone = ''; ownerRecoverAnswer = '';
+  ownerRecoverFlatId = null;
 }
 
 /* ---------- admin password recovery ---------- */
@@ -2537,100 +1843,55 @@ async function submitAdminRecover(){
   const newpass = document.getElementById('recover-admin-newpass').value;
   const msg = document.getElementById('admin-recover-msg');
   if(!settings.adminRecoveryQuestion){ msg.innerHTML = '<p class="note err">No recovery question is set up.</p>'; return; }
-  if(!answer){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
+  if(!answer || answer.toLowerCase() !== (settings.adminRecoveryAnswer||'').toLowerCase()){ msg.innerHTML = '<p class="note err">That answer doesn\'t match.</p>'; return; }
   if(!newpass || newpass.length < 4){ msg.innerHTML = '<p class="note err">Choose a password of at least 4 characters.</p>'; return; }
   const adminId = document.getElementById('admin-profile-select').value;
   const admin = admins.find(a=>a.id===adminId);
   if(!admin){ msg.innerHTML = '<p class="note err">Select an admin profile above first.</p>'; return; }
-  let r;
-  try{ r = await rpc('jdb_admin_recover', {p_admin_id: admin.id, p_answer: answer, p_new_password: newpass}); }
-  catch(e){ msg.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.'); return; }
-  if(!r.ok){
-    if(r.error === 'NO_QUESTION'){ msg.innerHTML = '<p class="note err">No recovery question is set up.</p>'; return; }
-    if(r.error === 'PASSWORD_TOO_SHORT'){ msg.innerHTML = '<p class="note err">Choose a password of at least 4 characters.</p>'; return; }
-    msg.innerHTML = loginErrorHtml({code:r.error}, 'That answer doesn\'t match.');
-    return;
-  }
+  admin.password = newpass;
+  await saveAdmins();
   msg.innerHTML = `<p class="note" style="color:var(--green);">Password updated for ${escapeHtml(admin.name || 'this admin')} — you can sign in now.</p>`;
   document.getElementById('recover-admin-answer').value = '';
   document.getElementById('recover-admin-newpass').value = '';
 }
 
-let signingIn = false;
-async function ownerLogin(){
-  if(signingIn) return;
+function ownerLogin(){
   const flatId = document.getElementById('owner-flat-select').value;
   const pin = document.getElementById('owner-pin').value.trim();
   const errBox = document.getElementById('owner-login-err');
-  const btn = document.getElementById('owner-login-btn');
-  if(!flatId || !pin){ errBox.innerHTML = '<p class="note err">Incorrect PIN for that flat. Please check with your committee/admin.</p>'; return; }
-  signingIn = true; btn.disabled = true;
-  try{
-    const r = await rpc('jdb_login_owner', {p_flat_id: flatId, p_pin: pin});
-    if(!r.ok){ errBox.innerHTML = loginErrorHtml({code:r.error}, 'Incorrect PIN for that flat. Please check with your committee/admin.'); return; }
-    sessionToken = r.token;
-    await loadSessionData();
-    errBox.innerHTML = '';
-    document.getElementById('owner-pin').value = '';
-    showApp();
-  }catch(e){
-    sessionToken = null;
-    errBox.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.');
-  }finally{ signingIn = false; btn.disabled = false; }
+  const flat = flats.find(f=>f.id===flatId);
+  if(!flat || !pin || String(flat.pin) !== pin){
+    errBox.innerHTML = '<p class="note err">Incorrect PIN for that flat. Please check with your committee/admin.</p>';
+    return;
+  }
+  errBox.innerHTML = '';
+  document.getElementById('owner-pin').value = '';
+  currentUser = {role:'owner', flatId: flat.id};
+  showApp();
 }
 
-async function adminLogin(){
-  if(signingIn) return;
+function adminLogin(){
   const adminId = document.getElementById('admin-profile-select').value;
   const pass = document.getElementById('admin-pass').value;
   const errBox = document.getElementById('admin-login-err');
-  const btn = document.getElementById('admin-login-btn');
-  if(!adminId || !pass){ errBox.innerHTML = '<p class="note err">Incorrect password for that admin profile.</p>'; return; }
-  signingIn = true; btn.disabled = true;
-  try{
-    const r = await rpc('jdb_login_admin', {p_admin_id: adminId, p_password: pass});
-    if(!r.ok){ errBox.innerHTML = loginErrorHtml({code:r.error}, 'Incorrect password for that admin profile.'); return; }
-    sessionToken = r.token;
-    await loadSessionData();
-    errBox.innerHTML = '';
-    document.getElementById('admin-pass').value = '';
-    showApp();
-  }catch(e){
-    sessionToken = null;
-    errBox.innerHTML = loginErrorHtml(e, 'Something went wrong — please try again.');
-  }finally{ signingIn = false; btn.disabled = false; }
+  const admin = admins.find(a=>a.id===adminId);
+  if(!admin || !pass || pass !== admin.password){
+    errBox.innerHTML = '<p class="note err">Incorrect password for that admin profile.</p>';
+    return;
+  }
+  errBox.innerHTML = '';
+  document.getElementById('admin-pass').value = '';
+  currentUser = {role:'admin', adminId: admin.id};
+  showApp();
 }
 
-async function logout(){
-  const token = sessionToken;
+function logout(){
   currentUser = null;
-  sessionToken = null;
-  lastLoadJson = '';
-  if(token) rpc('jdb_logout', {p_token: token}).catch(()=>{});
   document.getElementById('owner-pin').value = '';
   document.getElementById('admin-pass').value = '';
   document.getElementById('owner-login-err').innerHTML = '';
   document.getElementById('admin-login-err').innerHTML = '';
-  // drop everything that was loaded for the signed-in user; keep only login-screen info
-  payments = {}; expenses = {};
-  flats = flats.map(f=>({id:f.id, flatNo:f.flatNo, owner:f.owner}));
-  admins = admins.map(a=>({id:a.id, name:a.name}));
   initLoginScreen();
-  try{
-    const before = JSON.stringify([flats, admins]);
-    await loadPublicInfo();
-    document.getElementById('login-society-title').textContent = settings.societyName || 'JD Blossom Apartment';
-    if(JSON.stringify([flats, admins]) !== before && !currentUser){
-      const ownerSel = document.getElementById('owner-flat-select').value;
-      const adminSel = document.getElementById('admin-profile-select').value;
-      const sel = document.getElementById('owner-flat-select');
-      sel.innerHTML = flats.map(f=>`<option value="${f.id}">${escapeHtml(f.flatNo)}${f.owner?(' — '+escapeHtml(f.owner)):''}</option>`).join('');
-      const adminSelEl = document.getElementById('admin-profile-select');
-      adminSelEl.innerHTML = admins.map(a=>`<option value="${a.id}">${escapeHtml(a.name || 'Admin')}</option>`).join('');
-      if(flats.some(f=>f.id===ownerSel)) sel.value = ownerSel;
-      if(admins.some(a=>a.id===adminSel)) adminSelEl.value = adminSel;
-    }
-  }catch(e){ /* offline — the lists above are still usable */ }
 }
 
 /* ===================== APP SHELL ===================== */
@@ -2671,7 +1932,7 @@ function hideAllSections(){
 function buildNav(tabsList, showFn){
   const nav = document.getElementById('tabs');
   nav.innerHTML = tabsList.map(t=>`<button data-tab="${t.id}">${t.label}</button>`).join('');
-  nav.querySelectorAll('button').forEach(b=>{ b.onclick = ()=>{ showFn(b.dataset.tab); refreshData(false); }; });
+  nav.querySelectorAll('button').forEach(b=>{ b.onclick = ()=> showFn(b.dataset.tab); });
 }
 function showSection(tabsList, id){
   hideAllSections();
@@ -2695,13 +1956,15 @@ function initAdminUI(){
   const m = todayMonth();
   document.getElementById('dash-month').value = m;
   document.getElementById('entry-month').value = m;
+  document.getElementById('rpt-month').value = m;
   document.getElementById('exp-month').value = m;
 
   document.getElementById('dash-month').onchange = renderDashboard;
   document.getElementById('entry-month').onchange = renderEntry;
+  document.getElementById('rpt-month').onchange = renderMonthlyReport;
   document.getElementById('exp-month').onchange = renderExpenses;
-  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); renderPeriodReport(); };
-  document.getElementById('rpt-period-controls').onchange = ()=> renderPeriodReport();
+  document.getElementById('rpt-period-type').onchange = ()=>{ renderPeriodControls(); generatePeriodReport(); };
+  document.getElementById('exp-period-type').onchange = renderExpensePeriodControls;
 
   document.getElementById('gen-report-btn').onclick = renderWhatsAppReport;
   document.getElementById('add-flat-btn').onclick = addFlat;
@@ -2711,31 +1974,32 @@ function initAdminUI(){
   document.getElementById('set-recovery-a').value = '';
   document.getElementById('save-recovery-btn').onclick = saveRecoveryHandler;
   updateRecoveryWarning();
+  document.getElementById('copy-monthly-btn').onclick = ()=>copyText(buildMonthlyReportText(document.getElementById('rpt-month').value), 'copy-monthly-btn');
   document.getElementById('rpt-period-btn').onclick = generatePeriodReport;
   document.getElementById('exp-add-item-btn').onclick = addExpenseItem;
-  document.getElementById('exp-opening').onchange = saveExpenseOpening;
-  document.getElementById('exp-opening-reset').onclick = resetExpenseOpening;
-  document.getElementById('exp-maint').onchange = saveExpenseMaint;
-  document.getElementById('exp-maint-reset').onclick = resetExpenseMaint;
-  document.getElementById('rpt-print-btn').onclick = ()=>{ renderPeriodReport(); window.print(); };
-  document.getElementById('rpt-csv-btn').onclick = downloadExpenseCsv;
-  document.getElementById('rpt-xlsx-btn').onclick = downloadExpenseXlsx;
-  document.getElementById('rpt-wa-btn').onclick = showExpenseWhatsApp;
+  document.getElementById('exp-opening').addEventListener('change', saveExpenseOpening);
+  document.getElementById('exp-opening-reset').addEventListener('click', resetExpenseOpening);
+  document.getElementById('exp-maint').addEventListener('change', saveExpenseMaint);
+  document.getElementById('exp-maint-reset').addEventListener('click', resetExpenseMaint);
+  document.getElementById('exp-report-btn').onclick = generateExpenseReport;
+  document.getElementById('exp-range-btn').onclick = generateExpenseRangeReport;
+  document.getElementById('exp-print-btn').onclick = ()=>window.print();
   document.getElementById('export-backup-btn').onclick = exportBackupCsv;
   document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
-  document.getElementById('import-backup-input').onchange = importBackupCsv;
+  document.getElementById('import-backup-input').addEventListener('change', importBackupCsv);
   document.getElementById('run-diagnostics-btn').onclick = runStorageDiagnostics;
   document.getElementById('save-my-profile-btn').onclick = saveMyProfile;
   document.getElementById('save-my-password-btn').onclick = saveMyPassword;
   document.getElementById('add-admin-btn').onclick = addAdminProfile;
-  initBulkUpload();
 
   showSection(TABS_ADMIN, 'dashboard');
   renderFlats();
   renderEntry();
   renderDashboard();
+  renderMonthlyReport();
   renderPeriodControls();
   renderPeriodReport();
+  renderExpensePeriodControls();
   renderExpenses();
   renderProfile();
   document.getElementById('creds-output').innerHTML = '';
@@ -2774,7 +2038,7 @@ function renderFlats(){
       else if(field==='flatNo') flat[field] = inp.value.trim() || flat.flatNo;
       else flat[field] = inp.value;
       await saveFlats();
-      renderDashboard(); renderEntry(); renderPeriodReport();
+      renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
     });
   });
   tbody.querySelectorAll('.del-btn').forEach(b=>{
@@ -2782,7 +2046,7 @@ function renderFlats(){
       if(!(await customConfirm('Remove this flat and its login? This does not delete past payment records.'))) return;
       flats = flats.filter(x=>x.id!==b.dataset.id);
       await saveFlats();
-      renderFlats(); renderDashboard(); renderEntry(); renderPeriodReport();
+      renderFlats(); renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport();
     });
   });
   tbody.querySelectorAll('.wa-share-btn').forEach(b=>{
@@ -2913,7 +2177,7 @@ function renderEntry(){
       payments[payKey(id, month)] = {...existing, paid, amount, date, mode, verified};
       await savePayments(id, month);
       renderEntry();
-      renderDashboard(); renderPeriodReport(); renderExpenses();
+      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
     };
     tr.querySelector('.e-paid').addEventListener('change', save);
     tr.querySelector('.e-amount').addEventListener('change', save);
@@ -2938,7 +2202,7 @@ function renderEntry(){
       }
       await savePayments(id, month);
       renderEntry();
-      renderDashboard(); renderPeriodReport(); renderExpenses();
+      renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
     });
 
     const fileInput = tr.querySelector('.e-shot-input');
@@ -2948,14 +2212,11 @@ function renderEntry(){
       if(!file) return;
       try{
         const dataUrl = await compressImage(file);
-        let shotPath;
-        try{ shotPath = await uploadScreenshot(id, month, dataUrl); }
-        catch(upErr){ if(upErr.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(upErr)); return; }
         const existing = getPayment(id, month);
-        payments[payKey(id, month)] = {...existing, screenshot: dataUrl, screenshotPath: shotPath, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
+        payments[payKey(id, month)] = {...existing, screenshot: dataUrl, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
 
         const flat = flats.find(x=>x.id===id);
         const amtEntered = Number(document.querySelector(`tr[data-id="${id}"] .e-amount`)?.value) || Math.round(computeFlatDue(id, month).dueThisMonth);
@@ -2964,7 +2225,7 @@ function renderEntry(){
         payments[payKey(id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
       }catch(e){
         alert('Could not read that image, please try another file.');
       }
@@ -2975,10 +2236,10 @@ function renderEntry(){
       removeBtn.addEventListener('click', async ()=>{
         if(!(await customConfirm('Remove this payment screenshot?'))) return;
         const existing = getPayment(id, month);
-        payments[payKey(id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null};
+        payments[payKey(id, month)] = {...existing, screenshot: null, verified: false, autoCheck: null};
         await savePayments(id, month);
         renderEntry();
-        renderDashboard(); renderPeriodReport(); renderExpenses();
+        renderDashboard(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
       });
     }
 
@@ -3112,6 +2373,41 @@ function buildPendingReportText(month){
 }
 
 /* ---------- REPORTS TAB ---------- */
+function renderMonthlyReport(){
+  const month = document.getElementById('rpt-month').value || todayMonth();
+  const s = monthStats(month);
+  const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('rpt-monthly-stats').innerHTML = `
+    <div class="stat"><b>${s.total}</b><span>Flats</span></div>
+    <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
+    <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
+    <div class="stat"><b>${pct}%</b><span>Collected</span></div>
+  `;
+  document.getElementById('rpt-monthly-box').textContent = buildMonthlyReportText(month);
+}
+
+function buildMonthlyReportText(month){
+  const s = monthStats(month);
+  const monthLabel = monthLabelOf(month);
+  let lines = [];
+  lines.push(`${settings.societyName || 'JD Blossom Apartment'} — Monthly Report`);
+  lines.push(`Period: ${monthLabel}`);
+  lines.push(`Collected ${inr(s.collected)} of ${inr(s.expected)} expected (${s.expected ? Math.round(s.collected/s.expected*100) : 0}%)`);
+  lines.push('');
+  lines.push('Flat | Owner | Status | Due | Paid | Balance→next | Date | Proof');
+  lines.push('-'.repeat(70));
+  flats.forEach(f=>{
+    const p = getPayment(f.id, month);
+    const due = computeFlatDue(f.id, month);
+    const status = !p.paid ? 'PENDING' : (p.verified ? 'VERIFIED' : 'SUBMITTED');
+    const proof = p.screenshot ? (p.verified?'checked ✓':'uploaded, unverified') : 'none';
+    const bal = due.carryOut;
+    const balText = bal===0 ? '₹0' : inr(Math.abs(bal)) + (bal>0?' owed':' cr.');
+    lines.push(`${f.flatNo} | ${f.owner || '—'} | ${status} | ${inr(due.dueThisMonth)} | ${p.paid ? inr(p.amount||0) : '—'} | ${balText} | ${p.date||'—'} | ${proof}`);
+  });
+  return lines.join('\n');
+}
+
 function currentQuarter(){ return Math.floor(new Date().getMonth()/3)+1; }
 function currentHalf(){ return new Date().getMonth() < 6 ? 1 : 2; }
 
@@ -3187,33 +2483,17 @@ function getPeriodMonthsAndLabelFor(prefix){
 
 function renderPeriodControls(){ renderPeriodControlsFor('rpt-period'); }
 function getPeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('rpt-period'); }
-
-// Expected for a whole period = each flat's balance brought into the first month
-// + its maintenance share for every month of the period (waived months excluded).
-// Worked out as (paid in the period) + (balance left after the last month), so an
-// unpaid amount that stays open is counted once, not again in every month.
-function periodExpected(months){
-  if(!months.length) return 0;
-  const sorted = [...months].sort();
-  const last = sorted[sorted.length - 1];
-  let total = 0;
-  flats.forEach(f=>{
-    sorted.forEach(mo=>{ total += computeFlatDue(f.id, mo).paid; });
-    total += computeFlatDue(f.id, last).carryOut;
-  });
-  return total;
-}
+function renderExpensePeriodControls(){ renderPeriodControlsFor('exp-period'); }
+function getExpensePeriodMonthsAndLabel(){ return getPeriodMonthsAndLabelFor('exp-period'); }
 
 function renderPeriodReport(){
-  renderReportExpenseSummary();
   const {months} = getPeriodMonthsAndLabel();
   let totalExpected = 0, totalCollected = 0;
   const perMonth = months.map(mo=>{
     const s = monthStats(mo);
-    totalCollected += s.collected;
+    totalExpected += s.expected; totalCollected += s.collected;
     return {mo, s};
   });
-  totalExpected = periodExpected(months);
   const pct = totalExpected ? Math.round(totalCollected/totalExpected*100) : 0;
   document.getElementById('rpt-period-stats').innerHTML = `
     <div class="stat"><b>${inr(totalCollected)}</b><span>Collected</span></div>
@@ -3243,15 +2523,13 @@ function buildPeriodReportText(){
   let totalExpected = 0, totalCollected = 0;
   months.forEach(mo=>{
     const s = monthStats(mo);
-    totalCollected += s.collected;
+    totalExpected += s.expected; totalCollected += s.collected;
     const pct = s.total ? Math.round(s.paidCount/s.total*100) : 0;
     lines.push(`${monthLabelOf(mo)} | ${s.paidCount} | ${s.pendingCount} | ${inr(s.collected)} | ${inr(s.expected)} | ${pct}%`);
   });
   lines.push('-'.repeat(55));
-  totalExpected = periodExpected(months);
   const overall = totalExpected ? Math.round(totalCollected/totalExpected*100) : 0;
   lines.push(`TOTAL | | | ${inr(totalCollected)} | ${inr(totalExpected)} | ${overall}%`);
-  if(months.length > 1) lines.push(`(Total expected = maintenance for the period + balance brought in at the start; a month's Expected includes any balance carried into it, so month rows don't add up to the total.)`);
   return lines.join('\n');
 }
 
@@ -3275,110 +2553,100 @@ function renderExpenses(){
   const calc = computeExpenseMonth(month);
 
   document.getElementById('exp-opening').value = (data.openingOverride !== null && data.openingOverride !== undefined) ? data.openingOverride : Math.round(calc.autoOpening);
-  document.getElementById('exp-opening-note').textContent = `Auto: ${inr(calc.autoOpening)} (last month's balance)`;
+  document.getElementById('exp-opening-note').textContent = `Auto (carried from last month's balance): ${inr(calc.autoOpening)}`;
   document.getElementById('exp-maint').value = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? data.maintReceivedOverride : Math.round(calc.autoMaint);
-  document.getElementById('exp-maint-note').textContent = `Auto: ${inr(calc.autoMaint)} (collected this month)`;
-  document.getElementById('exp-opening-reset').style.visibility = (data.openingOverride !== null && data.openingOverride !== undefined) ? 'visible' : 'hidden';
-  document.getElementById('exp-maint-reset').style.visibility = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? 'visible' : 'hidden';
+  document.getElementById('exp-maint-note').textContent = `Auto (from this month's ledger): ${inr(calc.autoMaint)}`;
 
   document.getElementById('exp-receipts-stats').innerHTML = `
+    <div class="stat"><b>${inr(calc.opening)}</b><span>Opening bal.</span></div>
+    <div class="stat"><b>${inr(calc.maintReceived)}</b><span>Maint. received</span></div>
     <div class="stat"><b>${inr(calc.totalReceipts)}</b><span>Total receipts</span></div>
-    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
-    <div class="stat"><b style="color:${calc.closing < 0 ? 'var(--red)' : 'var(--green)'}">${inr(calc.closing)}</b><span>Available funds — balance c/f</span></div>
   `;
 
   renderExpenseItems(month, data);
+
+  document.getElementById('exp-payments-total').innerHTML = `
+    <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
+  `;
+
+  document.getElementById('exp-balance-box').innerHTML = `
+    <div class="stat" style="flex:1;"><b style="font-size:1.5rem;color:var(--green)">${inr(calc.closing)}</b><span>Available funds for maintenance — balance c/f</span></div>
+  `;
+
+  renderExpenseSummaryTable(month, data, calc);
+
+  document.getElementById('exp-report-output').innerHTML = '';
 }
 
-const EXPENSE_CATEGORIES = ['Water bill','Power bill','Diesel','Watchman Salary','Security Salary','BBMP Garbage Exp','Water Tank cleaning','Drainage cleaning','Lift maintenance','Repair & Maintenance','Housekeeping','Pest control','Miscellaneous'];
-const PAY_MODES = ['UPI','Cash','Bank Transfer','Cheque'];
-// New expense rows live here until Category, Paid on and Amount are all filled — only then are they saved.
-const expenseDrafts = {}; // month -> [item]
-function expenseMissing(it){
-  const miss = [];
-  if(!String(it.category||'').trim()) miss.push('Category');
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(it.paidOn||'')) miss.push('Paid on');
-  if(!(Number(it.amount) > 0)) miss.push('Amount');
-  return miss;
+function renderExpenseSummaryTable(month, data, calc){
+  const monthLabel = monthLabelOf(month);
+  const itemRows = data.items.length
+    ? data.items.map(it=>`
+      <tr class="item-row">
+        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}</td>
+        <td>${it.paidOn ? new Date(it.paidOn).toLocaleDateString('en-IN') : '—'}</td>
+        <td>${inr(it.amount)}</td>
+      </tr>`).join('')
+    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
+
+  document.getElementById('exp-summary-wrap').innerHTML = `
+    <table class="summary-table">
+      <thead>
+        <tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${monthLabel}</th></tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="3" class="section-label">Receipts</td></tr>
+        <tr><td>Balance b/f from last month</td><td></td><td>${inr(calc.opening)}</td></tr>
+        <tr><td>Maintenance Amt Received</td><td></td><td>${inr(calc.maintReceived)}</td></tr>
+        <tr class="total-row receipts-total"><td>Total Receipts (Maintenance Amt)</td><td></td><td>${inr(calc.totalReceipts)}</td></tr>
+
+        <tr><td colspan="3" class="section-label">Payments</td></tr>
+        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
+        ${itemRows}
+        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(calc.totalPayments)}</td></tr>
+
+        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f</td><td>${inr(calc.closing)}</td></tr>
+      </tbody>
+    </table>
+  `;
 }
 
 function renderExpenseItems(month, data){
   const wrap = document.getElementById('exp-items-wrap');
-  const CATEGORY_OPTIONS = EXPENSE_CATEGORIES;
-  const drafts = expenseDrafts[month] || [];
-  const star = '<span style="color:var(--red);font-weight:700;"> *</span>';
-  const rowHtml = (it, isDraft)=>{
+  const CATEGORY_OPTIONS = ['Water bill','Power bill','Diesel','Watchman Salary','Security Salary','BBMP Garbage Exp','Water Tank cleaning','Drainage cleaning','Lift maintenance','Repair & Maintenance','Housekeeping','Pest control','Miscellaneous'];
+  const rows = data.items.map(it=>{
     const isCustom = it.category && !CATEGORY_OPTIONS.includes(it.category);
-    const miss = expenseMissing(it);
-    const invalid = miss.length > 0 && (isDraft ? it._touched : true);
     return `
-    <tr data-id="${it.id}" data-draft="${isDraft?'1':''}" class="${invalid?'ei-invalid':''}">
+    <tr data-id="${it.id}">
       <td>
-        <select class="ei-cat-select" aria-required="true">
+        <select class="ei-cat-select">
           <option value="" ${!it.category?'selected':''}>Select…</option>
           ${CATEGORY_OPTIONS.map(c=>`<option value="${escapeHtml(c)}" ${it.category===c?'selected':''}>${escapeHtml(c)}</option>`).join('')}
           <option value="__other__" ${isCustom?'selected':''}>Other (type below)</option>
         </select>
         <input type="text" class="ei-cat-custom" style="margin-top:4px;${isCustom?'':'display:none;'}" value="${isCustom?escapeHtml(it.category||''):''}" placeholder="Custom category">
-        ${invalid ? `<div class="ei-err">${isDraft ? 'Not saved yet — ' : 'Incomplete — '}fill ${miss.join(', ')}</div>` : (isDraft ? '<div class="ei-err" style="color:#8A5A00;">Not saved yet</div>' : '')}
       </td>
-      <td><input type="date" class="ei-date" value="${it.paidOn||''}" aria-required="true"></td>
-      <td><input type="number" class="ei-amt" value="${(it.amount||it.amount===0)&&Number(it.amount)!==0?it.amount:''}" min="1" placeholder="0" aria-required="true" style="min-width:100px;"></td>
-      <td>
-        <select class="ei-mode">
-          <option value="">—</option>
-          ${PAY_MODES.map(m=>`<option value="${m}" ${it.mode===m?'selected':''}>${m}</option>`).join('')}
-        </select>
-      </td>
-      <td><input type="text" class="ei-comment" value="${escapeHtml(it.comment||'')}" placeholder="Optional note" maxlength="300" style="min-width:180px;"></td>
-      <td><button class="del-btn ei-del" type="button" title="${isDraft?'Discard':'Delete'}">✕</button></td>
+      <td><input type="date" class="ei-date" value="${it.paidOn||''}"></td>
+      <td><input type="number" class="ei-amt" value="${it.amount||0}" min="0"></td>
+      <td><button class="del-btn ei-del" type="button">✕</button></td>
     </tr>`;
-  };
-  const rows = data.items.map(it=>rowHtml(it,false)).join('') + drafts.map(it=>rowHtml(it,true)).join('');
+  }).join('');
   wrap.innerHTML = `
-    <p class="note" style="margin:0 0 8px;"><span style="color:var(--red);font-weight:700;">*</span> Category, Paid on and Amount are mandatory. Mode and Comments are optional.</p>
     <table>
-      <thead><tr><th>Category${star}</th><th>Paid on${star}</th><th>Amount (₹)${star}</th><th>Mode</th><th>Comments</th><th></th></tr></thead>
-      <tbody id="exp-items-tbody">${rows || '<tr><td colspan="6" style="text-align:center;color:#94A399;">No expenses added yet for this month.</td></tr>'}</tbody>
-      ${data.items.length ? `<tfoot><tr><td colspan="2" style="font-family:'Space Grotesk',sans-serif;font-weight:700;padding-top:10px;">Total (${data.items.length} item${data.items.length===1?'':'s'})</td><td id="exp-items-total" style="font-family:'JetBrains Mono',monospace;font-weight:700;padding-top:10px;">${inr(data.items.reduce((t,it)=>t+(Number(it.amount)||0),0))}</td><td colspan="3"></td></tr></tfoot>` : ''}
+      <thead><tr><th>Category</th><th>Paid on</th><th>Amount (₹)</th><th></th></tr></thead>
+      <tbody id="exp-items-tbody">${rows || '<tr><td colspan="4" style="text-align:center;color:#94A399;">No expenses added yet for this month.</td></tr>'}</tbody>
     </table>
   `;
 
   wrap.querySelectorAll('#exp-items-tbody tr[data-id]').forEach(tr=>{
     const id = tr.dataset.id;
-    const isDraft = tr.dataset.draft === '1';
-    const list = isDraft ? drafts : data.items;
-    const item = list.find(x=>x.id===id);
+    const item = data.items.find(x=>x.id===id);
     const select = tr.querySelector('.ei-cat-select');
     const custom = tr.querySelector('.ei-cat-custom');
-    const read = ()=>({
-      ...item,
-      category: (select.value === '__other__') ? custom.value.trim() : select.value,
-      paidOn: tr.querySelector('.ei-date').value,
-      amount: Number(tr.querySelector('.ei-amt').value) || 0,
-      mode: tr.querySelector('.ei-mode').value,
-      comment: tr.querySelector('.ei-comment').value.trim()
-    });
     const save = async ()=>{
-      const next = read();
-      const miss = expenseMissing(next);
-      if(miss.length){
-        // never store an incomplete expense — keep what was typed on screen and say what's missing
-        tr.classList.add('ei-invalid');
-        let err = tr.querySelector('.ei-err');
-        if(!err){ err = document.createElement('div'); err.className = 'ei-err'; tr.querySelector('td').appendChild(err); }
-        err.style.color = '';
-        err.textContent = (isDraft ? 'Not saved yet — ' : 'Not saved — ') + 'fill ' + miss.join(', ');
-        if(isDraft) Object.assign(item, next, {_touched:true});
-        return;
-      }
-      delete next._touched;
-      if(isDraft){
-        expenseDrafts[month] = drafts.filter(x=>x.id!==id);
-        data.items.push(next);
-      } else {
-        Object.assign(item, next);
-      }
+      item.category = (select.value === '__other__') ? custom.value.trim() : select.value;
+      item.paidOn = tr.querySelector('.ei-date').value;
+      item.amount = Number(tr.querySelector('.ei-amt').value) || 0;
       await saveExpenses();
       renderExpenses();
     };
@@ -3394,16 +2662,9 @@ function renderExpenseItems(month, data){
     custom.addEventListener('change', save);
     tr.querySelector('.ei-date').addEventListener('change', save);
     tr.querySelector('.ei-amt').addEventListener('change', save);
-    tr.querySelector('.ei-mode').addEventListener('change', save);
-    tr.querySelector('.ei-comment').addEventListener('change', save);
     tr.querySelector('.ei-del').addEventListener('click', async ()=>{
-      if(isDraft){
-        expenseDrafts[month] = drafts.filter(x=>x.id!==id);
-        renderExpenses();
-        return;
-      }
-      if(!(await customConfirm('Delete this expense?'))) return;
       data.items = data.items.filter(x=>x.id!==id);
+
       await saveExpenses();
       renderExpenses();
     });
@@ -3412,11 +2673,10 @@ function renderExpenseItems(month, data){
 
 async function addExpenseItem(){
   const month = document.getElementById('exp-month').value || todayMonth();
-  getExpenseData(month);
-  (expenseDrafts[month] = expenseDrafts[month] || []).push({id:'it'+Date.now()+Math.floor(Math.random()*1000), category:'', paidOn:'', amount:0, mode:'', comment:''});
+  const data = getExpenseData(month);
+  data.items.push({id:'it'+Date.now()+Math.floor(Math.random()*1000), category:'', paidOn:'', amount:0});
+  await saveExpenses();
   renderExpenses();
-  const rows = document.querySelectorAll('#exp-items-tbody tr[data-draft="1"]');
-  if(rows.length) rows[rows.length-1].querySelector('.ei-cat-select').focus();
 }
 
 async function saveExpenseOpening(){
@@ -3450,175 +2710,132 @@ async function resetExpenseMaint(){
   renderExpenses();
 }
 
-/* ---------- REPORTS: expense summary for the selected period (reuses the monthly accounting) ---------- */
-function buildExpenseRangeSummary(months){
-  if(!months || !months.length) return null;
-  const from = months[0], to = months[months.length-1];
-  const first = computeExpenseMonth(from);
-  const last = computeExpenseMonth(to);
-  let maint = 0, payments = 0;
-  const items = [];
-  const byCat = {};
-  months.forEach(mo=>{
-    const c = computeExpenseMonth(mo);
-    maint += c.maintReceived;
-    (peekExpenseData(mo).items || []).forEach(it=>{
-      const amt = Number(it.amount) || 0;
-      payments += amt;
-      items.push({month: mo, ...it, amount: amt});
-      const cat = it.category || '(uncategorised)';
-      byCat[cat] = (byCat[cat] || 0) + amt;
-    });
-  });
-  items.sort((x,y)=> (x.paidOn||x.month).localeCompare(y.paidOn||y.month));
-  // a later month's "Balance b/f" typed in by hand (not the previous month's c/f)
-  const adjustments = [];
-  months.slice(1).forEach((mo, i)=>{
-    const diff = computeExpenseMonth(mo).opening - computeExpenseMonth(months[i]).closing;
-    if(Math.abs(diff) >= 0.5) adjustments.push({month: mo, amount: diff});
-  });
-  const adjust = adjustments.reduce((t,a)=>t+a.amount, 0);
-  return {from, to, months, opening: first.opening, maint, receipts: first.opening + maint, payments, closing: last.closing, adjustments, adjust, items, byCat};
-}
-const fmtDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-IN') : '—';
-
-function renderReportExpenseSummary(){
-  const {months, label} = getPeriodMonthsAndLabel();
-  const box = document.getElementById('rpt-exp-summary');
-  const sum = buildExpenseRangeSummary(months);
-  if(!sum){ box.innerHTML = '<p class="note err">Pick a valid period — the "from" month must be on or before the "to" month.</p>'; return; }
-  const multi = months.length > 1;
-  const itemRows = sum.items.length
-    ? sum.items.map(it=>`
-      <tr class="item-row">
-        <td>${escapeHtml(it.category) || '<span style="color:#94A399;">(uncategorised)</span>'}${(it.comment || it.mode) ? `<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">${escapeHtml([it.mode, it.comment].filter(Boolean).join(' · '))}</div>` : ''}</td>
-        <td>${fmtDate(it.paidOn)}</td>
-        <td>${inr(it.amount)}</td>
-      </tr>`).join('')
-    : `<tr class="item-row"><td colspan="3" style="text-align:center;color:#94A399;">No expenses recorded.</td></tr>`;
-  const catKeys = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]);
-  const catRows = (multi && catKeys.length) ? `
-        <tr><td colspan="3" class="section-label">Payments by category</td></tr>
-        ${catKeys.map(c=>`<tr class="item-row"><td>${escapeHtml(c)}</td><td></td><td>${inr(sum.byCat[c])}</td></tr>`).join('')}` : '';
-  box.innerHTML = `
-    <table class="summary-table" id="rpt-exp-table">
-      <thead><tr><th colspan="3">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${escapeHtml(label)}</th></tr></thead>
-      <tbody>
-        <tr><td colspan="3" class="section-label">Receipts</td></tr>
-        <tr><td>Balance b/f${multi ? ` (${monthLabelOf(sum.from)})` : ' from last month'}</td><td></td><td>${inr(sum.opening)}</td></tr>
-        <tr><td>Maintenance Amt Received${multi ? ' (total)' : ''}</td><td></td><td>${inr(sum.maint)}</td></tr>
-        <tr class="total-row receipts-total"><td>Total Receipts</td><td></td><td>${inr(sum.receipts)}</td></tr>
-        <tr><td colspan="3" class="section-label">Payments</td></tr>
-        <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
-        ${itemRows}
-        <tr class="total-row payments-total"><td>Total Payments</td><td></td><td>${inr(sum.payments)}</td></tr>
-        ${catRows}
-        ${sum.adjustments.length ? `
-        <tr><td colspan="3" class="section-label">Balance adjustments</td></tr>
-        ${sum.adjustments.map(a=>`<tr class="item-row adj-row"><td>Balance b/f edited in ${monthLabelOf(a.month)}<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">differs from ${monthLabelOf(prevMonthKeyGlobal(a.month))}'s balance c/f</div></td><td></td><td>${a.amount > 0 ? '+' : '−'}${inr(Math.abs(a.amount))}</td></tr>`).join('')}
-        <tr class="item-row"><td colspan="2" style="font-size:.78rem;color:#4E6154;">Total receipts ${inr(sum.receipts)} − payments ${inr(sum.payments)} ${sum.adjust >= 0 ? '+' : '−'} adjustments ${inr(Math.abs(sum.adjust))} = balance c/f</td><td></td></tr>` : ''}
-        <tr class="total-row balance-row"><td colspan="2">(A) Available Funds for Maintenance — Balance c/f${multi ? ` (${monthLabelOf(sum.to)})` : ''}</td><td>${inr(sum.closing)}</td></tr>
-      </tbody>
-    </table>`;
-  document.getElementById('rpt-exp-output').innerHTML = '';
-}
-
-function expenseSummaryText(){
-  const {months, label} = getPeriodMonthsAndLabel();
-  const sum = buildExpenseRangeSummary(months);
-  if(!sum) return '';
-  const lines = [];
-  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
-  lines.push(`Maintenance Amt Summary — ${label}`);
-  lines.push('');
-  lines.push('Receipts:');
-  lines.push(`Balance b/f: ${inr(sum.opening)}`);
-  lines.push(`Maintenance Amt Received: ${inr(sum.maint)}`);
-  lines.push(`Total Receipts: ${inr(sum.receipts)}`);
-  lines.push('');
-  lines.push('Payments:');
-  if(!sum.items.length) lines.push('No expenses recorded.');
-  sum.items.forEach(it=> lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}${it.comment ? ' (' + it.comment + ')' : ''}`));
-  lines.push('');
-  lines.push(`Total Payments: ${inr(sum.payments)}`);
-  lines.push('');
-  if(sum.adjustments.length){
-    lines.push('Balance adjustments:');
-    sum.adjustments.forEach(a=>lines.push(`Balance b/f edited in ${monthLabelOf(a.month)}: ${a.amount > 0 ? '+' : '−'}${inr(Math.abs(a.amount))}`));
-    lines.push('');
-  }
-  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(sum.closing)}`);
-  return lines.join('\n');
-}
-function showExpenseWhatsApp(){
-  renderPeriodReport();
-  const text = expenseSummaryText();
+function generateExpenseReport(){
+  const month = document.getElementById('exp-month').value || todayMonth();
+  const text = buildExpenseReportText(month);
   const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
-  document.getElementById('rpt-exp-output').innerHTML = `
+  document.getElementById('exp-report-output').innerHTML = `
     <div class="report-box">${escapeHtml(text)}</div>
     <div class="actions-row">
-      <button class="wa" id="rpt-wa-open" type="button">Open in WhatsApp</button>
-      <button class="ghost" id="rpt-wa-copy" type="button">Copy text</button>
-    </div>`;
-  document.getElementById('rpt-wa-open').onclick = ()=>window.open(waLink, '_blank');
-  document.getElementById('rpt-wa-copy').onclick = ()=>copyText(text, 'rpt-wa-copy');
+      <button class="wa" id="exp-wa-btn" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="exp-copy-btn" type="button">Copy text</button>
+    </div>
+  `;
+  document.getElementById('exp-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
+  document.getElementById('exp-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-copy-btn'));
 }
 
-// rows shared by the CSV and Excel downloads (comments included)
-function expenseExportData(){
-  const {months, label} = getPeriodMonthsAndLabel();
-  const sum = buildExpenseRangeSummary(months);
-  if(!sum) return null;
-  const summary = [
-    ['Society', settings.societyName || 'JD Blossom Apartment'],
-    ['Period', label],
-    ['From month', sum.from], ['To month', sum.to],
-    ['Balance b/f', sum.opening],
-    ['Maintenance received', sum.maint],
-    ['Total receipts', sum.receipts],
-    ['Total payments', sum.payments],
-    ...sum.adjustments.map(a=>[`Balance adjustment (b/f edited in ${monthLabelOf(a.month)})`, a.amount]),
-    ['Available funds (balance c/f)', sum.closing]
-  ];
-  const itemsHead = ['Month', 'Paid on', 'Category', 'Mode', 'Comments', 'Amount'];
-  const items = sum.items.map(it=>[it.month, it.paidOn || '', it.category || '', it.mode || '', it.comment || '', it.amount]);
-  const cats = Object.keys(sum.byCat).sort((a,b)=>sum.byCat[b]-sum.byCat[a]).map(c=>[c, sum.byCat[c]]);
-  const maint = months.map(mo=>{ const s = monthStats(mo); return [mo, s.paidCount, s.pendingCount, s.collected, s.expected]; });
-  if(months.length > 1) maint.push(['Total (period)', '', '', maint.reduce((t,r)=>t+(Number(r[3])||0),0), periodExpected(months)]);
-  const fileBase = `Expense_summary_${sum.from}${sum.to !== sum.from ? '_to_' + sum.to : ''}`;
-  return {summary, itemsHead, items, cats, maint, fileBase};
+function buildExpenseReportText(month){
+  const calc = computeExpenseMonth(month);
+  const data = getExpenseData(month);
+  const monthLabel = monthLabelOf(month);
+  let lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`Maintenance Amt Summary — ${monthLabel}`);
+  lines.push('');
+  lines.push('Receipts:');
+  lines.push(`Balance b/f from last month: ${inr(calc.opening)}`);
+  lines.push(`Maintenance Amt Received: ${inr(calc.maintReceived)}`);
+  lines.push(`Total Receipts: ${inr(calc.totalReceipts)}`);
+  lines.push('');
+  lines.push('Payments:');
+  if(data.items.length === 0){
+    lines.push('No expenses recorded this month.');
+  } else {
+    data.items.forEach(it=>{
+      lines.push(`${it.category || '(uncategorised)'}${it.paidOn ? ' — ' + it.paidOn : ''}: ${inr(it.amount)}`);
+    });
+  }
+  lines.push('');
+  lines.push(`Total Payments: ${inr(calc.totalPayments)}`);
+  lines.push('');
+  lines.push(`(A) Available Funds for Maintenance — Balance c/f: ${inr(calc.closing)}`);
+  return lines.join('\n');
 }
-function downloadBlob(blob, name){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
-function downloadExpenseCsv(){
-  renderPeriodReport();
-  const d = expenseExportData();
-  if(!d) return;
-  const rows = [...d.summary, [], d.itemsHead, ...d.items, [], ['Payments by category', 'Amount'], ...d.cats];
-  const csv = '﻿' + rows.map(r=>r.map(v=>csvEscape(v ?? '')).join(',')).join('\r\n');
-  downloadBlob(new Blob([csv], {type:'text/csv;charset=utf-8;'}), d.fileBase + '.csv');
-}
-async function downloadExpenseXlsx(){
-  renderPeriodReport();
-  const d = expenseExportData();
-  if(!d) return;
-  const btn = document.getElementById('rpt-xlsx-btn');
-  try{
-    btn.disabled = true;
-    const XLSX = await loadXlsx();
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...d.summary, [], ['Payments by category', 'Amount'], ...d.cats]), 'Summary');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([d.itemsHead, ...d.items]), 'Expenses');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Month', 'Paid flats', 'Pending flats', 'Collected', 'Expected'], ...d.maint]), 'Maintenance');
-    XLSX.writeFile(wb, d.fileBase + '.xlsx');
-  }catch(e){
-    showSyncError("Couldn't create the Excel file — check your internet connection and try again.");
-  }finally{ btn.disabled = false; }
+
+/* ---------- EXPENSES: time-range summary ---------- */
+function generateExpenseRangeReport(){
+  const out = document.getElementById('exp-range-output');
+  const {months, label} = getExpensePeriodMonthsAndLabel();
+  if(!months || months.length === 0){
+    out.innerHTML = '<p class="note err">Pick a valid period — check that the "from" month is on or before the "to" month.</p>';
+    return;
+  }
+  const from = months[0], to = months[months.length-1];
+  const openingCalc = computeExpenseMonth(from);
+  const closingCalc = computeExpenseMonth(to);
+  let totalMaint = 0, totalPayments = 0;
+  const categoryTotals = {};
+  months.forEach(mo=>{
+    const c = computeExpenseMonth(mo);
+    totalMaint += c.maintReceived;
+    const d = getExpenseData(mo);
+    d.items.forEach(it=>{
+      const amt = Number(it.amount) || 0;
+      totalPayments += amt;
+      const cat = it.category || '(uncategorised)';
+      categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+    });
+  });
+  const openingBal = openingCalc.opening;
+  const closingBal = closingCalc.closing;
+  const totalReceipts = openingBal + totalMaint;
+  const catKeys = Object.keys(categoryTotals).sort((a,b)=>categoryTotals[b]-categoryTotals[a]);
+  const periodLabel = label;
+
+  const catRows = catKeys.length
+    ? catKeys.map(cat=>`<tr class="item-row"><td>${escapeHtml(cat)}</td><td>${inr(categoryTotals[cat])}</td></tr>`).join('')
+    : `<tr class="item-row"><td colspan="2" style="text-align:center;color:#94A399;">No expenses recorded in this period.</td></tr>`;
+
+  const tableHtml = `
+    <table class="summary-table">
+      <thead><tr><th colspan="2">${escapeHtml(settings.societyName || 'JD Blossom Apartment')} — ${periodLabel}</th></tr></thead>
+      <tbody>
+        <tr><td colspan="2" class="section-label">Receipts</td></tr>
+        <tr><td>Opening balance (${monthLabelOf(from)})</td><td>${inr(openingBal)}</td></tr>
+        <tr><td>Maintenance Amt Received (total)</td><td>${inr(totalMaint)}</td></tr>
+        <tr class="total-row receipts-total"><td>Total Receipts</td><td>${inr(totalReceipts)}</td></tr>
+
+        <tr><td colspan="2" class="section-label">Payments by category</td></tr>
+        ${catRows}
+        <tr class="total-row payments-total"><td>Total Payments</td><td>${inr(totalPayments)}</td></tr>
+
+        <tr class="total-row balance-row"><td>(A) Available Funds — Closing Balance (${monthLabelOf(to)})</td><td>${inr(closingBal)}</td></tr>
+      </tbody>
+    </table>
+  `;
+
+  let lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`Expense Summary — ${periodLabel}`);
+  lines.push('');
+  lines.push('Receipts:');
+  lines.push(`Opening balance (${monthLabelOf(from)}): ${inr(openingBal)}`);
+  lines.push(`Maintenance Amt Received (total): ${inr(totalMaint)}`);
+  lines.push(`Total Receipts: ${inr(totalReceipts)}`);
+  lines.push('');
+  lines.push('Payments by category:');
+  if(catKeys.length === 0){
+    lines.push('No expenses recorded in this period.');
+  } else {
+    catKeys.forEach(cat=>lines.push(`${cat}: ${inr(categoryTotals[cat])}`));
+  }
+  lines.push('');
+  lines.push(`Total Payments: ${inr(totalPayments)}`);
+  lines.push('');
+  lines.push(`(A) Available Funds — Closing Balance (${monthLabelOf(to)}): ${inr(closingBal)}`);
+  const text = lines.join('\n');
+
+  const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
+  out.innerHTML = `
+    ${tableHtml}
+    <div class="actions-row" style="margin-top:12px;">
+      <button class="wa" id="exp-range-wa-btn" type="button">Open in WhatsApp</button>
+      <button class="ghost" id="exp-range-copy-btn" type="button">Copy text</button>
+    </div>
+  `;
+  document.getElementById('exp-range-wa-btn').addEventListener('click', ()=>window.open(waLink, '_blank'));
+  document.getElementById('exp-range-copy-btn').addEventListener('click', ()=>copyText(text, 'exp-range-copy-btn'));
 }
 
 /* ---------- SETTINGS ---------- */
@@ -3637,7 +2854,7 @@ async function saveSettingsHandler(){
   document.getElementById('settings-saved-note').textContent = applyAll ? `Saved — applied ${inr(settings.defaultAmount)} to all ${flats.length} flats.` : 'Saved.';
   document.getElementById('set-amount-applyall').checked = false;
   setTimeout(()=>{ document.getElementById('settings-saved-note').textContent=''; }, 3000);
-  renderDashboard(); renderEntry(); renderPeriodReport(); renderExpenses();
+  renderDashboard(); renderEntry(); renderMonthlyReport(); renderPeriodReport(); renderExpenses();
 }
 
 /* ---------- PROFILE TAB ---------- */
@@ -3692,7 +2909,7 @@ function renderProfile(){
   }).join('');
 
   if(admins.length <= 1){
-    document.getElementById('admins-note').innerHTML = '<span style="color:#8A5A00;">Only one admin — add another as a backup.</span>';
+    document.getElementById('admins-note').innerHTML = '<span style="color:#8A5A00;">You have only one admin profile — if this admin ever forgets both the password and the recovery answer, no one can sign in. Consider adding at least one more admin profile as a backup.</span>';
   } else {
     document.getElementById('admins-note').textContent = '';
   }
@@ -3765,9 +2982,9 @@ async function saveMyProfile(){
   me.phone = document.getElementById('my-admin-phone').value.trim();
   await saveAdmins();
   document.getElementById('role-badge').textContent = me.name;
-  renderProfile();
   note.textContent = 'Profile saved.';
-  setTimeout(()=>note.textContent='',2500);
+  setTimeout(()=>note.textContent='',2000);
+  renderProfile();
 }
 
 async function saveMyPassword(){
@@ -3821,23 +3038,6 @@ function initOwnerUI(){
   buildNav(TABS_OWNER, (id)=>showSection(TABS_OWNER, id));
   showSection(TABS_OWNER, 'my');
   renderOwnerView();
-}
-
-// Owner page: the society's fund position this month (same figures as Admin → Expenses → Receipts)
-function renderOwnerSocietyFunds(month){
-  const wrap = document.getElementById('my-society-funds-wrap');
-  if(!firstExpenseMonth()){ wrap.style.display = 'none'; return; }
-  wrap.style.display = '';
-  const c = computeExpenseMonth(month);
-  document.getElementById('my-society-funds-title').textContent = `Society funds — ${monthLabelOf(month)}`;
-  document.getElementById('my-society-funds').innerHTML = `
-    <div class="stat"><b>${inr(c.opening)}</b><span>Previous month balance</span></div>
-    <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span>Collected this month</span></div>
-    <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span>Expenses this month</span></div>
-    <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span>Available balance</span></div>
-  `;
-  document.getElementById('my-society-funds-note').textContent =
-    `${inr(c.opening)} + ${inr(c.maintReceived)} − ${inr(c.totalPayments)} = ${inr(c.closing)}. Expenses are added by the committee during the month.`;
 }
 
 function renderOwnerView(){
@@ -3897,17 +3097,15 @@ function renderOwnerView(){
       shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
     }
   } else {
-    const REQ = '<span class="req-star" aria-hidden="true" style="color:var(--red);font-weight:700;"> *</span>';
     document.getElementById('my-upload-area').innerHTML = `
-      <p class="note" id="my-required-note" style="margin:0 0 12px;"><span style="color:var(--red);font-weight:700;">*</span> All three are mandatory to submit: <b>Amount paid</b>, <b>Mode</b> and <b>Payment screenshot</b>.</p>
       <div class="row" style="margin-bottom:10px;">
         <div>
-          <label for="my-pay-amount">Amount paid (₹)${REQ}</label>
-          <input type="number" id="my-pay-amount" value="${(p.amount!==undefined && p.amount!==null) ? p.amount : Math.round(due.dueThisMonth)}" min="1" required aria-required="true" inputmode="numeric">
+          <label for="my-pay-amount">Amount paid (₹)</label>
+          <input type="number" id="my-pay-amount" value="${(p.amount!==undefined && p.amount!==null) ? p.amount : Math.round(due.dueThisMonth)}" min="0">
         </div>
         <div>
-          <label for="my-pay-mode">Mode${REQ}</label>
-          <select id="my-pay-mode" required aria-required="true">
+          <label for="my-pay-mode">Mode</label>
+          <select id="my-pay-mode">
             <option value="">—</option>
             <option value="UPI" ${p.mode==='UPI'?'selected':''}>UPI</option>
             <option value="Cash" ${p.mode==='Cash'?'selected':''}>Cash</option>
@@ -3918,7 +3116,7 @@ function renderOwnerView(){
       </div>
       <div class="row" style="align-items:center;">
         <div>
-          <label>Payment screenshot${REQ}</label>
+          <label>Payment screenshot</label>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             ${shotPreview}
             <input type="file" accept="image/*" id="my-shot-input" class="file-input-hidden">
@@ -3928,7 +3126,6 @@ function renderOwnerView(){
           <div id="my-shot-checking" style="margin-top:8px;"></div>
         </div>
       </div>
-      <div id="my-submit-msg" role="alert"></div>
       <div class="actions-row">
         <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Update this month' : 'Mark as paid & submit'}</button>
       </div>
@@ -3941,31 +3138,18 @@ function renderOwnerView(){
       if(!file) return;
       try{
         const dataUrl = await compressImage(file);
-        document.getElementById('my-shot-checking').innerHTML = '<p class="note">Checking your screenshot…</p>';
-        let shotPath;
-        try{ shotPath = await uploadScreenshot(flat.id, month, dataUrl); }
-        catch(upErr){
-          document.getElementById('my-shot-checking').innerHTML = '';
-          if(upErr.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(upErr));
-          return;
-        }
         const existing = getPayment(flat.id, month);
-        payments[payKey(flat.id, month)] = {...existing, screenshot: dataUrl, screenshotPath: shotPath, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
+        payments[payKey(flat.id, month)] = {...existing, screenshot: dataUrl, autoCheck: {status:'checking', reason:'Checking screenshot…'}};
         await savePayments(flat.id, month);
+        document.getElementById('my-shot-checking').innerHTML = '<p class="note">Checking your screenshot…</p>';
 
         const amtField = document.getElementById('my-pay-amount');
         const amtEntered = amtField ? (Number(amtField.value) || Math.round(due.dueThisMonth)) : Math.round(due.dueThisMonth);
         const result = await autoVerifyScreenshot(dataUrl, flat, month, amtEntered);
         const latest = getPayment(flat.id, month);
-        // the auto-check result is kept, but only counts as "verified" once the owner actually submits
-        payments[payKey(flat.id, month)] = {...latest, autoCheck: result};
+        payments[payKey(flat.id, month)] = {...latest, autoCheck: result, verified: result.status==='verified' ? true : latest.verified};
         await savePayments(flat.id, month);
-        const keepAmount = document.getElementById('my-pay-amount') ? document.getElementById('my-pay-amount').value : null;
-        const keepMode = document.getElementById('my-pay-mode') ? document.getElementById('my-pay-mode').value : null;
         renderOwnerView();
-        // don't lose what the owner already typed/picked before uploading
-        if(keepAmount !== null && document.getElementById('my-pay-amount')) document.getElementById('my-pay-amount').value = keepAmount;
-        if(keepMode !== null && document.getElementById('my-pay-mode')) document.getElementById('my-pay-mode').value = keepMode;
       }catch(err){
         alert('Could not read that image, please try another file.');
       }
@@ -3973,14 +3157,9 @@ function renderOwnerView(){
     const myShotRemoveBtn = document.getElementById('my-shot-remove');
     if(myShotRemoveBtn){
       myShotRemoveBtn.addEventListener('click', async ()=>{
-        const current = getPayment(flat.id, month);
-        const question = current.paid
-          ? 'Remove your uploaded screenshot for this month? This also withdraws your submission — upload a new screenshot and submit again.'
-          : 'Remove your uploaded screenshot for this month?';
-        if(!(await customConfirm(question))) return;
+        if(!(await customConfirm('Remove your uploaded screenshot for this month?'))) return;
         const existing = getPayment(flat.id, month);
-        // a submission always needs its screenshot, so removing it withdraws the submission
-        payments[payKey(flat.id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null, paid: false};
+        payments[payKey(flat.id, month)] = {...existing, screenshot: null, verified: false, autoCheck: null};
         await savePayments(flat.id, month);
         renderOwnerView();
       });
@@ -3991,49 +3170,11 @@ function renderOwnerView(){
       shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
     }
 
-    // Submission needs all three: amount, mode and a payment screenshot.
-    const amountEl = document.getElementById('my-pay-amount');
-    const modeEl = document.getElementById('my-pay-mode');
-    const shotBtnEl = document.getElementById('my-shot-btn');
-    const submitMsg = document.getElementById('my-submit-msg');
-    const markInvalid = (el, bad)=>{
-      if(!el) return;
-      el.style.borderColor = bad ? 'var(--red)' : '';
-      el.style.color = (bad && el === shotBtnEl) ? 'var(--red)' : '';
-      if(bad) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid');
-    };
-    const clearIfFixed = ()=>{
-      if(!submitMsg.innerHTML) return;
-      const a = amountEl.value.trim();
-      markInvalid(amountEl, !a || !(Number(a) > 0));
-      markInvalid(modeEl, !modeEl.value);
-      if(amountEl.getAttribute('aria-invalid') !== 'true' && modeEl.getAttribute('aria-invalid') !== 'true' && shotBtnEl.getAttribute('aria-invalid') !== 'true') submitMsg.innerHTML = '';
-    };
-    amountEl.addEventListener('input', clearIfFixed);
-    modeEl.addEventListener('change', clearIfFixed);
-
     document.getElementById('my-mark-paid-btn').onclick = async ()=>{
       const existing = getPayment(flat.id, month);
-      const amountRaw = amountEl.value.trim();
-      const amount = Number(amountRaw);
-      const mode = modeEl.value;
-      const hasShot = !!(existing.screenshotPath || existing.screenshot);
-      const missing = [];
-      const badAmount = !amountRaw || !(amount > 0);
-      if(badAmount) missing.push(amountRaw === '' ? 'Amount paid — enter the amount you paid' : 'Amount paid — must be more than ₹0');
-      if(!mode) missing.push('Mode — choose UPI, Cash, Bank Transfer or Cheque');
-      if(!hasShot) missing.push('Payment screenshot — upload a screenshot of your payment');
-      markInvalid(amountEl, badAmount);
-      markInvalid(modeEl, !mode);
-      markInvalid(shotBtnEl, !hasShot);
-      if(missing.length){
-        submitMsg.innerHTML = `<div class="note err"><b>Not submitted — please fill the mandatory field${missing.length>1?'s':''} below:</b><ul style="margin:6px 0 0;padding-left:20px;">${missing.map(m=>`<li>${escapeHtml(m)}</li>`).join('')}</ul></div>`;
-        (badAmount ? amountEl : (!mode ? modeEl : shotBtnEl)).focus();
-        return;
-      }
-      submitMsg.innerHTML = '';
-      const autoOk = !!(existing.autoCheck && existing.autoCheck.status === 'verified');
-      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: autoOk};
+      const amount = Number(document.getElementById('my-pay-amount').value) || Math.round(due.dueThisMonth);
+      const mode = document.getElementById('my-pay-mode').value;
+      payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: existing.screenshot ? existing.verified : false};
       await savePayments(flat.id, month);
       renderOwnerView();
     };
@@ -4047,9 +3188,7 @@ function renderOwnerView(){
     <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
     <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
     <div class="stat"><b>${pct}%</b><span>Collected</span></div>
-    <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(s.collected)}</b><span>Amount collected</span></div>
   `;
-  renderOwnerSocietyFunds(month);
 
   // history
   const months = last12Months();
@@ -4097,15 +3236,10 @@ function renderOwnerView(){
     const a = document.getElementById('my-recovery-a').value.trim();
     const note = document.getElementById('my-recovery-saved-note');
     if(!q){ note.textContent = 'Enter a security question.'; setTimeout(()=>note.textContent='',2200); return; }
-    if(!flat.hasRecoveryAnswer && !a){ note.textContent = 'Enter an answer.'; setTimeout(()=>note.textContent='',2200); return; }
-    try{
-      await rpc('jdb_owner_set_recovery', {p_token: sessionToken, p_question: q, p_answer: a});
-    }catch(err){
-      if(err.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(err));
-      return;
-    }
+    if(!flat.recoveryAnswer && !a){ note.textContent = 'Enter an answer.'; setTimeout(()=>note.textContent='',2200); return; }
     flat.recoveryQuestion = q;
-    if(a) flat.hasRecoveryAnswer = true;
+    if(a) flat.recoveryAnswer = a;
+    await saveFlats();
     document.getElementById('my-recovery-a').value = '';
     document.getElementById('my-recovery-warn').style.display = 'none';
     note.textContent = 'Security question saved.';

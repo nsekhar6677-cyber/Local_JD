@@ -93,6 +93,10 @@ screen differs by more than 0.1 % of pixels or scrolls sideways.
 
 ## Reports & Expenses
 
+* **Owner page → Society overview** — also shows the amount collected this month and the society funds
+  (previous month balance, collected, expenses, available balance). Owners receive expense totals only
+  (`20260930000000_owner_society_funds.sql`), never categories, dates, modes or comments.
+
 * **Reports** — one period picker (monthly / quarterly / half-yearly / annual / custom from–to)
   drives both the maintenance collection and the **Expense summary** (receipts, itemised payments
   with mode + comments, category totals, balance c/f). Buttons: Print / Save as PDF (prints only

@@ -173,3 +173,40 @@ test('reports: an unpaid balance carried month to month is counted once in the p
   await page.click('#rpt-period-btn');
   await expect(page.locator('#rpt-period-output')).toContainText('TOTAL');
 });
+
+test('reports: a hand-edited Balance b/f in a later month shows as an adjustment so the summary reconciles', async ({ page, request }, testInfo) => {
+  only(testInfo);
+  await seed(request); // Jul closes at ₹48,713
+  await sql(request, `update jdb.expenses set data = jsonb_set(data, '{openingOverride}', '40000') where month='2026-08'`);
+  await openApp(page); await loginAdmin(page);
+  await customRange(page, '2026-07', '2026-08');
+  const box = page.locator('#rpt-exp-summary');
+  await expect(box).toContainText('Balance b/f edited in August 2026');
+  await expect(box.locator('tr.adj-row')).toContainText('−₹8,713');
+  // 1,48,000 receipts − 74,685 payments − 8,713 = 64,602
+  await expect(box.locator('tr.balance-row')).toContainText('64,602');
+  // no adjustment row when balances flow on automatically
+  await sql(request, `update jdb.expenses set data = jsonb_set(data, '{openingOverride}', 'null') where month='2026-08'`);
+  await page.reload(); await openApp(page); await loginAdmin(page);
+  await customRange(page, '2026-07', '2026-08');
+  await expect(box.locator('tr.balance-row')).toContainText('73,315');
+  await expect(box.locator('tr.adj-row')).toHaveCount(0);
+});
+
+test('expenses: balance carries forward through a month with no expenses, whatever month is opened first', async ({ page, request }, testInfo) => {
+  only(testInfo);
+  await sql(request, `insert into jdb.expenses(month, data) values
+    ('2026-06', '{"items":[{"id":"x1","category":"Diesel","paidOn":"2026-06-05","amount":1000}],"openingOverride":50000,"maintReceivedOverride":null}'),
+    ('2026-08', '{"items":[{"id":"x2","category":"Diesel","paidOn":"2026-08-05","amount":2000}],"openingOverride":null,"maintReceivedOverride":null}')`);
+  await openApp(page); await loginAdmin(page); await tab(page, 'expenses');
+  // open August straight away (July has no expenses and was never opened)
+  await page.fill('#exp-month', '2026-08'); await page.dispatchEvent('#exp-month', 'change');
+  await expect(page.locator('#exp-opening')).toHaveValue('49000');
+  await expect(page.locator('#exp-receipts-stats')).toContainText('47,000');
+  await page.fill('#exp-month', '2026-07'); await page.dispatchEvent('#exp-month', 'change');
+  await expect(page.locator('#exp-opening')).toHaveValue('49000');
+  // reports agree, with no false adjustment
+  await customRange(page, '2026-06', '2026-08');
+  await expect(page.locator('#rpt-exp-summary tr.balance-row')).toContainText('47,000');
+  await expect(page.locator('#rpt-exp-summary tr.adj-row')).toHaveCount(0);
+});
