@@ -266,6 +266,8 @@
 
   /* Phones: summary boxes stay on ONE row (smaller text instead of wrapping) */
   .lbl-short{display:none;}
+  .my-paid-line{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:.9rem;color:var(--ink);}
+  .my-paid-line .shot-thumb{width:44px;height:44px;flex:0 0 auto;}
   @media (max-width:600px){
     .stats.one-row{display:grid !important;grid-template-columns:repeat(var(--n,4),minmax(0,1fr)) !important;flex-wrap:nowrap;}
     .stats.one-row .stat{min-width:0 !important;padding:9px 2px !important;text-align:center !important;display:block !important;grid-column:auto !important;}
@@ -2713,7 +2715,7 @@ async function adminLogin(){
 
 async function logout(){
   const token = sessionToken;
-  currentUser = null;
+  currentUser = null; ownerEditOpen = false;
   sessionToken = null;
   lastLoadJson = '';
   if(token) rpc('jdb_logout', {p_token: token}).catch(()=>{});
@@ -4390,6 +4392,7 @@ function renderOwnerSocietyFunds(month){
   fundsEl.style.setProperty('--n', c.specialReceived ? 5 : 4);
 }
 
+let ownerEditOpen = false; // owner opened "Edit submission" for this month's maintenance
 function renderOwnerView(){
   const flat = flats.find(f=>f.id===currentUser.flatId);
   if(!flat){ logout(); return; }
@@ -4411,47 +4414,41 @@ function renderOwnerView(){
     <div class="stat"><b style="color:${status==='waived'?'#4E6154':status==='pending'?'var(--red)':status==='verified'?'var(--green)':'#8A5A00'}">${status==='waived'?'Waived':statusLabel.split(' ')[0]}</b><span>${monthLabelOf(month)}</span></div>
   `;
 
+  // short status: badge + one line (details only once something was paid)
+  const showForm = !due.waived && !p.verified && (!p.paid || ownerEditOpen);
+  const balanceText = (p.paid && due.carryOut !== 0)
+    ? ` · <b style="color:${due.carryOut>0?'var(--red)':'var(--green)'}">${inr(Math.abs(due.carryOut))} ${due.carryOut>0?'owed':'credit'}</b> next month` : '';
   document.getElementById('my-current-status').innerHTML = `
     <span class="badge ${status==='waived'?'submitted':status==='pending'?'pending':status==='verified'?'verified':'submitted'}">${statusLabel}</span>
-    ${status==='waived' ? '<div class="note">Your admin has cancelled this month\'s due — nothing to pay, and it will not carry forward.</div>' : ''}
-    ${p.paid && status!=='waived' ? `<div class="note">Paid: ${inr(p.amount||0)} · Mode: ${p.mode||'—'} · Date: ${p.date||'—'}</div>` : ''}
-    ${p.paid && status!=='waived' ? `<div class="note">Balance to next month: <b style="color:${due.carryOut>0?'var(--red)':due.carryOut<0?'var(--green)':'inherit'}">${due.carryOut===0?'₹0':inr(Math.abs(due.carryOut)) + (due.carryOut>0?' owed':' credit')}</b></div>` : ''}
-    ${p.autoCheck && p.screenshot && status!=='waived' ? renderAutoCheckNote(p.autoCheck) : ''}
+    ${status==='waived' ? '<div class="note" style="margin:6px 0 0;">Waived by the admin — nothing to pay.</div>' : ''}
+    ${p.paid && status!=='waived' ? `<div class="my-paid-line">
+        ${p.screenshot && !showForm ? `<img class="shot-thumb my-shot-view" src="${p.screenshot}" alt="Payment proof">` : ''}
+        <span>${inr(p.amount||0)} · ${escapeHtml(p.mode||'—')} · ${fmtDate(p.date)}${balanceText}</span>
+      </div>` : ''}
   `;
 
   const shotPreview = p.screenshot
     ? `<img class="shot-thumb my-shot-view" src="${p.screenshot}" alt="Payment proof" style="width:56px;height:56px;">`
     : '';
 
+  const bindStatusThumb = ()=>{
+    const t = document.querySelector('#my-current-status .my-shot-view');
+    if(t){ t.style.cursor = 'pointer'; t.onclick = ()=>openShotModal(t.src, `${flat.flatNo} — ${monthLabelOf(month)}`); }
+  };
   if(due.waived){
-    document.getElementById('my-upload-area').innerHTML = `
-      <div class="note">This month's due has been waived by your admin — there's nothing to submit.</div>
-    `;
+    document.getElementById('my-upload-area').innerHTML = '';
   } else if(p.verified){
+    document.getElementById('my-upload-area').innerHTML = `<p class="note" style="margin:0;">Verified by admin — locked. Contact the committee for any correction.</p>`;
+    bindStatusThumb();
+  } else if(p.paid && !ownerEditOpen){
     document.getElementById('my-upload-area').innerHTML = `
-      <div class="note" style="color:var(--green);"><b>Verified by admin.</b> This month's payment is locked and can no longer be edited here.</div>
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label>Amount paid (₹)</label>
-          <div style="padding:11px 10px;background:var(--paper);border:1px solid var(--line);">${inr(p.amount||0)}</div>
-        </div>
-        <div>
-          <label>Mode</label>
-          <div style="padding:11px 10px;background:var(--paper);border:1px solid var(--line);">${p.mode||'—'}</div>
-        </div>
-      </div>
-      ${p.screenshot ? `<div style="margin-top:12px;"><label>Payment screenshot</label><br>${shotPreview}</div>` : ''}
-      <p class="note">If this needs a correction, please contact your admin/committee directly.</p>
-    `;
-    const shotThumb = document.querySelector('.my-shot-view');
-    if(shotThumb){
-      shotThumb.style.cursor = 'pointer';
-      shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
-    }
+      <div class="actions-row" style="margin-top:0;"><button class="ghost" id="my-edit-btn" type="button">Edit submission</button></div>`;
+    bindStatusThumb();
+    document.getElementById('my-edit-btn').onclick = ()=>{ ownerEditOpen = true; renderOwnerView(); };
   } else {
     const REQ = '<span class="req-star" aria-hidden="true" style="color:var(--red);font-weight:700;"> *</span>';
     document.getElementById('my-upload-area').innerHTML = `
-      <p class="note" id="my-required-note" style="margin:0 0 12px;"><span style="color:var(--red);font-weight:700;">*</span> All three are mandatory to submit: <b>Amount paid</b>, <b>Mode</b> and <b>Payment screenshot</b>.</p>
+      <p class="note" id="my-required-note" style="margin:0 0 10px;"><span style="color:var(--red);font-weight:700;">*</span> All fields are required.</p>
       <div class="row" style="margin-bottom:10px;">
         <div>
           <label for="my-pay-amount">Amount paid (₹)${REQ}</label>
@@ -4474,7 +4471,7 @@ function renderOwnerView(){
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             ${shotPreview}
             <input type="file" accept="image/*" id="my-shot-input" class="file-input-hidden">
-            <button type="button" class="ghost" id="my-shot-btn">${p.screenshot?'Replace screenshot':'Upload screenshot'}</button>
+            <button type="button" class="ghost" id="my-shot-btn">${p.screenshot?'Replace':'Upload screenshot'}</button>
             ${p.screenshot ? `<button type="button" class="ghost" id="my-shot-remove" style="color:var(--red);border-color:var(--red);">Remove</button>` : ''}
           </div>
           <div id="my-shot-checking" style="margin-top:8px;"></div>
@@ -4482,11 +4479,14 @@ function renderOwnerView(){
       </div>
       <div id="my-submit-msg" role="alert"></div>
       <div class="actions-row">
-        <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Update this month' : 'Mark as paid & submit'}</button>
+        <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Save changes' : 'Submit payment'}</button>
+        ${p.paid ? `<button class="ghost" id="my-edit-cancel" type="button">Cancel</button>` : ''}
       </div>
-      <p class="note">Marking as paid submits it for the admin to verify against your screenshot. If you pay less or more than the amount due, the difference automatically carries to next month.</p>
+      <p class="note" style="margin-bottom:0;">The admin verifies it against your screenshot. Paying more or less carries the difference to next month.</p>
     `;
 
+    const cancelEdit = document.getElementById('my-edit-cancel');
+    if(cancelEdit) cancelEdit.onclick = ()=>{ ownerEditOpen = false; renderOwnerView(); };
     document.getElementById('my-shot-btn').onclick = ()=>document.getElementById('my-shot-input').click();
     document.getElementById('my-shot-input').addEventListener('change', async (e)=>{
       const file = e.target.files[0];
@@ -4533,6 +4533,7 @@ function renderOwnerView(){
         const existing = getPayment(flat.id, month);
         // a submission always needs its screenshot, so removing it withdraws the submission
         payments[payKey(flat.id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null, paid: false};
+        ownerEditOpen = false;
         await savePayments(flat.id, month);
         renderOwnerView();
       });
@@ -4586,6 +4587,7 @@ function renderOwnerView(){
       submitMsg.innerHTML = '';
       const autoOk = !!(existing.autoCheck && existing.autoCheck.status === 'verified');
       payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: autoOk};
+      ownerEditOpen = false;
       await savePayments(flat.id, month);
       renderOwnerView();
     };
