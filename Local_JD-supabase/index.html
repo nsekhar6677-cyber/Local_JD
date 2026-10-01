@@ -4080,6 +4080,7 @@ function renderCollectionsAdmin(){
               ${p.screenshot ? `<img class="shot-thumb cg-shot-view" src="${p.screenshot}" alt="Payment proof">` : ''}
               <input type="file" accept="image/*" class="file-input-hidden cg-shot-input">
               <button type="button" class="file-btn cg-shot-btn" ${locked?'disabled':''}>${p.screenshot ? 'Replace' : 'Upload'}</button>
+              ${p.screenshotPath ? `<button type="button" class="file-btn cg-shot-rm" style="color:var(--red);border-color:var(--red);" title="Remove screenshot">Remove</button>` : ''}
             </td>
             <td><input type="checkbox" class="chk cg-ver" ${p.verified?'checked':''} ${locked||!p.paid||p.waived?'disabled':''}></td>
             <td><input type="checkbox" class="chk cg-waive" ${p.waived?'checked':''} ${locked?'disabled':''}></td>
@@ -4089,8 +4090,26 @@ function renderCollectionsAdmin(){
       </table>
     </div>
     <p class="note">Type the amount paid to mark a flat as paid (date defaults to today). Untick "Applies" for flats that don't need to pay.</p>
+    <div class="coll-item" style="margin-top:16px;">
+      <h3>Pending owners — WhatsApp report</h3>
+      <p class="note" style="margin:0 0 10px;">Lists the flats that haven't paid this collection yet, ready to share in the society WhatsApp group.</p>
+      <div class="actions-row" style="margin-top:0;"><button class="primary" style="width:auto;" id="coll-pending-btn" type="button">Generate report</button></div>
+      <div id="coll-pending-output" style="margin-top:12px;"></div>
+    </div>
   `;
 
+  document.getElementById('coll-pending-btn').onclick = ()=>{
+    const text = buildCollPendingText(c);
+    const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
+    document.getElementById('coll-pending-output').innerHTML = `
+      <div class="report-box">${escapeHtml(text)}</div>
+      <div class="actions-row">
+        <button class="wa" id="coll-wa-btn" type="button">Open in WhatsApp</button>
+        <button class="ghost" id="coll-copy-btn" type="button">Copy text</button>
+      </div>`;
+    document.getElementById('coll-wa-btn').onclick = ()=>window.open(waLink, '_blank');
+    document.getElementById('coll-copy-btn').onclick = ()=>copyText(text, 'coll-copy-btn');
+  };
   document.getElementById('coll-select').onchange = (e)=>{ selectedCollId = e.target.value; collEditOpen = false; renderCollectionsAdmin(); };
   document.getElementById('coll-edit-btn').onclick = ()=>{ collEditOpen = !collEditOpen; renderCollectionsAdmin(); };
   document.getElementById('coll-close-btn').onclick = async ()=>{
@@ -4160,9 +4179,38 @@ function renderCollectionsAdmin(){
         commit(p);
       }catch(err){ if(err.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(err)); }
     };
+    const rmBtn = tr.querySelector('.cg-shot-rm');
+    if(rmBtn) rmBtn.onclick = async ()=>{
+      const fl = flats.find(f=>f.id===fid) || {};
+      if(!(await customConfirm(`Remove the payment screenshot for ${fl.flatNo || fid} (${c.title})? The payment amount and status stay as they are.`))) return;
+      const p = cur(); p.screenshot = null; p.screenshotPath = null;
+      commit(p);
+    };
     const view = tr.querySelector('.cg-shot-view');
     if(view){ view.style.cursor = 'pointer'; view.onclick = ()=>openShotModal(view.src, `${(flats.find(f=>f.id===fid)||{}).flatNo || ''} — ${c.title}`); }
   });
+}
+
+// Same style as the maintenance "Pending owners" report on the Dashboard.
+function buildCollPendingText(c){
+  const st = collStats(c);
+  const unverified = flats.filter(f=>collAppliesTo(c, f.id) && getCollPayment(c.id, f.id).paid && !getCollPayment(c.id, f.id).verified && !getCollPayment(c.id, f.id).waived);
+  const pending = flats.filter(f=>{ if(!collAppliesTo(c, f.id)) return false; const p = getCollPayment(c.id, f.id); return !p.paid && !p.waived; });
+  const lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`${c.title} — ${monthLabelOf(c.month)}${c.dueDate ? ` (due ${fmtDate(c.dueDate)})` : ''}`);
+  lines.push(`Collected: ${st.paidCount}/${st.total - st.waivedCount} flats (${inr(st.collected)} of ${inr(st.expected)})`);
+  if(unverified.length) lines.push(`⏳ ${unverified.length} payment screenshot(s) awaiting verification.`);
+  lines.push('');
+  if(!pending.length){
+    lines.push('✅ All flats have paid this collection. Thank you!');
+  } else {
+    lines.push(`*Pending owners (${pending.length}):*`);
+    pending.forEach((f,i)=>lines.push(`${i+1}. ${f.flatNo} — ${f.owner || '(name not on file)'} — ${inr(collDue(c, f.id))} due`));
+    lines.push('');
+    lines.push('Kindly pay at the earliest. Thank you.');
+  }
+  return lines.join('\n');
 }
 
 /* ---------- owner: Special collections card ---------- */
@@ -4203,6 +4251,7 @@ function renderOwnerCollections(flat){
         ${shot ? `<img class="shot-thumb mc-shot-view" src="${shot}" alt="Payment proof" style="width:56px;height:56px;">` : ''}
         <input type="file" accept="image/*" class="file-input-hidden mc-shot-input">
         <button type="button" class="ghost mc-shot-btn">${shot ? 'Replace screenshot' : 'Upload screenshot'}</button>
+        ${shot ? `<button type="button" class="ghost mc-shot-remove" style="color:var(--red);border-color:var(--red);">Remove</button>` : ''}
       </div>
       <div class="mc-msg" role="alert"></div>
       <div class="actions-row"><button class="primary mc-submit" style="width:auto;" type="button">${p.paid ? 'Update submission' : 'Mark as paid & submit'}</button></div>
@@ -4232,6 +4281,33 @@ function renderOwnerCollections(flat){
     };
     const view = el.querySelector('.mc-shot-view');
     if(view){ view.style.cursor = 'pointer'; view.onclick = ()=>openShotModal(view.src, c.title); }
+    const rm = el.querySelector('.mc-shot-remove');
+    if(rm) rm.onclick = async ()=>{
+      const keep = {amt: el.querySelector('.mc-amt').value, mode: el.querySelector('.mc-mode').value};
+      const restore = ()=>{ const again = document.querySelector(`#my-coll-open .coll-item[data-cid="${cid}"]`);
+        if(again){ again.querySelector('.mc-amt').value = keep.amt; again.querySelector('.mc-mode').value = keep.mode; } };
+      const existing = getCollPayment(cid, flat.id);
+      if(pendingCollShots[cid] && !existing.screenshotPath){   // only chosen, never uploaded
+        delete pendingCollShots[cid]; renderOwnerCollections(flat); restore(); return;
+      }
+      const question = existing.paid
+        ? `Remove your screenshot for "${c.title}"? This also withdraws your submission — upload a new screenshot and submit again.`
+        : `Remove your screenshot for "${c.title}"?`;
+      if(!(await customConfirm(question))) return;
+      delete pendingCollShots[cid];
+      // a submission always needs its screenshot, so removing it withdraws the submission
+      const data = {...existing, paid: false, verified: false, screenshotPath: null};
+      delete data.screenshot;
+      try{
+        await saveChain;
+        await rpc('jdb_save_collection_payment', {p_token: sessionToken, p_collection_id: cid, p_flat_id: flat.id, p_data: data});
+        collPayments[collKey(cid, flat.id)] = {...data, screenshot: null};
+        renderOwnerView(); restore();
+      }catch(e){
+        if(e.code === 'SESSION_EXPIRED') return;
+        el.querySelector('.mc-msg').innerHTML = `<p class="note err">${escapeHtml(friendlySaveError(e))}</p>`;
+      }
+    };
     el.querySelector('.mc-submit').onclick = async ()=>{
       const msg = el.querySelector('.mc-msg');
       const amtEl = el.querySelector('.mc-amt'), modeEl = el.querySelector('.mc-mode'), shotBtn = el.querySelector('.mc-shot-btn');

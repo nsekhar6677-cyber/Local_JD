@@ -167,3 +167,66 @@ test('owners only see other flats’ paid amount — never their screenshots or 
   expect(otherRow).toEqual({ paid: true, amount: 1500, waived: false });
   await o.close();
 });
+
+test('owner can remove the screenshot: before submitting, and after (withdraws the submission)', async ({ page, browser, request }, testInfo) => {
+  only(testInfo);
+  await openApp(page); await loginAdmin(page); await createCollection(page);
+  const o = await browser.newPage({ viewport: page.viewportSize() });
+  await openApp(o); await loginOwner(o, { flatId: 'id3', pin: '1003' });
+  const item = () => o.locator('#my-coll-open .coll-item').first();
+  // chosen but not submitted → removed straight away, typed values kept
+  await item().locator('.mc-mode').selectOption('UPI');
+  await item().locator('.mc-shot-input').setInputFiles(testImage());
+  await expect(item().locator('.mc-shot-remove')).toBeVisible();
+  await item().locator('.mc-shot-remove').click();
+  await expect(item().locator('.mc-shot-view')).toHaveCount(0);
+  await expect(item().locator('.mc-shot-remove')).toHaveCount(0);
+  await expect(item().locator('.mc-mode')).toHaveValue('UPI');
+  // submit, then remove → asks, withdraws
+  await item().locator('.mc-shot-input').setInputFiles(testImage());
+  await item().locator('.mc-submit').click();
+  await expect(item()).toContainText('awaiting verification');
+  await item().locator('.mc-shot-remove').click();
+  await expect(o.locator('#confirm-modal-text')).toContainText('withdraws your submission');
+  await o.click('#confirm-modal-yes');
+  await expect(item()).not.toContainText('awaiting verification');
+  await expect(item().locator('.mc-shot-view')).toHaveCount(0);
+  const r = (await sql(request, `select data, screenshot_path from jdb.collection_payments where flat_id='id3'`))[0];
+  expect(r.screenshot_path).toBeNull();
+  expect(r.data.paid).toBe(false);
+  await o.close();
+});
+
+test('admin can remove a screenshot in the grid; the payment stays', async ({ page, request }, testInfo) => {
+  only(testInfo);
+  await openApp(page); await loginAdmin(page); await createCollection(page);
+  await row(page, 'id2').locator('.cg-amt').fill('1500'); await row(page, 'id2').locator('.cg-amt').press('Tab'); await settle(page);
+  await expect(row(page, 'id2').locator('.cg-shot-rm')).toHaveCount(0);
+  await row(page, 'id2').locator('.cg-shot-input').setInputFiles(testImage()); await settle(page);
+  await expect(row(page, 'id2').locator('.cg-shot-view')).toBeVisible();
+  await row(page, 'id2').locator('.cg-shot-rm').click();
+  await expect(page.locator('#confirm-modal-text')).toContainText('payment amount and status stay');
+  await page.click('#confirm-modal-yes'); await settle(page);
+  await expect(row(page, 'id2').locator('.cg-shot-view')).toHaveCount(0);
+  const r = (await sql(request, `select data, screenshot_path from jdb.collection_payments where flat_id='id2'`))[0];
+  expect(r.screenshot_path).toBeNull();
+  expect(r.data).toMatchObject({ paid: true, amount: 1500 });
+});
+
+test('pending owners WhatsApp report for a collection', async ({ page, request }, testInfo) => {
+  only(testInfo);
+  await openApp(page); await loginAdmin(page); await createCollection(page, { due: `${month()}-15` });
+  await row(page, 'id1').locator('.cg-amt').fill('1500'); await row(page, 'id1').locator('.cg-amt').press('Tab'); await settle(page);
+  await row(page, 'id2').locator('.cg-waive').check(); await settle(page);
+  await page.click('#coll-pending-btn');
+  const out = page.locator('#coll-pending-output .report-box');
+  await expect(out).toContainText('Lift repair contribution');
+  await expect(out).toContainText('Collected: 1/34 flats (₹1,500 of ₹51,000)');
+  await expect(out).toContainText('*Pending owners (33):*');
+  await expect(out).not.toContainText('f001 —'); // paid
+  await expect(out).not.toContainText('f002 —'); // waived
+  await expect(out).toContainText('f003 — Anushree M. — ₹1,500 due');
+  await expect(page.locator('#coll-wa-btn')).toBeVisible();
+  await expect(page.locator('#coll-copy-btn')).toBeVisible();
+  await noHorizontalOverflow(page);
+});
