@@ -60,6 +60,7 @@ test.describe('design parity with the original app', () => {
       test.skip(screen.name === 'admin-expenses', 'Expenses page intentionally changed (comments, mandatory fields, bulk upload) — covered by 07 spec');
       test.skip(screen.name === 'owner-ledger', 'Owner form intentionally changed (mandatory fields) — covered by 06 spec');
       test.skip(screen.name === 'admin-reports', 'Reports intentionally changed (combined maintenance + expense summary) — covered by 08 spec');
+      test.skip(['admin-dashboard', 'admin-flats'].includes(screen.name), 'Admin menu gained the Collections tab — covered by 11 spec');
       test.skip(['admin-settings', 'admin-profile'].includes(screen.name), 'Settings and Profile intentionally simplified — covered by 09 spec');
       const before = await capture(browser, testInfo, 'original', screen);
       const after = await capture(browser, testInfo, 'supabase', screen);

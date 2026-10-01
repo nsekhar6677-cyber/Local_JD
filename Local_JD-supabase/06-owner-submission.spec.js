@@ -15,7 +15,7 @@ async function start(page, flatId = 'id3', pin = '1003') {
 
 test('the form clearly marks all three fields as mandatory', async ({ page }) => {
   await start(page);
-  await expect(page.locator('#my-required-note')).toContainText('All three are mandatory to submit: Amount paid, Mode and Payment screenshot');
+  await expect(page.locator('#my-required-note')).toContainText('All fields are required');
   await expect(page.locator('label[for="my-pay-amount"] .req-star')).toBeVisible();
   await expect(page.locator('label[for="my-pay-mode"] .req-star')).toBeVisible();
   await expect(page.locator('#my-upload-area label', { hasText: 'Payment screenshot' }).locator('.req-star')).toBeVisible();
@@ -108,7 +108,7 @@ test('all three present: submits and is saved', async ({ page, request }) => {
   await ownerUploadShot(page);
   await page.click('#my-mark-paid-btn');
   await settle(page);
-  await expect(page.locator('#my-submit-msg')).toBeEmpty();
+  await expect(page.locator('#my-submit-msg li')).toHaveCount(0);
   await expect(page.locator('#my-current-status')).toContainText(/Submitted|Paid & verified/);
   await expect(page.locator('#my-history-wrap tbody tr').first()).toContainText('Bank Transfer');
   const row = await paidRow(request, 'id3');
@@ -124,6 +124,7 @@ test('removing the screenshot after submitting withdraws the submission', async 
   await page.click('#my-mark-paid-btn');
   await settle(page);
   expect((await paidRow(request, 'id3')).paid).toBe(true);
+  await page.click('#my-edit-btn'); // submitted months show a short summary; the form opens on "Edit submission"
   await page.click('#my-shot-remove');
   await expect(page.locator('#confirm-modal-text')).toContainText('withdraws your submission');
   await page.click('#confirm-modal-yes');
@@ -145,4 +146,25 @@ test('server also refuses an owner submission without a screenshot', async ({ pa
   }, month());
   expect(status.status).toBeGreaterThanOrEqual(400);
   expect(status.body).toContain('INCOMPLETE_SUBMISSION');
+});
+
+test('this-month card is short: submitted shows one summary line, form only on Edit', async ({ page }) => {
+  await start(page);
+  await page.fill('#my-pay-amount', '2000');
+  await page.selectOption('#my-pay-mode', 'UPI');
+  await ownerUploadShot(page);
+  await page.click('#my-mark-paid-btn');
+  await settle(page);
+  await expect(page.locator('#my-current-status')).toContainText(/Submitted|Paid & verified/);
+  await expect(page.locator('#my-current-status .my-paid-line')).toContainText('₹2,000 · UPI');
+  await expect(page.locator('#my-pay-amount')).toHaveCount(0);       // no form until Edit
+  await expect(page.locator('#tab-my')).not.toContainText('Auto-check'); // admin-only detail hidden from owners
+  await page.click('#my-edit-btn');
+  await expect(page.locator('#my-pay-amount')).toHaveValue('2000');
+  await page.fill('#my-pay-amount', '2500');
+  await page.click('#my-mark-paid-btn'); await settle(page);
+  await expect(page.locator('#my-current-status .my-paid-line')).toContainText('₹2,500');
+  await expect(page.locator('#my-pay-amount')).toHaveCount(0);
+  await page.click('#my-edit-btn'); await page.click('#my-edit-cancel');
+  await expect(page.locator('#my-edit-btn')).toBeVisible();
 });

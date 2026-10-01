@@ -91,6 +91,17 @@ screen differs by more than 0.1 % of pixels or scrolls sideways.
   verification and history stay. Runs are logged in `jdb.cleanup_log`
   (last run shown in Settings → Run diagnostics).
 
+## Special (one-time) collections
+
+* **Admin → Collections** — create a collection (title, month, amount per flat, due date, note), then track every
+  flat: paid amount, date, mode, screenshot, verify, waive, "Applies" (untick for flats that don't pay).
+  Close it to stop submissions; delete is only allowed while nobody has paid.
+* **Owners** see open collections under "Special collections" and submit amount + mode + screenshot (all mandatory);
+  verified payments are locked. Never part of maintenance dues or carry-forward.
+* **Money flow** — collected amounts count as a receipt in the expense report for the collection's month
+  (Expenses → Receipts line, Reports summary/CSV/Excel/WhatsApp, owner Society funds) and carry into next month's
+  balance. Tables `jdb.collections`, `jdb.collection_payments` (`20261001000000_special_collections.sql`).
+
 ## Reports & Expenses
 
 * **Owner page → Society overview** — also shows the amount collected this month and the society funds

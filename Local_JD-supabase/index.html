@@ -249,10 +249,52 @@
   .exp-field input{width:100%;}
   .exp-auto{display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:.76rem;color:#4E6154;line-height:1.4;}
   .exp-auto .link-btn{width:auto;padding:4px 0;min-height:28px;text-align:right;}
+  .exp-special{margin:0 0 14px;padding:10px 12px;background:#EEF4EF;border:1px solid var(--line);font-size:.86rem;}
+  .exp-special b{font-family:'Space Grotesk',sans-serif;}
+  .coll-head{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px;}
+  .coll-head > div{flex:1 1 220px;min-width:0;}
+  #coll-grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #coll-grid-wrap table{min-width:1080px;}
+  #coll-grid-wrap td{padding:6px 6px;}
+  #coll-grid-wrap td input.fld, #coll-grid-wrap td select.fld{width:100%;font-size:16px;height:40px;padding:6px 8px;}
+  #coll-grid-wrap .cg-due, #coll-grid-wrap .cg-amt{min-width:90px;}
+  #coll-grid-wrap .cg-date{min-width:150px;}
+  #coll-grid-wrap .cg-mode{min-width:130px;}
+  #coll-grid-wrap tr.na td{opacity:.55;}
+  .coll-item{border:1px solid var(--line);padding:12px;margin-bottom:12px;background:var(--white);}
+  .coll-item h3{margin:0 0 4px;font-size:1rem;font-family:'Space Grotesk',sans-serif;}
+
+  /* Phones: summary boxes stay on ONE row (smaller text instead of wrapping) */
+  .lbl-short{display:none;}
+  .my-paid-line{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:.9rem;color:var(--ink);}
+  .my-paid-line .shot-thumb{width:44px;height:44px;flex:0 0 auto;}
+  @media (max-width:600px){
+    .stats.one-row{display:grid !important;grid-template-columns:repeat(var(--n,4),minmax(0,1fr)) !important;flex-wrap:nowrap;}
+    .stats.one-row .stat{min-width:0 !important;padding:9px 2px !important;text-align:center !important;display:block !important;grid-column:auto !important;}
+    .stats.one-row .stat b{font-size:clamp(.66rem, 3.05vw, 1rem) !important;white-space:nowrap;letter-spacing:-.01em;}
+    .stats.one-row .stat span{font-size:.47rem;letter-spacing:.02em;line-height:1.25;display:block;margin-top:2px;}
+    .stats.one-row .lbl-long{display:none;}
+    .stats.one-row .lbl-short{display:inline;}
+  }
+  /* Collections on phones: iPhone/Android draw month/date fields with their own size — give them one fixed style */
+  @media (max-width:767px){
+    #coll-month, #coll-due, #ce-month, #ce-due, #coll-grid-wrap .cg-date{
+      -webkit-appearance:none; appearance:none; box-sizing:border-box; display:block; margin:0;
+      width:100%; min-width:0; height:44px; min-height:44px; line-height:1.2; padding:0 12px;
+      font-size:16px; text-align:left; background-color:var(--paper); color:var(--ink);
+    }
+    #coll-grid-wrap .cg-date{height:40px;min-height:40px;width:150px;min-width:150px;padding:0 10px;}
+    #coll-month::-webkit-date-and-time-value, #coll-due::-webkit-date-and-time-value, #ce-month::-webkit-date-and-time-value,
+    #ce-due::-webkit-date-and-time-value, #coll-grid-wrap .cg-date::-webkit-date-and-time-value{text-align:left;margin:0;}
+    #tab-collections .row{align-items:flex-end;}
+    .coll-actions{display:flex;flex-wrap:nowrap;gap:8px;}
+    .coll-actions button{flex:1 1 0;min-width:0;padding:10px 6px;font-size:.8rem;white-space:nowrap;}
+  }
   .stats.society-funds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0;}
   .stats.society-funds .stat{min-width:0;}
   .stats.society-funds .stat b{font-size:1.1rem;white-space:nowrap;}
-  @media (max-width:600px){ .stats.society-funds{grid-template-columns:1fr 1fr;} .stats.society-funds .stat b{font-size:1rem;} }
+  .stats.society-funds.has-special{grid-template-columns:repeat(5,minmax(0,1fr));}
+  @media (max-width:600px){ .stats.society-funds.has-special .stat:last-child{grid-column:1 / -1;} .stats.society-funds, .stats.society-funds.has-special{grid-template-columns:1fr 1fr;} .stats.society-funds .stat b{font-size:1rem;} }
   .set-check{display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--ink);margin-bottom:14px;}
   .stats.exp-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0;}
   .stats.exp-totals .stat{min-width:0;}
@@ -325,10 +367,15 @@
      Flat column and the sideways scrollbar are always in view.
      Phones (under 768px) keep the original behaviour. */
   @media (min-width:768px){
-    #tab-entry{
+    #tab-entry, #tab-collections{
       width:max(100%, min(1240px, calc(100vw - 64px)));
       margin-left:calc((100% - max(100%, min(1240px, calc(100vw - 64px)))) / 2);
     }
+    #coll-grid-wrap{max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);overflow:auto;border:1px solid var(--paper-2);overscroll-behavior:contain;}
+    #coll-grid-wrap table{border-collapse:separate;border-spacing:0;}
+    #coll-grid-wrap thead th{position:sticky;top:0;z-index:3;background:var(--white);box-shadow:inset 0 -1px 0 var(--line);}
+    #coll-grid-wrap td:first-child, #coll-grid-wrap th:first-child{position:sticky;left:0;z-index:2;background:var(--white);box-shadow:inset -1px 0 0 var(--paper-2);}
+    #coll-grid-wrap thead th:first-child{z-index:4;}
     #entry-table-wrap{
       max-height:calc(100vh - 150px);
       max-height:calc(100dvh - 150px);
@@ -731,7 +778,7 @@
           <input type="month" id="dash-month">
         </div>
       </div>
-      <div class="stats" id="dash-stats"></div>
+      <div class="stats one-row" id="dash-stats" style="--n:6;"></div>
       <div class="note" id="dash-lastcheck"></div>
     </div>
 
@@ -752,10 +799,6 @@
       <div id="dash-flats-wrap" style="overflow-x:auto;"></div>
     </div>
 
-    <div class="card">
-      <h2>Society overview — this month</h2>
-      <div id="dash-society-stats" class="stats"></div>
-    </div>
   </section>
 
   <!-- ===== ADMIN: FLATS & ACCESS ===== -->
@@ -805,6 +848,51 @@
   </section>
 
   <!-- ===== ADMIN: REPORTS ===== -->
+  <section id="tab-collections">
+    <div class="card">
+      <button class="primary" style="width:auto;" id="coll-new-btn" type="button">+ Create collection</button>
+      <div id="coll-form" style="display:none;">
+      <h2 style="margin-top:4px;">New special collection</h2>
+      <div class="row">
+        <div>
+          <label for="coll-title">Title<span style="color:var(--red);"> *</span></label>
+          <input type="text" id="coll-title" placeholder="e.g. Lift repair contribution" maxlength="80">
+        </div>
+        <div>
+          <label for="coll-month">Month<span style="color:var(--red);"> *</span></label>
+          <input type="month" id="coll-month">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="coll-amount">Amount per flat (₹)<span style="color:var(--red);"> *</span></label>
+          <input type="number" id="coll-amount" min="1" inputmode="numeric">
+        </div>
+        <div>
+          <label for="coll-due">Due date</label>
+          <input type="date" id="coll-due">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="coll-note">Note for owners</label>
+          <input type="text" id="coll-note" placeholder="Optional" maxlength="200">
+        </div>
+      </div>
+      <div class="actions-row coll-form-actions" style="margin-top:4px;">
+        <button class="primary" style="width:auto;" id="coll-create-btn" type="button">Save</button>
+        <button class="ghost" id="coll-cancel-btn" type="button">Cancel</button>
+      </div>
+      </div>
+      <div id="coll-create-msg" role="alert"></div>
+    </div>
+
+    <div class="card">
+      <h2>Collections</h2>
+      <div id="coll-manage"></div>
+    </div>
+  </section>
+
   <section id="tab-reports">
     <div class="card">
       <h2>Maintenance &amp; expense report</h2>
@@ -832,6 +920,11 @@
         <button class="ghost" id="rpt-period-btn" type="button">Show collection details</button>
       </div>
       <div id="rpt-period-output" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card" id="rpt-coll-card" style="display:none;">
+      <h2>Special collections</h2>
+      <div id="rpt-coll-summary" style="overflow-x:auto;"></div>
     </div>
 
     <div class="card">
@@ -869,6 +962,7 @@
           <div class="exp-auto"><span id="exp-maint-note"></span><button class="link-btn" id="exp-maint-reset" type="button">Reset to auto</button></div>
         </div>
       </div>
+      <div id="exp-special" class="exp-special" style="display:none;"></div>
       <div class="stats exp-totals" id="exp-receipts-stats"></div>
     </div>
 
@@ -1004,6 +1098,12 @@
       <div id="my-upload-area"></div>
     </div>
 
+    <div class="card" id="my-coll-card" style="display:none;">
+      <h2>Special collections</h2>
+      <div id="my-coll-open"></div>
+      <div id="my-coll-history" style="overflow-x:auto;"></div>
+    </div>
+
     <div class="card">
       <h2>Society overview</h2>
       <p class="note">Read-only — collection status for the building this month.</p>
@@ -1075,6 +1175,7 @@ const TABS_ADMIN = [
   {id:'dashboard', label:'Dashboard'},
   {id:'flats', label:'Flats & Access'},
   {id:'entry', label:'Entry'},
+  {id:'collections', label:'Collections'},
   {id:'reports', label:'Reports'},
   {id:'expenses', label:'Expenses'},
   {id:'settings', label:'Settings'},
@@ -1087,6 +1188,8 @@ const TABS_OWNER = [
 let flats = [];
 let payments = {}; // key: `${flatId}:${YYYY-MM}` -> {paid,amount,date,mode,screenshot,verified}
 let settings = {societyName:'JD Blossom Apartment', defaultAmount:2000, lastCheck:null, adminRecoveryQuestion:'', adminPhone:''};
+let collections = [];   // special one-time collections [{id, month, title, amount, dueDate, note, closed, flats, amounts}]
+let collPayments = {};  // 'collectionId:flatId' -> {paid, amount, date, mode, verified, waived, screenshotPath, screenshot}
 let expenses = {}; // key: 'YYYY-MM' -> {openingOverride, maintReceivedOverride, items:[{id,category,paidOn,amount}]}
 let admins = []; // [{id, name, phone, password}]
 let currentUser = null; // {role:'admin', adminId} | {role:'owner', flatId}
@@ -1195,8 +1298,8 @@ const signedUrlCache = {};
 async function signScreenshots(){
   const now = Date.now();
   const need = [];
-  for(const k in payments){
-    const p = payments[k];
+  const signables = [...Object.values(payments), ...Object.values(collPayments)];
+  for(const p of signables){
     if(p && p.screenshotPath){
       const c = signedUrlCache[p.screenshotPath];
       if(c && now - c.at < 6*3600*1000) p.screenshot = c.url; else need.push(p.screenshotPath);
@@ -1207,7 +1310,7 @@ async function signScreenshots(){
     const r = await filesApi({action:'sign', paths: need});
     const urls = (r && r.urls) || {};
     for(const path in urls) signedUrlCache[path] = {url: urls[path], at: now};
-    for(const k in payments){ const p = payments[k]; if(p && p.screenshotPath && !p.screenshot) p.screenshot = urls[p.screenshotPath] || null; }
+    for(const p of signables){ if(p && p.screenshotPath && !p.screenshot) p.screenshot = urls[p.screenshotPath] || null; }
   }catch(e){
     if(e.code !== 'SESSION_EXPIRED') showSyncError("Couldn't load payment screenshots — check your connection and refresh.");
   }
@@ -1235,6 +1338,8 @@ function friendlySaveError(e){
   if(e && e.code === 'LOCKED_WAIVED') return "This month's due was waived by the admin — there's nothing to submit.";
   if(e && e.code === 'CANNOT_DELETE_SELF') return "You can't remove your own profile while logged in.";
   if(e && e.code === 'LAST_ADMIN') return 'At least one admin profile must remain.';
+  if(e && e.code === 'COLLECTION_CLOSED') return 'This collection has been closed by the admin.';
+  if(e && e.code === 'HAS_PAYMENTS') return "This collection already has payments, so it can't be deleted — close it instead.";
   if(e && e.code === 'INCOMPLETE_SUBMISSION') return 'Please add the amount, payment mode and a payment screenshot before submitting.';
   return "Couldn't save that change — please refresh and try again.";
 }
@@ -1276,7 +1381,7 @@ async function loadPublicInfo(){
   const info = await rpc('jdb_public_info');
   flats = info.flats || [];
   admins = info.admins || [];
-  payments = {}; expenses = {};
+  payments = {}; expenses = {}; collections = []; collPayments = {};
   settings = {...settings, societyName: info.societyName || 'JD Blossom Apartment', adminRecoveryQuestion: info.adminRecoveryQuestion || ''};
 }
 
@@ -1289,6 +1394,8 @@ async function loadSessionData(){
   flats = d.flats || [];
   payments = d.payments || {};
   expenses = d.expenses || {};
+  collections = d.collections || [];
+  collPayments = d.collectionPayments || {};
   admins = d.admins || [];
   settings = {...settings, ...(d.settings || {})};
   currentUser = d.role === 'admin' ? {role:'admin', adminId: d.subject} : {role:'owner', flatId: d.subject};
@@ -1317,7 +1424,7 @@ function rerenderAll(){
   if(!currentUser) return;
   document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
   if(currentUser.role === 'admin'){
-    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile(); renderCollectionsAdmin();
   } else {
     renderOwnerView();
   }
@@ -1491,7 +1598,9 @@ async function exportBackupCsv(){
       ['payments', JSON.stringify(paymentsOut)],
       ['settings', JSON.stringify(settingsOut)],
       ['expenses', JSON.stringify(expenses)],
-      ['admins', JSON.stringify(adminsOut)]
+      ['admins', JSON.stringify(adminsOut)],
+      ['collections', JSON.stringify(collections)],
+      ['collectionPayments', JSON.stringify(Object.fromEntries(Object.entries(collPayments).map(([k,v])=>{ const o = {...v}; delete o.screenshot; return [k, o]; })))]
     ];
     const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
     const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
@@ -1544,7 +1653,7 @@ async function runStorageDiagnostics(){
     lines.push(`Database: Supabase — connected (${ms} ms).`);
     lines.push(`Flats currently on file: ${d.flats}`);
     lines.push(`Payment records: ${d.payments} (${(d.months||[]).length} month(s), ${d.screenshots} screenshot(s))`);
-    lines.push(`Expense months: ${d.expenseMonths} · Admins: ${d.admins}`);
+    lines.push(`Expense months: ${d.expenseMonths} · Admins: ${d.admins} · Special collections: ${d.collections ?? 0}`);
     lines.push(`Last payment change: ${d.lastPaymentChange ? new Date(d.lastPaymentChange).toLocaleString('en-IN') : 'never'}`);
     const lc = d.lastCleanup;
     lines.push(`Last screenshot clean-up: ${lc ? `${new Date(lc.at).toLocaleString('en-IN')}${lc.dryRun ? ' (test run)' : ''} — ${lc.filesDeleted} deleted${lc.filesFailed ? `, ${lc.filesFailed} failed` : ''}` : 'not run yet'}`);
@@ -1593,14 +1702,16 @@ async function importBackupCsv(e){
 
     note.textContent = 'Restoring…';
     await saveChain;
-    await rpc('jdb_restore', {p_token: sessionToken, p: {flats: inFlats, payments: cleanPayments, settings: inSettings, expenses: inExpenses, admins: inAdmins}});
+    const restoreBody = {flats: inFlats, payments: cleanPayments, settings: inSettings, expenses: inExpenses, admins: inAdmins};
+    if(data.collections){ restoreBody.collections = JSON.parse(data.collections); restoreBody.collectionPayments = data.collectionPayments ? JSON.parse(data.collectionPayments) : {}; }
+    await rpc('jdb_restore', {p_token: sessionToken, p: restoreBody});
     await loadSessionData();
 
     document.getElementById('set-name').value = settings.societyName || '';
     document.getElementById('set-amount').value = settings.defaultAmount || 2000;
     document.getElementById('set-admin-phone').value = settings.adminPhone || '';
     document.getElementById('society-title').textContent = settings.societyName || 'JD Blossom Apartment';
-    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile();
+    renderFlats(); renderEntry(); renderDashboard(); renderPeriodReport(); renderExpenses(); renderProfile(); renderCollectionsAdmin();
 
     note.textContent = 'Backup restored successfully.';
     e.target.value = '';
@@ -1648,20 +1759,22 @@ function peekExpenseData(month){
 const hasOverride = v => v !== null && v !== undefined && v !== '';
 // first month that really has expense data (items or a typed-in figure)
 function firstExpenseMonth(){
-  return Object.keys(expenses).filter(m=>{
+  return [...Object.keys(expenses).filter(m=>{
     const d = expenses[m];
     return d && ((d.items && d.items.length) || hasOverride(d.openingOverride) || hasOverride(d.maintReceivedOverride));
-  }).sort()[0] || null;
+  }), ...collections.filter(c=>collStats(c).collected > 0).map(c=>c.month)].sort()[0] || null;
 }
 function expenseMonthFigures(month, autoOpening){
   const data = peekExpenseData(month);
   const autoMaint = monthStats(month).collected;
   const opening = hasOverride(data.openingOverride) ? Number(data.openingOverride) : autoOpening;
   const maintReceived = hasOverride(data.maintReceivedOverride) ? Number(data.maintReceivedOverride) : autoMaint;
-  const totalReceipts = opening + maintReceived;
+  const specials = specialCollectionsIn(month);           // one-time collections counted in this month
+  const specialReceived = specials.reduce((t,c)=>t+c.collected, 0);
+  const totalReceipts = opening + maintReceived + specialReceived;
   const totalPayments = (data.items || []).reduce((s,it)=>s+(Number(it.amount)||0),0);
   const closing = totalReceipts - totalPayments;
-  return {opening, maintReceived, totalReceipts, totalPayments, closing, autoOpening, autoMaint};
+  return {opening, maintReceived, specialReceived, specials, totalReceipts, totalPayments, closing, autoOpening, autoMaint};
 }
 // Balance b/f carries forward month by month from the first month with expense data,
 // including through months that have no expenses recorded.
@@ -2603,7 +2716,7 @@ async function adminLogin(){
 
 async function logout(){
   const token = sessionToken;
-  currentUser = null;
+  currentUser = null; ownerEditOpen = false;
   sessionToken = null;
   lastLoadJson = '';
   if(token) rpc('jdb_logout', {p_token: token}).catch(()=>{});
@@ -2659,7 +2772,7 @@ function showApp(){
 document.getElementById('shot-modal-close').addEventListener('click', closeShotModal);
 document.getElementById('shot-modal').addEventListener('click', (e)=>{ if(e.target.id==='shot-modal') closeShotModal(); });
 
-const ALL_TAB_IDS = ['dashboard','flats','entry','reports','expenses','settings','profile','my'];
+const ALL_TAB_IDS = ['dashboard','flats','entry','collections','reports','expenses','settings','profile','my'];
 
 function hideAllSections(){
   ALL_TAB_IDS.forEach(id=>{
@@ -2696,6 +2809,19 @@ function initAdminUI(){
   document.getElementById('dash-month').value = m;
   document.getElementById('entry-month').value = m;
   document.getElementById('exp-month').value = m;
+  document.getElementById('coll-month').value = m;
+  document.getElementById('coll-create-btn').onclick = createCollection;
+  const showCollForm = (open)=>{
+    document.getElementById('coll-form').style.display = open ? '' : 'none';
+    document.getElementById('coll-new-btn').style.display = open ? 'none' : '';
+    if(open){ document.getElementById('coll-create-msg').innerHTML = ''; document.getElementById('coll-title').focus(); }
+  };
+  document.getElementById('coll-new-btn').onclick = ()=>showCollForm(true);
+  document.getElementById('coll-cancel-btn').onclick = ()=>{
+    ['coll-title','coll-amount','coll-due','coll-note'].forEach(id=>document.getElementById(id).value='');
+    showCollForm(false);
+  };
+  window.closeCollForm = ()=>showCollForm(false);
 
   document.getElementById('dash-month').onchange = renderDashboard;
   document.getElementById('entry-month').onchange = renderEntry;
@@ -2738,6 +2864,7 @@ function initAdminUI(){
   renderPeriodReport();
   renderExpenses();
   renderProfile();
+  renderCollectionsAdmin();
   document.getElementById('creds-output').innerHTML = '';
 }
 
@@ -3056,13 +3183,6 @@ function renderDashboard(){
     </table>
   `;
 
-  // society overview — this month only
-  const monthPct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
-  document.getElementById('dash-society-stats').innerHTML = `
-    <div class="stat"><b>${inr(s.collected)}</b><span>Collected</span></div>
-    <div class="stat"><b>${inr(s.expected)}</b><span>Expected</span></div>
-    <div class="stat"><b>${monthPct}%</b><span>Overall</span></div>
-  `;
 }
 
 async function renderWhatsAppReport(){
@@ -3204,8 +3324,23 @@ function periodExpected(months){
   return total;
 }
 
+function renderReportCollections(months){
+  const card = document.getElementById('rpt-coll-card');
+  const list = collections.filter(c=>months.includes(c.month)).sort((a,b)=>a.month.localeCompare(b.month));
+  if(!list.length){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  document.getElementById('rpt-coll-summary').innerHTML = `
+    <table class="summary-table" id="rpt-coll-table">
+      <thead><tr><th colspan="3">One-time collections in this period</th></tr></thead>
+      <tbody>${list.map(c=>{ const st = collStats(c); return `
+        <tr class="item-row"><td>${escapeHtml(c.title)}<div style="font-size:.74rem;color:#4E6154;margin-top:2px;">${monthLabelOf(c.month)} · ${st.paidCount} of ${st.total - st.waivedCount} flats paid${c.closed ? ' · closed' : ''}</div></td>
+        <td style="white-space:nowrap;">${inr(st.collected)} of ${inr(st.expected)}</td><td>${st.expected ? Math.round(st.collected / st.expected * 100) : 0}%</td></tr>`; }).join('')}</tbody>
+    </table>`;
+}
+
 function renderPeriodReport(){
   renderReportExpenseSummary();
+  renderReportCollections(getPeriodMonthsAndLabel().months);
   const {months} = getPeriodMonthsAndLabel();
   let totalExpected = 0, totalCollected = 0;
   const perMonth = months.map(mo=>{
@@ -3281,6 +3416,13 @@ function renderExpenses(){
   document.getElementById('exp-opening-reset').style.visibility = (data.openingOverride !== null && data.openingOverride !== undefined) ? 'visible' : 'hidden';
   document.getElementById('exp-maint-reset').style.visibility = (data.maintReceivedOverride !== null && data.maintReceivedOverride !== undefined) ? 'visible' : 'hidden';
 
+  const spEl = document.getElementById('exp-special');
+  if(calc.specials.length){
+    spEl.style.display = '';
+    spEl.innerHTML = `Special collections this month: <b>${inr(calc.specialReceived)}</b> — ` +
+      calc.specials.map(c=>`${escapeHtml(c.title)} ${inr(c.collected)}`).join(' · ') +
+      ` <span style="color:#4E6154;">(included in total receipts; managed in Collections)</span>`;
+  } else { spEl.style.display = 'none'; spEl.innerHTML = ''; }
   document.getElementById('exp-receipts-stats').innerHTML = `
     <div class="stat"><b>${inr(calc.totalReceipts)}</b><span>Total receipts</span></div>
     <div class="stat"><b style="color:var(--red)">${inr(calc.totalPayments)}</b><span>Total payments</span></div>
@@ -3456,12 +3598,15 @@ function buildExpenseRangeSummary(months){
   const from = months[0], to = months[months.length-1];
   const first = computeExpenseMonth(from);
   const last = computeExpenseMonth(to);
-  let maint = 0, payments = 0;
+  let maint = 0, payments = 0, special = 0;
   const items = [];
   const byCat = {};
+  const specials = [];
   months.forEach(mo=>{
     const c = computeExpenseMonth(mo);
     maint += c.maintReceived;
+    special += c.specialReceived;
+    c.specials.forEach(sp=>specials.push(sp));
     (peekExpenseData(mo).items || []).forEach(it=>{
       const amt = Number(it.amount) || 0;
       payments += amt;
@@ -3478,7 +3623,7 @@ function buildExpenseRangeSummary(months){
     if(Math.abs(diff) >= 0.5) adjustments.push({month: mo, amount: diff});
   });
   const adjust = adjustments.reduce((t,a)=>t+a.amount, 0);
-  return {from, to, months, opening: first.opening, maint, receipts: first.opening + maint, payments, closing: last.closing, adjustments, adjust, items, byCat};
+  return {from, to, months, opening: first.opening, maint, special, specials, receipts: first.opening + maint + special, payments, closing: last.closing, adjustments, adjust, items, byCat};
 }
 const fmtDate = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-IN') : '—';
 
@@ -3507,6 +3652,7 @@ function renderReportExpenseSummary(){
         <tr><td colspan="3" class="section-label">Receipts</td></tr>
         <tr><td>Balance b/f${multi ? ` (${monthLabelOf(sum.from)})` : ' from last month'}</td><td></td><td>${inr(sum.opening)}</td></tr>
         <tr><td>Maintenance Amt Received${multi ? ' (total)' : ''}</td><td></td><td>${inr(sum.maint)}</td></tr>
+        ${sum.specials.map(sp=>`<tr class="special-row"><td>Special collection: ${escapeHtml(sp.title)}${multi ? ` (${monthLabelOf(sp.month)})` : ''}</td><td></td><td>${inr(sp.collected)}</td></tr>`).join('')}
         <tr class="total-row receipts-total"><td>Total Receipts</td><td></td><td>${inr(sum.receipts)}</td></tr>
         <tr><td colspan="3" class="section-label">Payments</td></tr>
         <tr class="col-head"><th>Category</th><th>Paid on</th><th style="text-align:right;">Amount</th></tr>
@@ -3534,6 +3680,7 @@ function expenseSummaryText(){
   lines.push('Receipts:');
   lines.push(`Balance b/f: ${inr(sum.opening)}`);
   lines.push(`Maintenance Amt Received: ${inr(sum.maint)}`);
+  sum.specials.forEach(sp=>lines.push(`Special collection — ${sp.title}${sum.months.length > 1 ? ' (' + monthLabelOf(sp.month) + ')' : ''}: ${inr(sp.collected)}`));
   lines.push(`Total Receipts: ${inr(sum.receipts)}`);
   lines.push('');
   lines.push('Payments:');
@@ -3575,6 +3722,7 @@ function expenseExportData(){
     ['From month', sum.from], ['To month', sum.to],
     ['Balance b/f', sum.opening],
     ['Maintenance received', sum.maint],
+    ...sum.specials.map(sp=>[`Special collection: ${sp.title} (${monthLabelOf(sp.month)})`, sp.collected]),
     ['Total receipts', sum.receipts],
     ['Total payments', sum.payments],
     ...sum.adjustments.map(a=>[`Balance adjustment (b/f edited in ${monthLabelOf(a.month)})`, a.amount]),
@@ -3823,6 +3971,411 @@ function initOwnerUI(){
   renderOwnerView();
 }
 
+/* ===================== SPECIAL (ONE-TIME) COLLECTIONS ===================== */
+// Kept separate from maintenance: never part of a flat's maintenance due or carry-forward.
+// Money collected counts as a receipt in the expense report for the collection's month.
+const collKey = (cid, fid) => cid + ':' + fid;
+function markCollInvalid(el, bad){
+  if(!el) return;
+  el.style.borderColor = bad ? 'var(--red)' : '';
+  if(bad) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid');
+}
+function getCollPayment(cid, fid){
+  return collPayments[collKey(cid, fid)] || {paid:false, amount:null, date:'', mode:'', verified:false, waived:false};
+}
+function collAppliesTo(c, fid){ return !Array.isArray(c.flats) || c.flats.includes(fid); }
+function collDue(c, fid){
+  const a = c.amounts ? c.amounts[fid] : undefined;
+  return (a !== undefined && a !== null && a !== '' && !isNaN(Number(a))) ? Number(a) : (Number(c.amount) || 0);
+}
+function collStats(c){
+  let total = 0, paidCount = 0, waivedCount = 0, collected = 0, expected = 0;
+  flats.forEach(f=>{
+    if(!collAppliesTo(c, f.id)) return;
+    total++;
+    const p = getCollPayment(c.id, f.id);
+    if(p.waived){ waivedCount++; return; }
+    expected += collDue(c, f.id);
+    if(p.paid){ paidCount++; collected += Number(p.amount) || 0; }
+  });
+  return {total, paidCount, waivedCount, pendingCount: total - paidCount - waivedCount, collected, expected};
+}
+function specialCollectionsIn(month){
+  return collections.filter(c=>c.month === month)
+    .map(c=>({id: c.id, title: c.title, month: c.month, collected: collStats(c).collected}))
+    .filter(c=>c.collected > 0);
+}
+function newCollectionId(){ return 'c' + Date.now().toString(36) + Math.floor(Math.random()*1e4).toString(36); }
+
+function saveCollection(c){
+  const body = {...c};
+  return queueSave(async ()=>{ await rpc('jdb_save_collection', {p_token: sessionToken, p: body}); });
+}
+function saveCollPayment(cid, fid){
+  const p = collPayments[collKey(cid, fid)] || {};
+  const data = {...p};
+  delete data.screenshot;
+  data.screenshotPath = p.screenshotPath || null;
+  return queueSave(async ()=>{
+    await rpc('jdb_save_collection_payment', {p_token: sessionToken, p_collection_id: cid, p_flat_id: fid, p_data: data});
+  });
+}
+function collLabel(c){ return `${c.title} — ${monthLabelOf(c.month)}${c.closed ? ' (closed)' : ''}`; }
+const collStatusBadge = (p)=> p.waived ? '<span class="badge verified">Waived</span>'
+  : !p.paid ? '<span class="badge pending">Pending</span>'
+  : p.verified ? '<span class="badge verified">Verified</span>' : '<span class="badge submitted">Submitted</span>';
+
+/* ---------- admin: Collections tab ---------- */
+let selectedCollId = null;
+let collEditOpen = false;
+async function createCollection(){
+  const msg = document.getElementById('coll-create-msg');
+  const title = document.getElementById('coll-title').value.trim();
+  const month = document.getElementById('coll-month').value;
+  const amount = Number(document.getElementById('coll-amount').value);
+  const miss = [];
+  if(!title) miss.push('Title');
+  if(!/^\d{4}-\d{2}$/.test(month)) miss.push('Month');
+  if(!(amount > 0)) miss.push('Amount per flat (more than ₹0)');
+  if(miss.length){ msg.innerHTML = `<p class="note err">Please fill: ${miss.join(', ')}.</p>`; return; }
+  const c = {id: newCollectionId(), month, title, amount, dueDate: document.getElementById('coll-due').value || '',
+             note: document.getElementById('coll-note').value.trim(), closed: false, flats: null, amounts: {}};
+  collections.push(c);
+  selectedCollId = c.id;
+  await saveCollection(c);
+  ['coll-title','coll-amount','coll-due','coll-note'].forEach(id=>document.getElementById(id).value='');
+  if(window.closeCollForm) window.closeCollForm();
+  msg.innerHTML = `<p class="note" style="color:var(--green);">Created "${escapeHtml(title)}". Owners can now see and pay it.</p>`;
+  setTimeout(()=>{ msg.innerHTML=''; }, 4000);
+  renderCollectionsAdmin(); renderExpenses(); renderPeriodReport();
+}
+
+function renderCollectionsAdmin(){
+  const box = document.getElementById('coll-manage');
+  if(!box) return;
+  if(!collections.length){ box.innerHTML = '<p class="note">No special collections yet — create one above.</p>'; return; }
+  const sorted = [...collections].sort((a,b)=> (b.month + (b.createdAt||'')).localeCompare(a.month + (a.createdAt||'')));
+  if(!sorted.some(c=>c.id === selectedCollId)) selectedCollId = sorted[0].id;
+  const c = collections.find(x=>x.id === selectedCollId);
+  const st = collStats(c);
+  const pct = st.expected ? Math.round(st.collected / st.expected * 100) : 0;
+  box.innerHTML = `
+    <div class="coll-head">
+      <div>
+        <label for="coll-select">Collection</label>
+        <select id="coll-select">${sorted.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${escapeHtml(collLabel(x))}</option>`).join('')}</select>
+      </div>
+      <div class="actions-row coll-actions" style="margin:0;flex:0 1 auto;">
+        <button class="ghost" id="coll-edit-btn" type="button">${collEditOpen ? 'Cancel' : 'Edit'}</button>
+        <button class="ghost" id="coll-close-btn" type="button">${c.closed ? 'Reopen' : 'Close'}</button>
+        <button class="ghost" id="coll-del-btn" type="button" style="color:var(--red);border-color:var(--red);">Delete</button>
+      </div>
+    </div>
+    ${collEditOpen ? `
+    <div class="coll-item" id="coll-edit-form">
+      <div class="row">
+        <div><label for="ce-title">Title</label><input type="text" id="ce-title" value="${escapeHtml(c.title)}" maxlength="80"></div>
+        <div><label for="ce-month">Month</label><input type="month" id="ce-month" value="${c.month}"></div>
+      </div>
+      <div class="row">
+        <div><label for="ce-amount">Amount per flat (₹)</label><input type="number" id="ce-amount" min="1" value="${c.amount}"></div>
+        <div><label for="ce-due">Due date</label><input type="date" id="ce-due" value="${c.dueDate||''}"></div>
+      </div>
+      <div class="row"><div><label for="ce-note">Note for owners</label><input type="text" id="ce-note" value="${escapeHtml(c.note||'')}" maxlength="200"></div></div>
+      <div id="ce-msg"></div>
+      <button class="primary" style="width:auto;" id="ce-save" type="button">Save details</button>
+    </div>` : ''}
+    <p class="note" style="margin:0 0 10px;">${c.dueDate ? `Due ${fmtDate(c.dueDate)} · ` : ''}${inr(c.amount)} per flat${c.note ? ' · ' + escapeHtml(c.note) : ''}${c.closed ? ' · <b>Closed</b> — owners can no longer submit' : ''}</p>
+    <div class="stats one-row" id="coll-stats" style="--n:5;">
+      <div class="stat"><b>${st.total}</b><span>Flats</span></div>
+      <div class="stat"><b style="color:var(--green)">${st.paidCount}</b><span>Paid</span></div>
+      <div class="stat"><b style="color:var(--red)">${st.pendingCount}</b><span>Pending</span></div>
+      <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(st.collected)}</b><span>Collected · ${pct}%</span></div>
+      <div class="stat"><b style="white-space:nowrap;">${inr(st.expected)}</b><span>Expected</span></div>
+    </div>
+    <div id="coll-grid-wrap">
+      <table>
+        <thead><tr><th>Flat</th><th>Owner</th><th>Applies</th><th>Due (₹)</th><th>Paid (₹)</th><th>Date</th><th>Mode</th><th>Screenshot</th><th>Verified</th><th>Waive</th><th>Status</th></tr></thead>
+        <tbody>${flats.map(f=>{
+          const applies = collAppliesTo(c, f.id);
+          const p = getCollPayment(c.id, f.id);
+          const locked = !applies;
+          return `<tr data-fid="${f.id}" class="${applies ? '' : 'na'}">
+            <td><b>${escapeHtml(f.flatNo)}</b></td>
+            <td>${escapeHtml(f.owner||'')}</td>
+            <td><input type="checkbox" class="chk cg-applies" ${applies?'checked':''} ${p.paid?'disabled title="Already paid"':''}></td>
+            <td><input type="number" class="fld cg-due" min="0" value="${collDue(c, f.id)}" ${locked?'disabled':''}></td>
+            <td><input type="number" class="fld cg-amt" min="0" value="${p.paid ? (p.amount ?? '') : ''}" placeholder="—" ${locked||p.waived?'disabled':''}></td>
+            <td><input type="date" class="fld cg-date" value="${p.date||''}" ${locked||p.waived?'disabled':''}></td>
+            <td><select class="fld cg-mode" ${locked||p.waived?'disabled':''}><option value="">—</option>${PAY_MODES.map(m=>`<option ${p.mode===m?'selected':''}>${m}</option>`).join('')}</select></td>
+            <td style="white-space:nowrap;">
+              ${p.screenshot ? `<img class="shot-thumb cg-shot-view" src="${p.screenshot}" alt="Payment proof">` : ''}
+              <input type="file" accept="image/*" class="file-input-hidden cg-shot-input">
+              <button type="button" class="file-btn cg-shot-btn" ${locked?'disabled':''}>${p.screenshot ? 'Replace' : 'Upload'}</button>
+              ${p.screenshotPath ? `<button type="button" class="file-btn cg-shot-rm" style="color:var(--red);border-color:var(--red);" title="Remove screenshot">Remove</button>` : ''}
+            </td>
+            <td><input type="checkbox" class="chk cg-ver" ${p.verified?'checked':''} ${locked||!p.paid||p.waived?'disabled':''}></td>
+            <td><input type="checkbox" class="chk cg-waive" ${p.waived?'checked':''} ${locked?'disabled':''}></td>
+            <td>${applies ? collStatusBadge(p) : '<span class="note">Not applicable</span>'}</td>
+          </tr>`;}).join('')}
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Type the amount paid to mark a flat as paid (date defaults to today). Untick "Applies" for flats that don't need to pay.</p>
+    <div class="coll-item" style="margin-top:16px;">
+      <h3>Pending owners — WhatsApp report</h3>
+      <p class="note" style="margin:0 0 10px;">Lists the flats that haven't paid this collection yet, ready to share in the society WhatsApp group.</p>
+      <div class="actions-row" style="margin-top:0;"><button class="primary" style="width:auto;" id="coll-pending-btn" type="button">Generate report</button></div>
+      <div id="coll-pending-output" style="margin-top:12px;"></div>
+    </div>
+  `;
+
+  document.getElementById('coll-pending-btn').onclick = ()=>{
+    const text = buildCollPendingText(c);
+    const waLink = 'https://wa.me/?text=' + encodeURIComponent(text);
+    document.getElementById('coll-pending-output').innerHTML = `
+      <div class="report-box">${escapeHtml(text)}</div>
+      <div class="actions-row">
+        <button class="wa" id="coll-wa-btn" type="button">Open in WhatsApp</button>
+        <button class="ghost" id="coll-copy-btn" type="button">Copy text</button>
+      </div>`;
+    document.getElementById('coll-wa-btn').onclick = ()=>window.open(waLink, '_blank');
+    document.getElementById('coll-copy-btn').onclick = ()=>copyText(text, 'coll-copy-btn');
+  };
+  document.getElementById('coll-select').onchange = (e)=>{ selectedCollId = e.target.value; collEditOpen = false; renderCollectionsAdmin(); };
+  document.getElementById('coll-edit-btn').onclick = ()=>{ collEditOpen = !collEditOpen; renderCollectionsAdmin(); };
+  document.getElementById('coll-close-btn').onclick = async ()=>{
+    c.closed = !c.closed; await saveCollection(c); renderCollectionsAdmin();
+  };
+  document.getElementById('coll-del-btn').onclick = async ()=>{
+    if(st.paidCount > 0 || Object.keys(collPayments).some(k=>k.startsWith(c.id + ':') && (collPayments[k].paid || collPayments[k].verified))){
+      showSyncError("This collection already has payments, so it can't be deleted — close it instead.");
+      return;
+    }
+    if(!(await customConfirm(`Delete "${c.title}"? This can't be undone.`))) return;
+    await queueSave(async ()=>{ await rpc('jdb_delete_collection', {p_token: sessionToken, p_id: c.id}); });
+    collections = collections.filter(x=>x.id !== c.id);
+    Object.keys(collPayments).forEach(k=>{ if(k.startsWith(c.id + ':')) delete collPayments[k]; });
+    selectedCollId = null;
+    renderCollectionsAdmin(); renderExpenses(); renderPeriodReport();
+  };
+  const saveBtn = document.getElementById('ce-save');
+  if(saveBtn) saveBtn.onclick = async ()=>{
+    const t = document.getElementById('ce-title').value.trim(), mo = document.getElementById('ce-month').value, am = Number(document.getElementById('ce-amount').value);
+    if(!t || !/^\d{4}-\d{2}$/.test(mo) || !(am > 0)){ document.getElementById('ce-msg').innerHTML = '<p class="note err">Title, month and an amount above ₹0 are required.</p>'; return; }
+    Object.assign(c, {title: t, month: mo, amount: am, dueDate: document.getElementById('ce-due').value || '', note: document.getElementById('ce-note').value.trim()});
+    collEditOpen = false;
+    await saveCollection(c);
+    renderCollectionsAdmin(); renderExpenses(); renderPeriodReport();
+  };
+
+  box.querySelectorAll('#coll-grid-wrap tr[data-fid]').forEach(tr=>{
+    const fid = tr.dataset.fid;
+    const cur = ()=> ({...getCollPayment(c.id, fid)});
+    const commit = async (p)=>{ collPayments[collKey(c.id, fid)] = p; await saveCollPayment(c.id, fid); renderCollectionsAdmin(); renderExpenses(); renderPeriodReport(); };
+    tr.querySelector('.cg-applies').onchange = async (e)=>{
+      const all = flats.map(f=>f.id);
+      let list = Array.isArray(c.flats) ? [...c.flats] : [...all];
+      if(e.target.checked){ if(!list.includes(fid)) list.push(fid); } else list = list.filter(x=>x !== fid);
+      c.flats = all.every(id=>list.includes(id)) ? null : list;
+      await saveCollection(c); renderCollectionsAdmin(); renderExpenses(); renderPeriodReport();
+    };
+    tr.querySelector('.cg-due').onchange = async (e)=>{
+      const v = e.target.value === '' ? null : Number(e.target.value);
+      c.amounts = {...(c.amounts||{})};
+      if(v === null || v === Number(c.amount)) delete c.amounts[fid]; else c.amounts[fid] = v;
+      await saveCollection(c); renderCollectionsAdmin(); renderPeriodReport();
+    };
+    tr.querySelector('.cg-amt').onchange = (e)=>{
+      const p = cur(); const v = Number(e.target.value);
+      if(v > 0){ p.paid = true; p.amount = v; if(!p.date) p.date = todayDate(); }
+      else { p.paid = false; p.amount = null; p.verified = false; }
+      commit(p);
+    };
+    tr.querySelector('.cg-date').onchange = (e)=>{ const p = cur(); p.date = e.target.value; commit(p); };
+    tr.querySelector('.cg-mode').onchange = (e)=>{ const p = cur(); p.mode = e.target.value; commit(p); };
+    tr.querySelector('.cg-ver').onchange = (e)=>{ const p = cur(); p.verified = e.target.checked; commit(p); };
+    tr.querySelector('.cg-waive').onchange = (e)=>{
+      const p = cur(); p.waived = e.target.checked;
+      if(p.waived){ p.paid = false; p.amount = null; p.verified = false; }
+      commit(p);
+    };
+    const inp = tr.querySelector('.cg-shot-input');
+    tr.querySelector('.cg-shot-btn').onclick = ()=>inp.click();
+    inp.onchange = async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      try{
+        const dataUrl = await compressImage(file);
+        const path = await uploadScreenshot(fid, c.month, dataUrl);
+        const p = cur(); p.screenshot = dataUrl; p.screenshotPath = path;
+        commit(p);
+      }catch(err){ if(err.code !== 'SESSION_EXPIRED') showSyncError(friendlySaveError(err)); }
+    };
+    const rmBtn = tr.querySelector('.cg-shot-rm');
+    if(rmBtn) rmBtn.onclick = async ()=>{
+      const fl = flats.find(f=>f.id===fid) || {};
+      if(!(await customConfirm(`Remove the payment screenshot for ${fl.flatNo || fid} (${c.title})? The payment amount and status stay as they are.`))) return;
+      const p = cur(); p.screenshot = null; p.screenshotPath = null;
+      commit(p);
+    };
+    const view = tr.querySelector('.cg-shot-view');
+    if(view){ view.style.cursor = 'pointer'; view.onclick = ()=>openShotModal(view.src, `${(flats.find(f=>f.id===fid)||{}).flatNo || ''} — ${c.title}`); }
+  });
+}
+
+// Same style as the maintenance "Pending owners" report on the Dashboard.
+function buildCollPendingText(c){
+  const st = collStats(c);
+  const unverified = flats.filter(f=>collAppliesTo(c, f.id) && getCollPayment(c.id, f.id).paid && !getCollPayment(c.id, f.id).verified && !getCollPayment(c.id, f.id).waived);
+  const pending = flats.filter(f=>{ if(!collAppliesTo(c, f.id)) return false; const p = getCollPayment(c.id, f.id); return !p.paid && !p.waived; });
+  const lines = [];
+  lines.push(`*${settings.societyName || 'JD Blossom Apartment'}*`);
+  lines.push(`${c.title} — ${monthLabelOf(c.month)}${c.dueDate ? ` (due ${fmtDate(c.dueDate)})` : ''}`);
+  lines.push(`Collected: ${st.paidCount}/${st.total - st.waivedCount} flats (${inr(st.collected)} of ${inr(st.expected)})`);
+  if(unverified.length) lines.push(`⏳ ${unverified.length} payment screenshot(s) awaiting verification.`);
+  lines.push('');
+  if(!pending.length){
+    lines.push('✅ All flats have paid this collection. Thank you!');
+  } else {
+    lines.push(`*Pending owners (${pending.length}):*`);
+    pending.forEach((f,i)=>lines.push(`${i+1}. ${f.flatNo} — ${f.owner || '(name not on file)'} — ${inr(collDue(c, f.id))} due`));
+    lines.push('');
+    lines.push('Kindly pay at the earliest. Thank you.');
+  }
+  return lines.join('\n');
+}
+
+/* ---------- owner: Special collections card ---------- */
+const pendingCollShots = {}; // collectionId -> compressed image chosen but not yet submitted
+function renderOwnerCollections(flat){
+  const card = document.getElementById('my-coll-card');
+  const mine = collections.filter(c=>collAppliesTo(c, flat.id))
+    .sort((a,b)=> (b.month + (b.createdAt||'')).localeCompare(a.month + (a.createdAt||'')));
+  if(!mine.length){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  const REQ = '<span class="req-star" aria-hidden="true" style="color:var(--red);font-weight:700;"> *</span>';
+  // open ones to pay/update; closed ones stay listed only if this flat never paid (so the owner knows why)
+  const open = mine.filter(c=>{ const p = getCollPayment(c.id, flat.id); return !c.closed || (!p.paid && !p.waived); });
+  const formFor = (c)=>{
+    const p = getCollPayment(c.id, flat.id);
+    const due = collDue(c, flat.id);
+    const head = `<h3>${escapeHtml(c.title)}</h3>
+      <p class="note" style="margin:0 0 10px;">${monthLabelOf(c.month)} · Amount: <b>${inr(due)}</b>${c.dueDate && !p.paid ? ` · Due by ${fmtDate(c.dueDate)}` : ''}${c.note && !p.paid && !p.waived ? `<br><span class="coll-note">${escapeHtml(c.note)}</span>` : ''}</p>`;
+    if(p.waived) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Waived by the admin — nothing to pay.</span></div>`;
+    if(p.verified) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Paid ${inr(p.amount)} · ${escapeHtml(p.mode||'—')} · ${fmtDate(p.date)}. Locked after verification.</span></div>`;
+    if(c.closed) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Closed by the admin${p.paid ? '' : ' — please contact the committee'}.</span></div>`;
+    const shot = pendingCollShots[c.id] || p.screenshot;
+    return `<div class="coll-item" data-cid="${c.id}">${head}
+      <div style="margin-bottom:10px;">${collStatusBadge(p)}${p.paid ? ` <span class="note">${inr(p.amount)} · ${escapeHtml(p.mode||'')} — awaiting verification. You can update it below.</span>` : ''}</div>
+      <p class="note" style="margin:0 0 10px;"><span style="color:var(--red);font-weight:700;">*</span> Amount paid, Mode and Payment screenshot are all mandatory.</p>
+      <div class="row" style="margin-bottom:10px;">
+        <div>
+          <label for="mc-amt-${c.id}">Amount paid (₹)${REQ}</label>
+          <input type="number" id="mc-amt-${c.id}" class="mc-amt" min="1" inputmode="numeric" value="${p.paid ? p.amount : due}">
+        </div>
+        <div>
+          <label for="mc-mode-${c.id}">Mode${REQ}</label>
+          <select id="mc-mode-${c.id}" class="mc-mode"><option value="">—</option>${PAY_MODES.map(m=>`<option ${p.mode===m?'selected':''}>${m}</option>`).join('')}</select>
+        </div>
+      </div>
+      <label>Payment screenshot${REQ}</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        ${shot ? `<img class="shot-thumb mc-shot-view" src="${shot}" alt="Payment proof" style="width:56px;height:56px;">` : ''}
+        <input type="file" accept="image/*" class="file-input-hidden mc-shot-input">
+        <button type="button" class="ghost mc-shot-btn">${shot ? 'Replace screenshot' : 'Upload screenshot'}</button>
+        ${shot ? `<button type="button" class="ghost mc-shot-remove" style="color:var(--red);border-color:var(--red);">Remove</button>` : ''}
+      </div>
+      <div class="mc-msg" role="alert"></div>
+      <div class="actions-row"><button class="primary mc-submit" style="width:auto;" type="button">${p.paid ? 'Update submission' : 'Mark as paid & submit'}</button></div>
+    </div>`;
+  };
+  document.getElementById('my-coll-open').innerHTML = open.length ? open.map(formFor).join('') : '<p class="note">No open collections right now.</p>';
+  document.getElementById('my-coll-history').innerHTML = `
+    <table>
+      <thead><tr><th>Collection</th><th>Paid</th><th>Status</th></tr></thead>
+      <tbody>${mine.map(c=>{ const p = getCollPayment(c.id, flat.id); return `<tr>
+        <td>${escapeHtml(c.title)}<div style="font-size:.74rem;color:#4E6154;">${monthLabelOf(c.month)} · ${inr(collDue(c, flat.id))}</div></td>
+        <td style="white-space:nowrap;">${p.paid ? inr(p.amount) : '—'}</td><td>${collStatusBadge(p)}</td></tr>`; }).join('')}</tbody>
+    </table>`;
+
+  document.querySelectorAll('#my-coll-open .coll-item[data-cid]').forEach(el=>{
+    const cid = el.dataset.cid;
+    const c = collections.find(x=>x.id === cid);
+    const input = el.querySelector('.mc-shot-input');
+    el.querySelector('.mc-shot-btn').onclick = ()=>input.click();
+    input.onchange = async (e)=>{
+      const file = e.target.files[0]; if(!file) return;
+      pendingCollShots[cid] = await compressImage(file);
+      const keep = {amt: el.querySelector('.mc-amt').value, mode: el.querySelector('.mc-mode').value};
+      renderOwnerCollections(flat);
+      const again = document.querySelector(`#my-coll-open .coll-item[data-cid="${cid}"]`);
+      if(again){ again.querySelector('.mc-amt').value = keep.amt; again.querySelector('.mc-mode').value = keep.mode; }
+    };
+    const view = el.querySelector('.mc-shot-view');
+    if(view){ view.style.cursor = 'pointer'; view.onclick = ()=>openShotModal(view.src, c.title); }
+    const rm = el.querySelector('.mc-shot-remove');
+    if(rm) rm.onclick = async ()=>{
+      const keep = {amt: el.querySelector('.mc-amt').value, mode: el.querySelector('.mc-mode').value};
+      const restore = ()=>{ const again = document.querySelector(`#my-coll-open .coll-item[data-cid="${cid}"]`);
+        if(again){ again.querySelector('.mc-amt').value = keep.amt; again.querySelector('.mc-mode').value = keep.mode; } };
+      const existing = getCollPayment(cid, flat.id);
+      if(pendingCollShots[cid] && !existing.screenshotPath){   // only chosen, never uploaded
+        delete pendingCollShots[cid]; renderOwnerCollections(flat); restore(); return;
+      }
+      const question = existing.paid
+        ? `Remove your screenshot for "${c.title}"? This also withdraws your submission — upload a new screenshot and submit again.`
+        : `Remove your screenshot for "${c.title}"?`;
+      if(!(await customConfirm(question))) return;
+      delete pendingCollShots[cid];
+      // a submission always needs its screenshot, so removing it withdraws the submission
+      const data = {...existing, paid: false, verified: false, screenshotPath: null};
+      delete data.screenshot;
+      try{
+        await saveChain;
+        await rpc('jdb_save_collection_payment', {p_token: sessionToken, p_collection_id: cid, p_flat_id: flat.id, p_data: data});
+        collPayments[collKey(cid, flat.id)] = {...data, screenshot: null};
+        renderOwnerView(); restore();
+      }catch(e){
+        if(e.code === 'SESSION_EXPIRED') return;
+        el.querySelector('.mc-msg').innerHTML = `<p class="note err">${escapeHtml(friendlySaveError(e))}</p>`;
+      }
+    };
+    el.querySelector('.mc-submit').onclick = async ()=>{
+      const msg = el.querySelector('.mc-msg');
+      const amtEl = el.querySelector('.mc-amt'), modeEl = el.querySelector('.mc-mode'), shotBtn = el.querySelector('.mc-shot-btn');
+      const amount = Number(amtEl.value), mode = modeEl.value;
+      const existing = getCollPayment(cid, flat.id);
+      const hasShot = !!(pendingCollShots[cid] || existing.screenshotPath);
+      const missing = [];
+      if(amtEl.value.trim() === '') missing.push('Amount paid — enter the amount you paid');
+      else if(!(amount > 0)) missing.push('Amount paid — must be more than ₹0');
+      if(!mode) missing.push('Mode — choose UPI, Cash, Bank Transfer or Cheque');
+      if(!hasShot) missing.push('Payment screenshot — upload a screenshot of your payment');
+      markCollInvalid(amtEl, !(amount > 0)); markCollInvalid(modeEl, !mode); markCollInvalid(shotBtn, !hasShot);
+      if(missing.length){
+        msg.innerHTML = `<div class="note err"><b>Not submitted — please fill the mandatory field${missing.length>1?'s':''} below:</b><ul style="margin:6px 0 0;padding-left:20px;">${missing.map(m=>`<li>${escapeHtml(m)}</li>`).join('')}</ul></div>`;
+        return;
+      }
+      const btn = el.querySelector('.mc-submit');
+      btn.disabled = true; btn.textContent = 'Submitting…'; msg.innerHTML = '';
+      try{
+        await saveChain;
+        let path = existing.screenshotPath || null, img = existing.screenshot || null;
+        if(pendingCollShots[cid]){ path = await uploadScreenshot(flat.id, c.month, pendingCollShots[cid]); img = pendingCollShots[cid]; }
+        const data = {paid: true, amount, mode, date: existing.date || todayDate(), verified: false, waived: false, screenshotPath: path};
+        await rpc('jdb_save_collection_payment', {p_token: sessionToken, p_collection_id: cid, p_flat_id: flat.id, p_data: data});
+        collPayments[collKey(cid, flat.id)] = {...data, screenshot: img};
+        delete pendingCollShots[cid];
+        renderOwnerView();
+      }catch(e){
+        if(e.code === 'SESSION_EXPIRED') return;
+        btn.disabled = false; btn.textContent = existing.paid ? 'Update submission' : 'Mark as paid & submit';
+        msg.innerHTML = `<p class="note err">${escapeHtml(friendlySaveError(e))}</p>`;
+      }
+    };
+  });
+}
+
 // Owner page: the society's fund position this month (same figures as Admin → Expenses → Receipts)
 function renderOwnerSocietyFunds(month){
   const wrap = document.getElementById('my-society-funds-wrap');
@@ -3831,15 +4384,21 @@ function renderOwnerSocietyFunds(month){
   const c = computeExpenseMonth(month);
   document.getElementById('my-society-funds-title').textContent = `Society funds — ${monthLabelOf(month)}`;
   document.getElementById('my-society-funds').innerHTML = `
-    <div class="stat"><b>${inr(c.opening)}</b><span>Previous month balance</span></div>
-    <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span>Collected this month</span></div>
-    <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span>Expenses this month</span></div>
-    <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span>Available balance</span></div>
+    <div class="stat"><b>${inr(c.opening)}</b><span><i style="font-style:normal" class="lbl-long">Previous month balance</i><i style="font-style:normal" class="lbl-short">Last month</i></span></div>
+    <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span><i style="font-style:normal" class="lbl-long">Collected this month</i><i style="font-style:normal" class="lbl-short">Collected</i></span></div>
+    ${c.specialReceived ? `<div class="stat"><b style="color:var(--green)">${inr(c.specialReceived)}</b><span><i style="font-style:normal" class="lbl-long">Onetime collections</i><i style="font-style:normal" class="lbl-short">Onetime</i></span></div>` : ''}
+    <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span><i style="font-style:normal" class="lbl-long">Expenses this month</i><i style="font-style:normal" class="lbl-short">Expenses</i></span></div>
+    <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span><i style="font-style:normal" class="lbl-long">Available balance</i><i style="font-style:normal" class="lbl-short">Available</i></span></div>
   `;
   document.getElementById('my-society-funds-note').textContent =
-    `${inr(c.opening)} + ${inr(c.maintReceived)} − ${inr(c.totalPayments)} = ${inr(c.closing)}. Expenses are added by the committee during the month.`;
+    `${inr(c.opening)} + ${inr(c.maintReceived)}${c.specialReceived ? ' + ' + inr(c.specialReceived) : ''} − ${inr(c.totalPayments)} = ${inr(c.closing)}. Expenses are added by the committee during the month.`;
+  const fundsEl = document.getElementById('my-society-funds');
+  fundsEl.classList.toggle('has-special', !!c.specialReceived);
+  fundsEl.classList.add('one-row');
+  fundsEl.style.setProperty('--n', c.specialReceived ? 5 : 4);
 }
 
+let ownerEditOpen = false; // owner opened "Edit submission" for this month's maintenance
 function renderOwnerView(){
   const flat = flats.find(f=>f.id===currentUser.flatId);
   if(!flat){ logout(); return; }
@@ -3852,54 +4411,50 @@ function renderOwnerView(){
   const status = due.waived ? 'waived' : (!p.paid ? 'pending' : (p.verified ? 'verified' : 'submitted'));
   const statusLabel = status==='waived' ? 'Waived — nothing due' : status==='pending' ? 'Pending' : (status==='verified' ? 'Paid & verified' : 'Submitted — awaiting verification');
 
+  document.getElementById('my-stats').classList.add('one-row');
+  document.getElementById('my-stats').style.setProperty('--n', 4);
   document.getElementById('my-stats').innerHTML = `
-    <div class="stat"><b>${inr(due.base)}</b><span>Base amount</span></div>
-    <div class="stat"><b style="color:${due.carryIn>0?'var(--red)':due.carryIn<0?'var(--green)':'inherit'}">${due.carryIn===0?'₹0':inr(Math.abs(due.carryIn))}</b><span>${due.carryIn>0?'Carried from last month':due.carryIn<0?'Credit from last month':'Carried from last month'}</span></div>
-    <div class="stat"><b style="font-size:1.15rem;">${inr(due.dueThisMonth)}</b><span>Due this month</span></div>
+    <div class="stat"><b>${inr(due.base)}</b><span><i style="font-style:normal" class="lbl-long">Base amount</i><i style="font-style:normal" class="lbl-short">Base</i></span></div>
+    <div class="stat"><b style="color:${due.carryIn>0?'var(--red)':due.carryIn<0?'var(--green)':'inherit'}">${due.carryIn===0?'₹0':inr(Math.abs(due.carryIn))}</b><span><i style="font-style:normal" class="lbl-long">${due.carryIn<0?'Credit from last month':'Carried from last month'}</i><i style="font-style:normal" class="lbl-short">${due.carryIn<0?'Credit':'Carried'}</i></span></div>
+    <div class="stat"><b style="font-size:1.15rem;">${inr(due.dueThisMonth)}</b><span><i style="font-style:normal" class="lbl-long">Due this month</i><i style="font-style:normal" class="lbl-short">Due</i></span></div>
     <div class="stat"><b style="color:${status==='waived'?'#4E6154':status==='pending'?'var(--red)':status==='verified'?'var(--green)':'#8A5A00'}">${status==='waived'?'Waived':statusLabel.split(' ')[0]}</b><span>${monthLabelOf(month)}</span></div>
   `;
 
+  // short status: badge + one line (details only once something was paid)
+  const showForm = !due.waived && !p.verified && (!p.paid || ownerEditOpen);
+  const balanceText = (p.paid && due.carryOut !== 0)
+    ? ` · <b style="color:${due.carryOut>0?'var(--red)':'var(--green)'}">${inr(Math.abs(due.carryOut))} ${due.carryOut>0?'owed':'credit'}</b> next month` : '';
   document.getElementById('my-current-status').innerHTML = `
     <span class="badge ${status==='waived'?'submitted':status==='pending'?'pending':status==='verified'?'verified':'submitted'}">${statusLabel}</span>
-    ${status==='waived' ? '<div class="note">Your admin has cancelled this month\'s due — nothing to pay, and it will not carry forward.</div>' : ''}
-    ${p.paid && status!=='waived' ? `<div class="note">Paid: ${inr(p.amount||0)} · Mode: ${p.mode||'—'} · Date: ${p.date||'—'}</div>` : ''}
-    ${p.paid && status!=='waived' ? `<div class="note">Balance to next month: <b style="color:${due.carryOut>0?'var(--red)':due.carryOut<0?'var(--green)':'inherit'}">${due.carryOut===0?'₹0':inr(Math.abs(due.carryOut)) + (due.carryOut>0?' owed':' credit')}</b></div>` : ''}
-    ${p.autoCheck && p.screenshot && status!=='waived' ? renderAutoCheckNote(p.autoCheck) : ''}
+    ${status==='waived' ? '<div class="note" style="margin:6px 0 0;">Waived by the admin — nothing to pay.</div>' : ''}
+    ${p.paid && status!=='waived' ? `<div class="my-paid-line">
+        ${p.screenshot && !showForm ? `<img class="shot-thumb my-shot-view" src="${p.screenshot}" alt="Payment proof">` : ''}
+        <span>${inr(p.amount||0)} · ${escapeHtml(p.mode||'—')} · ${fmtDate(p.date)}${balanceText}</span>
+      </div>` : ''}
   `;
 
   const shotPreview = p.screenshot
     ? `<img class="shot-thumb my-shot-view" src="${p.screenshot}" alt="Payment proof" style="width:56px;height:56px;">`
     : '';
 
+  const bindStatusThumb = ()=>{
+    const t = document.querySelector('#my-current-status .my-shot-view');
+    if(t){ t.style.cursor = 'pointer'; t.onclick = ()=>openShotModal(t.src, `${flat.flatNo} — ${monthLabelOf(month)}`); }
+  };
   if(due.waived){
-    document.getElementById('my-upload-area').innerHTML = `
-      <div class="note">This month's due has been waived by your admin — there's nothing to submit.</div>
-    `;
+    document.getElementById('my-upload-area').innerHTML = '';
   } else if(p.verified){
+    document.getElementById('my-upload-area').innerHTML = `<p class="note" style="margin:0;">Verified by admin — locked. Contact the committee for any correction.</p>`;
+    bindStatusThumb();
+  } else if(p.paid && !ownerEditOpen){
     document.getElementById('my-upload-area').innerHTML = `
-      <div class="note" style="color:var(--green);"><b>Verified by admin.</b> This month's payment is locked and can no longer be edited here.</div>
-      <div class="row" style="margin-top:12px;">
-        <div>
-          <label>Amount paid (₹)</label>
-          <div style="padding:11px 10px;background:var(--paper);border:1px solid var(--line);">${inr(p.amount||0)}</div>
-        </div>
-        <div>
-          <label>Mode</label>
-          <div style="padding:11px 10px;background:var(--paper);border:1px solid var(--line);">${p.mode||'—'}</div>
-        </div>
-      </div>
-      ${p.screenshot ? `<div style="margin-top:12px;"><label>Payment screenshot</label><br>${shotPreview}</div>` : ''}
-      <p class="note">If this needs a correction, please contact your admin/committee directly.</p>
-    `;
-    const shotThumb = document.querySelector('.my-shot-view');
-    if(shotThumb){
-      shotThumb.style.cursor = 'pointer';
-      shotThumb.addEventListener('click', ()=>openShotModal(shotThumb.src, `${flat.flatNo} — ${monthLabelOf(month)}`));
-    }
+      <div class="actions-row" style="margin-top:0;"><button class="ghost" id="my-edit-btn" type="button">Edit submission</button></div>`;
+    bindStatusThumb();
+    document.getElementById('my-edit-btn').onclick = ()=>{ ownerEditOpen = true; renderOwnerView(); };
   } else {
     const REQ = '<span class="req-star" aria-hidden="true" style="color:var(--red);font-weight:700;"> *</span>';
     document.getElementById('my-upload-area').innerHTML = `
-      <p class="note" id="my-required-note" style="margin:0 0 12px;"><span style="color:var(--red);font-weight:700;">*</span> All three are mandatory to submit: <b>Amount paid</b>, <b>Mode</b> and <b>Payment screenshot</b>.</p>
+      <p class="note" id="my-required-note" style="margin:0 0 10px;"><span style="color:var(--red);font-weight:700;">*</span> All fields are required.</p>
       <div class="row" style="margin-bottom:10px;">
         <div>
           <label for="my-pay-amount">Amount paid (₹)${REQ}</label>
@@ -3922,7 +4477,7 @@ function renderOwnerView(){
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             ${shotPreview}
             <input type="file" accept="image/*" id="my-shot-input" class="file-input-hidden">
-            <button type="button" class="ghost" id="my-shot-btn">${p.screenshot?'Replace screenshot':'Upload screenshot'}</button>
+            <button type="button" class="ghost" id="my-shot-btn">${p.screenshot?'Replace':'Upload screenshot'}</button>
             ${p.screenshot ? `<button type="button" class="ghost" id="my-shot-remove" style="color:var(--red);border-color:var(--red);">Remove</button>` : ''}
           </div>
           <div id="my-shot-checking" style="margin-top:8px;"></div>
@@ -3930,11 +4485,14 @@ function renderOwnerView(){
       </div>
       <div id="my-submit-msg" role="alert"></div>
       <div class="actions-row">
-        <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Update this month' : 'Mark as paid & submit'}</button>
+        <button class="primary" style="width:auto;" id="my-mark-paid-btn" type="button">${p.paid ? 'Save changes' : 'Submit payment'}</button>
+        ${p.paid ? `<button class="ghost" id="my-edit-cancel" type="button">Cancel</button>` : ''}
       </div>
-      <p class="note">Marking as paid submits it for the admin to verify against your screenshot. If you pay less or more than the amount due, the difference automatically carries to next month.</p>
+      <p class="note" style="margin-bottom:0;">The admin verifies it against your screenshot. Paying more or less carries the difference to next month.</p>
     `;
 
+    const cancelEdit = document.getElementById('my-edit-cancel');
+    if(cancelEdit) cancelEdit.onclick = ()=>{ ownerEditOpen = false; renderOwnerView(); };
     document.getElementById('my-shot-btn').onclick = ()=>document.getElementById('my-shot-input').click();
     document.getElementById('my-shot-input').addEventListener('change', async (e)=>{
       const file = e.target.files[0];
@@ -3981,6 +4539,7 @@ function renderOwnerView(){
         const existing = getPayment(flat.id, month);
         // a submission always needs its screenshot, so removing it withdraws the submission
         payments[payKey(flat.id, month)] = {...existing, screenshot: null, screenshotPath: null, verified: false, autoCheck: null, paid: false};
+        ownerEditOpen = false;
         await savePayments(flat.id, month);
         renderOwnerView();
       });
@@ -4034,6 +4593,7 @@ function renderOwnerView(){
       submitMsg.innerHTML = '';
       const autoOk = !!(existing.autoCheck && existing.autoCheck.status === 'verified');
       payments[payKey(flat.id, month)] = {...existing, paid:true, amount, mode, date: existing.date || todayDate(), verified: autoOk};
+      ownerEditOpen = false;
       await savePayments(flat.id, month);
       renderOwnerView();
     };
@@ -4042,14 +4602,17 @@ function renderOwnerView(){
   // society-wide read-only overview
   const s = monthStats(month);
   const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('my-society-stats').classList.add('one-row');
+  document.getElementById('my-society-stats').style.setProperty('--n', 5);
   document.getElementById('my-society-stats').innerHTML = `
     <div class="stat"><b>${s.total}</b><span>Flats</span></div>
     <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
     <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
     <div class="stat"><b>${pct}%</b><span>Collected</span></div>
-    <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(s.collected)}</b><span>Amount collected</span></div>
+    <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(s.collected)}</b><span><i style="font-style:normal" class="lbl-long">Amount collected</i><i style="font-style:normal" class="lbl-short">Amount</i></span></div>
   `;
   renderOwnerSocietyFunds(month);
+  renderOwnerCollections(flat);
 
   // history
   const months = last12Months();
