@@ -263,6 +263,31 @@
   #coll-grid-wrap tr.na td{opacity:.55;}
   .coll-item{border:1px solid var(--line);padding:12px;margin-bottom:12px;background:var(--white);}
   .coll-item h3{margin:0 0 4px;font-size:1rem;font-family:'Space Grotesk',sans-serif;}
+
+  /* Phones: summary boxes stay on ONE row (smaller text instead of wrapping) */
+  .lbl-short{display:none;}
+  @media (max-width:600px){
+    .stats.one-row{display:grid !important;grid-template-columns:repeat(var(--n,4),minmax(0,1fr)) !important;flex-wrap:nowrap;}
+    .stats.one-row .stat{min-width:0 !important;padding:9px 2px !important;text-align:center !important;display:block !important;grid-column:auto !important;}
+    .stats.one-row .stat b{font-size:clamp(.66rem, 3.05vw, 1rem) !important;white-space:nowrap;letter-spacing:-.01em;}
+    .stats.one-row .stat span{font-size:.47rem;letter-spacing:.02em;line-height:1.25;display:block;margin-top:2px;}
+    .stats.one-row .lbl-long{display:none;}
+    .stats.one-row .lbl-short{display:inline;}
+  }
+  /* Collections on phones: iPhone/Android draw month/date fields with their own size — give them one fixed style */
+  @media (max-width:767px){
+    #coll-month, #coll-due, #ce-month, #ce-due, #coll-grid-wrap .cg-date{
+      -webkit-appearance:none; appearance:none; box-sizing:border-box; display:block; margin:0;
+      width:100%; min-width:0; height:44px; min-height:44px; line-height:1.2; padding:0 12px;
+      font-size:16px; text-align:left; background-color:var(--paper); color:var(--ink);
+    }
+    #coll-grid-wrap .cg-date{height:40px;min-height:40px;width:150px;min-width:150px;padding:0 10px;}
+    #coll-month::-webkit-date-and-time-value, #coll-due::-webkit-date-and-time-value, #ce-month::-webkit-date-and-time-value,
+    #ce-due::-webkit-date-and-time-value, #coll-grid-wrap .cg-date::-webkit-date-and-time-value{text-align:left;margin:0;}
+    #tab-collections .row{align-items:flex-end;}
+    .coll-actions{display:flex;flex-wrap:nowrap;gap:8px;}
+    .coll-actions button{flex:1 1 0;min-width:0;padding:10px 6px;font-size:.8rem;white-space:nowrap;}
+  }
   .stats.society-funds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0;}
   .stats.society-funds .stat{min-width:0;}
   .stats.society-funds .stat b{font-size:1.1rem;white-space:nowrap;}
@@ -4032,9 +4057,9 @@ function renderCollectionsAdmin(){
         <label for="coll-select">Collection</label>
         <select id="coll-select">${sorted.map(x=>`<option value="${x.id}" ${x.id===c.id?'selected':''}>${escapeHtml(collLabel(x))}</option>`).join('')}</select>
       </div>
-      <div class="actions-row" style="margin:0;flex:0 1 auto;">
-        <button class="ghost" id="coll-edit-btn" type="button">${collEditOpen ? 'Cancel edit' : 'Edit details'}</button>
-        <button class="ghost" id="coll-close-btn" type="button">${c.closed ? 'Reopen' : 'Close collection'}</button>
+      <div class="actions-row coll-actions" style="margin:0;flex:0 1 auto;">
+        <button class="ghost" id="coll-edit-btn" type="button">${collEditOpen ? 'Cancel' : 'Edit'}</button>
+        <button class="ghost" id="coll-close-btn" type="button">${c.closed ? 'Reopen' : 'Close'}</button>
         <button class="ghost" id="coll-del-btn" type="button" style="color:var(--red);border-color:var(--red);">Delete</button>
       </div>
     </div>
@@ -4053,13 +4078,12 @@ function renderCollectionsAdmin(){
       <button class="primary" style="width:auto;" id="ce-save" type="button">Save details</button>
     </div>` : ''}
     <p class="note" style="margin:0 0 10px;">${c.dueDate ? `Due ${fmtDate(c.dueDate)} · ` : ''}${inr(c.amount)} per flat${c.note ? ' · ' + escapeHtml(c.note) : ''}${c.closed ? ' · <b>Closed</b> — owners can no longer submit' : ''}</p>
-    <div class="stats" id="coll-stats">
+    <div class="stats one-row" id="coll-stats" style="--n:5;">
       <div class="stat"><b>${st.total}</b><span>Flats</span></div>
       <div class="stat"><b style="color:var(--green)">${st.paidCount}</b><span>Paid</span></div>
       <div class="stat"><b style="color:var(--red)">${st.pendingCount}</b><span>Pending</span></div>
-      <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(st.collected)}</b><span>Collected</span></div>
+      <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(st.collected)}</b><span>Collected · ${pct}%</span></div>
       <div class="stat"><b style="white-space:nowrap;">${inr(st.expected)}</b><span>Expected</span></div>
-      <div class="stat"><b>${pct}%</b><span>Done</span></div>
     </div>
     <div id="coll-grid-wrap">
       <table>
@@ -4228,9 +4252,9 @@ function renderOwnerCollections(flat){
     const p = getCollPayment(c.id, flat.id);
     const due = collDue(c, flat.id);
     const head = `<h3>${escapeHtml(c.title)}</h3>
-      <p class="note" style="margin:0 0 10px;">${monthLabelOf(c.month)} · Amount: <b>${inr(due)}</b>${c.dueDate ? ` · Due by ${fmtDate(c.dueDate)}` : ''}${c.note ? `<br>${escapeHtml(c.note)}` : ''}</p>`;
+      <p class="note" style="margin:0 0 10px;">${monthLabelOf(c.month)} · Amount: <b>${inr(due)}</b>${c.dueDate && !p.paid ? ` · Due by ${fmtDate(c.dueDate)}` : ''}${c.note && !p.paid && !p.waived ? `<br><span class="coll-note">${escapeHtml(c.note)}</span>` : ''}</p>`;
     if(p.waived) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Waived by the admin — nothing to pay.</span></div>`;
-    if(p.verified) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Paid ${inr(p.amount)} · ${escapeHtml(p.mode||'—')} · ${p.date||'—'}. Locked after verification.</span></div>`;
+    if(p.verified) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Paid ${inr(p.amount)} · ${escapeHtml(p.mode||'—')} · ${fmtDate(p.date)}. Locked after verification.</span></div>`;
     if(c.closed) return `<div class="coll-item">${head}${collStatusBadge(p)} <span class="note">Closed by the admin${p.paid ? '' : ' — please contact the committee'}.</span></div>`;
     const shot = pendingCollShots[c.id] || p.screenshot;
     return `<div class="coll-item" data-cid="${c.id}">${head}
@@ -4352,15 +4376,18 @@ function renderOwnerSocietyFunds(month){
   const c = computeExpenseMonth(month);
   document.getElementById('my-society-funds-title').textContent = `Society funds — ${monthLabelOf(month)}`;
   document.getElementById('my-society-funds').innerHTML = `
-    <div class="stat"><b>${inr(c.opening)}</b><span>Previous month balance</span></div>
-    <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span>Collected this month</span></div>
-    ${c.specialReceived ? `<div class="stat"><b style="color:var(--green)">${inr(c.specialReceived)}</b><span>Special collections</span></div>` : ''}
-    <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span>Expenses this month</span></div>
-    <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span>Available balance</span></div>
+    <div class="stat"><b>${inr(c.opening)}</b><span><i style="font-style:normal" class="lbl-long">Previous month balance</i><i style="font-style:normal" class="lbl-short">Last month</i></span></div>
+    <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span><i style="font-style:normal" class="lbl-long">Collected this month</i><i style="font-style:normal" class="lbl-short">Collected</i></span></div>
+    ${c.specialReceived ? `<div class="stat"><b style="color:var(--green)">${inr(c.specialReceived)}</b><span><i style="font-style:normal" class="lbl-long">Special collections</i><i style="font-style:normal" class="lbl-short">Special</i></span></div>` : ''}
+    <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span><i style="font-style:normal" class="lbl-long">Expenses this month</i><i style="font-style:normal" class="lbl-short">Expenses</i></span></div>
+    <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span><i style="font-style:normal" class="lbl-long">Available balance</i><i style="font-style:normal" class="lbl-short">Available</i></span></div>
   `;
   document.getElementById('my-society-funds-note').textContent =
     `${inr(c.opening)} + ${inr(c.maintReceived)}${c.specialReceived ? ' + ' + inr(c.specialReceived) : ''} − ${inr(c.totalPayments)} = ${inr(c.closing)}. Expenses are added by the committee during the month.`;
-  document.getElementById('my-society-funds').classList.toggle('has-special', !!c.specialReceived);
+  const fundsEl = document.getElementById('my-society-funds');
+  fundsEl.classList.toggle('has-special', !!c.specialReceived);
+  fundsEl.classList.add('one-row');
+  fundsEl.style.setProperty('--n', c.specialReceived ? 5 : 4);
 }
 
 function renderOwnerView(){
@@ -4375,10 +4402,12 @@ function renderOwnerView(){
   const status = due.waived ? 'waived' : (!p.paid ? 'pending' : (p.verified ? 'verified' : 'submitted'));
   const statusLabel = status==='waived' ? 'Waived — nothing due' : status==='pending' ? 'Pending' : (status==='verified' ? 'Paid & verified' : 'Submitted — awaiting verification');
 
+  document.getElementById('my-stats').classList.add('one-row');
+  document.getElementById('my-stats').style.setProperty('--n', 4);
   document.getElementById('my-stats').innerHTML = `
-    <div class="stat"><b>${inr(due.base)}</b><span>Base amount</span></div>
-    <div class="stat"><b style="color:${due.carryIn>0?'var(--red)':due.carryIn<0?'var(--green)':'inherit'}">${due.carryIn===0?'₹0':inr(Math.abs(due.carryIn))}</b><span>${due.carryIn>0?'Carried from last month':due.carryIn<0?'Credit from last month':'Carried from last month'}</span></div>
-    <div class="stat"><b style="font-size:1.15rem;">${inr(due.dueThisMonth)}</b><span>Due this month</span></div>
+    <div class="stat"><b>${inr(due.base)}</b><span><i style="font-style:normal" class="lbl-long">Base amount</i><i style="font-style:normal" class="lbl-short">Base</i></span></div>
+    <div class="stat"><b style="color:${due.carryIn>0?'var(--red)':due.carryIn<0?'var(--green)':'inherit'}">${due.carryIn===0?'₹0':inr(Math.abs(due.carryIn))}</b><span><i style="font-style:normal" class="lbl-long">${due.carryIn<0?'Credit from last month':'Carried from last month'}</i><i style="font-style:normal" class="lbl-short">${due.carryIn<0?'Credit':'Carried'}</i></span></div>
+    <div class="stat"><b style="font-size:1.15rem;">${inr(due.dueThisMonth)}</b><span><i style="font-style:normal" class="lbl-long">Due this month</i><i style="font-style:normal" class="lbl-short">Due</i></span></div>
     <div class="stat"><b style="color:${status==='waived'?'#4E6154':status==='pending'?'var(--red)':status==='verified'?'var(--green)':'#8A5A00'}">${status==='waived'?'Waived':statusLabel.split(' ')[0]}</b><span>${monthLabelOf(month)}</span></div>
   `;
 
@@ -4565,12 +4594,14 @@ function renderOwnerView(){
   // society-wide read-only overview
   const s = monthStats(month);
   const pct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
+  document.getElementById('my-society-stats').classList.add('one-row');
+  document.getElementById('my-society-stats').style.setProperty('--n', 5);
   document.getElementById('my-society-stats').innerHTML = `
     <div class="stat"><b>${s.total}</b><span>Flats</span></div>
     <div class="stat"><b style="color:var(--green)">${s.paidCount}</b><span>Paid</span></div>
     <div class="stat"><b style="color:var(--red)">${s.pendingCount}</b><span>Pending</span></div>
     <div class="stat"><b>${pct}%</b><span>Collected</span></div>
-    <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(s.collected)}</b><span>Amount collected</span></div>
+    <div class="stat"><b style="color:var(--green);white-space:nowrap;">${inr(s.collected)}</b><span><i style="font-style:normal" class="lbl-long">Amount collected</i><i style="font-style:normal" class="lbl-short">Amount</i></span></div>
   `;
   renderOwnerSocietyFunds(month);
   renderOwnerCollections(flat);

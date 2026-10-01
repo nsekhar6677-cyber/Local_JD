@@ -230,3 +230,30 @@ test('pending owners WhatsApp report for a collection', async ({ page, request }
   await expect(page.locator('#coll-copy-btn')).toBeVisible();
   await noHorizontalOverflow(page);
 });
+
+test('phone layout: summary boxes on one row, buttons on one line, date fields aligned; paid hides the note', async ({ page, browser, request }, testInfo) => {
+  only(testInfo);
+  const oneRow = (p, sel) => p.$$eval(`${sel} .stat`, st => new Set(st.map(e => Math.round(e.getBoundingClientRect().top))).size);
+  await openApp(page); await loginAdmin(page); await createCollection(page);
+  if ((page.viewportSize().width) <= 600) {
+    expect(await oneRow(page, '#coll-stats')).toBe(1);
+    expect(await page.$$eval('.coll-actions button', b => new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size)).toBe(1);
+    const box = id => page.locator(id).boundingBox();
+    const [t, mo, am, du] = [await box('#coll-title'), await box('#coll-month'), await box('#coll-amount'), await box('#coll-due')];
+    if (Math.abs(t.y - mo.y) < 30) { expect(Math.abs(t.y - mo.y)).toBeLessThan(2); expect(Math.abs(am.y - du.y)).toBeLessThan(2); }
+    expect(Math.abs(mo.height - t.height)).toBeLessThan(2);
+  }
+  await row(page, 'id3').locator('.cg-amt').fill('1500'); await row(page, 'id3').locator('.cg-amt').press('Tab'); await settle(page);
+  await row(page, 'id3').locator('.cg-mode').selectOption('UPI'); await settle(page);
+  await row(page, 'id3').locator('.cg-ver').check(); await settle(page);
+  const o = await browser.newPage({ viewport: page.viewportSize() });
+  await openApp(o); await loginOwner(o, { flatId: 'id3', pin: '1003' });
+  const item = o.locator('#my-coll-open .coll-item').first();
+  await expect(item).toContainText('Locked after verification');
+  await expect(item).not.toContainText('Lift motor replacement'); // description hidden once paid
+  if ((o.viewportSize().width) <= 600) {
+    for (const sel of ['#my-stats', '#my-society-stats']) expect(await oneRow(o, sel)).toBe(1);
+  }
+  await noHorizontalOverflow(o);
+  await o.close();
+});
