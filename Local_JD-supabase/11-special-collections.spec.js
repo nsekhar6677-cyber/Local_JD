@@ -10,6 +10,7 @@ const only = (testInfo) => test.skip(!FULL.includes(testInfo.project.name), 'run
 
 async function createCollection(page, { title = 'Lift repair contribution', amount = '1500', due = '' } = {}) {
   await tab(page, 'collections');
+  await page.click('#coll-new-btn');
   await page.fill('#coll-title', title);
   await page.fill('#coll-amount', amount);
   if (due) await page.fill('#coll-due', due);
@@ -22,9 +23,18 @@ const row = (page, fid) => page.locator(`#coll-grid-wrap tr[data-fid="${fid}"]`)
 test('admin creates a collection; title, month and amount are required', async ({ page, request }, testInfo) => {
   only(testInfo);
   await openApp(page); await loginAdmin(page); await tab(page, 'collections');
+  // simple view: only the button until it's clicked
+  await expect(page.locator('#coll-new-btn')).toBeVisible();
+  await expect(page.locator('#coll-title')).toBeHidden();
+  await page.click('#coll-new-btn');
+  await expect(page.locator('#coll-new-btn')).toBeHidden();
   await page.click('#coll-create-btn');
   await expect(page.locator('#coll-create-msg')).toContainText('Please fill: Title, Amount per flat');
+  await page.click('#coll-cancel-btn');
+  await expect(page.locator('#coll-title')).toBeHidden();
+  await expect(page.locator('#coll-new-btn')).toBeVisible();
   await createCollection(page);
+  await expect(page.locator('#coll-title')).toBeHidden(); // form closes after Save
   await expect(page.locator('#coll-create-msg')).toContainText('Created "Lift repair contribution"');
   await expect(page.locator('#coll-stats')).toContainText('35Flats');
   await expect(page.locator('#coll-stats')).toContainText('₹52,500Expected');
@@ -105,7 +115,7 @@ test('collected amount shows in Expenses receipts, Reports, exports and the owne
   // owner society funds include it
   const o = await browser.newPage({ viewport: page.viewportSize() });
   await openApp(o); await loginOwner(o, { flatId: 'id3', pin: '1003' });
-  await expect(o.locator('#my-society-funds')).toContainText('₹3,000Special collections');
+  await expect(o.locator('#my-society-funds')).toContainText('₹3,000Onetime collections');
   await expect(o.locator('#my-society-funds-note')).toContainText('₹20,000 + ₹0 + ₹3,000 − ₹5,000 = ₹18,000');
   await noHorizontalOverflow(o);
   await o.close();
@@ -237,6 +247,7 @@ test('phone layout: summary boxes on one row, buttons on one line, date fields a
   await openApp(page); await loginAdmin(page); await createCollection(page);
   if ((page.viewportSize().width) <= 600) {
     expect(await oneRow(page, '#coll-stats')).toBe(1);
+    await page.click('#coll-new-btn');
     expect(await page.$$eval('.coll-actions button', b => new Set(b.map(x => Math.round(x.getBoundingClientRect().top))).size)).toBe(1);
     const box = id => page.locator(id).boundingBox();
     const [t, mo, am, du] = [await box('#coll-title'), await box('#coll-month'), await box('#coll-amount'), await box('#coll-due')];
@@ -256,4 +267,15 @@ test('phone layout: summary boxes on one row, buttons on one line, date fields a
   }
   await noHorizontalOverflow(o);
   await o.close();
+});
+
+test('admin dashboard: summary on one row on phones, no society overview card', async ({ page }, testInfo) => {
+  only(testInfo);
+  await openApp(page); await loginAdmin(page);
+  await expect(page.locator('#tab-dashboard')).not.toContainText('Society overview');
+  await expect(page.locator('#dash-society-stats')).toHaveCount(0);
+  if ((page.viewportSize().width) <= 600) {
+    expect(await page.$$eval('#dash-stats .stat', st => new Set(st.map(e => Math.round(e.getBoundingClientRect().top))).size)).toBe(1);
+  }
+  await noHorizontalOverflow(page);
 });

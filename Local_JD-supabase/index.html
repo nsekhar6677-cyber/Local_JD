@@ -778,7 +778,7 @@
           <input type="month" id="dash-month">
         </div>
       </div>
-      <div class="stats" id="dash-stats"></div>
+      <div class="stats one-row" id="dash-stats" style="--n:6;"></div>
       <div class="note" id="dash-lastcheck"></div>
     </div>
 
@@ -799,10 +799,6 @@
       <div id="dash-flats-wrap" style="overflow-x:auto;"></div>
     </div>
 
-    <div class="card">
-      <h2>Society overview — this month</h2>
-      <div id="dash-society-stats" class="stats"></div>
-    </div>
   </section>
 
   <!-- ===== ADMIN: FLATS & ACCESS ===== -->
@@ -854,8 +850,9 @@
   <!-- ===== ADMIN: REPORTS ===== -->
   <section id="tab-collections">
     <div class="card">
-      <h2>New special collection</h2>
-      <p class="note">A one-time amount collected from flats (e.g. lift repair). Kept separate from maintenance and shown as income in that month's expense report.</p>
+      <button class="primary" style="width:auto;" id="coll-new-btn" type="button">+ Create collection</button>
+      <div id="coll-form" style="display:none;">
+      <h2 style="margin-top:4px;">New special collection</h2>
       <div class="row">
         <div>
           <label for="coll-title">Title<span style="color:var(--red);"> *</span></label>
@@ -882,7 +879,11 @@
           <input type="text" id="coll-note" placeholder="Optional" maxlength="200">
         </div>
       </div>
-      <button class="primary" style="width:auto;" id="coll-create-btn" type="button">Create collection</button>
+      <div class="actions-row coll-form-actions" style="margin-top:4px;">
+        <button class="primary" style="width:auto;" id="coll-create-btn" type="button">Save</button>
+        <button class="ghost" id="coll-cancel-btn" type="button">Cancel</button>
+      </div>
+      </div>
       <div id="coll-create-msg" role="alert"></div>
     </div>
 
@@ -2810,6 +2811,17 @@ function initAdminUI(){
   document.getElementById('exp-month').value = m;
   document.getElementById('coll-month').value = m;
   document.getElementById('coll-create-btn').onclick = createCollection;
+  const showCollForm = (open)=>{
+    document.getElementById('coll-form').style.display = open ? '' : 'none';
+    document.getElementById('coll-new-btn').style.display = open ? 'none' : '';
+    if(open){ document.getElementById('coll-create-msg').innerHTML = ''; document.getElementById('coll-title').focus(); }
+  };
+  document.getElementById('coll-new-btn').onclick = ()=>showCollForm(true);
+  document.getElementById('coll-cancel-btn').onclick = ()=>{
+    ['coll-title','coll-amount','coll-due','coll-note'].forEach(id=>document.getElementById(id).value='');
+    showCollForm(false);
+  };
+  window.closeCollForm = ()=>showCollForm(false);
 
   document.getElementById('dash-month').onchange = renderDashboard;
   document.getElementById('entry-month').onchange = renderEntry;
@@ -3171,13 +3183,6 @@ function renderDashboard(){
     </table>
   `;
 
-  // society overview — this month only
-  const monthPct = s.total ? Math.round((s.paidCount/s.total)*100) : 0;
-  document.getElementById('dash-society-stats').innerHTML = `
-    <div class="stat"><b>${inr(s.collected)}</b><span>Collected</span></div>
-    <div class="stat"><b>${inr(s.expected)}</b><span>Expected</span></div>
-    <div class="stat"><b>${monthPct}%</b><span>Overall</span></div>
-  `;
 }
 
 async function renderWhatsAppReport(){
@@ -4039,6 +4044,7 @@ async function createCollection(){
   selectedCollId = c.id;
   await saveCollection(c);
   ['coll-title','coll-amount','coll-due','coll-note'].forEach(id=>document.getElementById(id).value='');
+  if(window.closeCollForm) window.closeCollForm();
   msg.innerHTML = `<p class="note" style="color:var(--green);">Created "${escapeHtml(title)}". Owners can now see and pay it.</p>`;
   setTimeout(()=>{ msg.innerHTML=''; }, 4000);
   renderCollectionsAdmin(); renderExpenses(); renderPeriodReport();
@@ -4380,7 +4386,7 @@ function renderOwnerSocietyFunds(month){
   document.getElementById('my-society-funds').innerHTML = `
     <div class="stat"><b>${inr(c.opening)}</b><span><i style="font-style:normal" class="lbl-long">Previous month balance</i><i style="font-style:normal" class="lbl-short">Last month</i></span></div>
     <div class="stat"><b style="color:var(--green)">${inr(c.maintReceived)}</b><span><i style="font-style:normal" class="lbl-long">Collected this month</i><i style="font-style:normal" class="lbl-short">Collected</i></span></div>
-    ${c.specialReceived ? `<div class="stat"><b style="color:var(--green)">${inr(c.specialReceived)}</b><span><i style="font-style:normal" class="lbl-long">Special collections</i><i style="font-style:normal" class="lbl-short">Special</i></span></div>` : ''}
+    ${c.specialReceived ? `<div class="stat"><b style="color:var(--green)">${inr(c.specialReceived)}</b><span><i style="font-style:normal" class="lbl-long">Onetime collections</i><i style="font-style:normal" class="lbl-short">Onetime</i></span></div>` : ''}
     <div class="stat"><b style="color:var(--red)">${inr(c.totalPayments)}</b><span><i style="font-style:normal" class="lbl-long">Expenses this month</i><i style="font-style:normal" class="lbl-short">Expenses</i></span></div>
     <div class="stat"><b style="color:${c.closing < 0 ? 'var(--red)' : 'var(--blue)'}">${inr(c.closing)}</b><span><i style="font-style:normal" class="lbl-long">Available balance</i><i style="font-style:normal" class="lbl-short">Available</i></span></div>
   `;
