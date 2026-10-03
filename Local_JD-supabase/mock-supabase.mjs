@@ -40,6 +40,7 @@ await migrate();
 
 const files = new Map(); // path -> {buf, type}
 const signed = new Map(); // token -> path
+const backups = new Map(); // name -> {csv, at} (jdb-backups bucket)
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -91,6 +92,61 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
+    // emulates the jdb-backup Edge Function (same backup CSV; keeps only the newest)
+    if (req.method === 'POST' && url.pathname === '/functions/v1/jdb-backup') {
+      const body = JSON.parse((await readBody(req)) || '{}');
+      const key = req.headers['x-cleanup-key'];
+      if (key) { if (key !== 'test-cleanup-key') return send(res, 401, { error: 'UNAUTHORIZED' }); }
+      else {
+        const sess = await callRpc('jdb_session_info', { p_token: String(body.token || '') }, 'service_role');
+        if (!sess) return send(res, 401, { error: 'SESSION_EXPIRED' });
+        if (sess.role !== 'admin') return send(res, 403, { error: 'FORBIDDEN' });
+      }
+      const action = body.action || (key ? 'run' : 'status');
+      if (action === 'run') {
+        const all = async (sql) => (await q(() => db.query(sql))).rows;
+        const flats = await all(`select id, flat_no, owner, phone, amount, pin, recovery_question, recovery_answer_hash from jdb.flats order by sort_order, id`);
+        const pays = await all(`select flat_id, month, data, screenshot_path from jdb.payments`);
+        const exps = await all(`select month, data from jdb.expenses`);
+        const adm = await all(`select id, name, phone, password_hash from jdb.admins order by sort_order, id`);
+        const st = (await all(`select * from jdb.settings where id = 1`))[0] || {};
+        const cols = await all(`select id, month, data, created_at from jdb.collections order by month, created_at`);
+        const cps = await all(`select collection_id, flat_id, data, screenshot_path from jdb.collection_payments`);
+        const num = v => (v === null || v === undefined || v === '' ? null : Number(v));
+        const paymentsOut = {}; pays.forEach(p => { paymentsOut[`${p.flat_id}:${p.month}`] = { ...(p.data || {}), screenshotPath: p.screenshot_path ?? null }; });
+        const expensesOut = {}; exps.forEach(e => { expensesOut[e.month] = e.data; });
+        const cpOut = {}; cps.forEach(p => { cpOut[`${p.collection_id}:${p.flat_id}`] = { ...(p.data || {}), screenshotPath: p.screenshot_path ?? null }; });
+        const settingsOut = { societyName: st.society_name, defaultAmount: num(st.default_amount), adminPhone: st.admin_phone || '', adminRecoveryQuestion: st.admin_recovery_question || '', lastCheck: st.last_check || null };
+        if (st.admin_recovery_answer_hash) settingsOut.adminRecoveryAnswerHash = st.admin_recovery_answer_hash;
+        const rows = [['key', 'value'], ['meta_app', st.society_name || 'JD Blossom Apartment'], ['meta_exportedAt', new Date().toISOString()], ['meta_source', 'automatic monthly backup'],
+          ['flats', JSON.stringify(flats.map(f => ({ id: f.id, flatNo: f.flat_no, owner: f.owner, phone: f.phone, amount: num(f.amount), pin: f.pin, recoveryQuestion: f.recovery_question, ...(f.recovery_answer_hash ? { recoveryAnswerHash: f.recovery_answer_hash } : {}) })))],
+          ['payments', JSON.stringify(paymentsOut)], ['settings', JSON.stringify(settingsOut)], ['expenses', JSON.stringify(expensesOut)],
+          ['admins', JSON.stringify(adm.map(a => ({ id: a.id, name: a.name, phone: a.phone, passwordHash: a.password_hash })))],
+          ['collections', JSON.stringify(cols.map(c => ({ ...(c.data || {}), id: c.id, month: c.month, createdAt: c.created_at })))],
+          ['collectionPayments', JSON.stringify(cpOut)]];
+        const csv = rows.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
+        const now = body.now ? new Date(body.now) : new Date();
+        const t = new Date(now.getTime() + 5.5 * 3600e3).toISOString();
+        const name = `JDB_backup_${t.slice(0, 10)}_${t.slice(11, 13)}${t.slice(14, 16)}.csv`;
+        backups.set(name, { csv, at: now.toISOString() });
+        const old = [...backups.keys()].filter(n => n !== name);
+        old.forEach(n => backups.delete(n));
+        return send(res, 200, { ok: true, name, size: csv.length, removed: old.length });
+      }
+      if (action === 'status') {
+        const names = [...backups.keys()].sort().reverse();
+        if (!names.length) return send(res, 200, { latest: null });
+        const n = names[0];
+        return send(res, 200, { latest: { name: n, createdAt: backups.get(n).at, size: backups.get(n).csv.length, url: `http://localhost:${PORT}/backup-file/${encodeURIComponent(n)}` }, count: names.length });
+      }
+      return send(res, 400, { error: 'BAD_ACTION' });
+    }
+    if (req.method === 'GET' && url.pathname.startsWith('/backup-file/')) {
+      const b = backups.get(decodeURIComponent(url.pathname.slice('/backup-file/'.length)));
+      if (!b) return send(res, 404, { error: 'not found' });
+      res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment' }); return res.end(b.csv);
+    }
+    if (url.pathname === '/__backups') return send(res, 200, { names: [...backups.keys()] });
     if (req.method === 'POST' && url.pathname === '/functions/v1/jdb-files') {
       const body = JSON.parse((await readBody(req)) || '{}');
       const sess = await callRpc('jdb_session_info', { p_token: String(body.token || '') }, 'service_role');
@@ -161,7 +217,7 @@ const server = http.createServer(async (req, res) => {
           for r in select p.oid::regprocedure sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname like 'jdb\\_%' loop
             execute 'drop function ' || r.sig || ' cascade';
           end loop; end $$;`); await migrate(); });
-      files.clear(); signed.clear(); delayMs = 0;
+      files.clear(); signed.clear(); backups.clear(); delayMs = 0;
       return send(res, 200, { ok: true });
     }
     if (url.pathname === '/__delay') { delayMs = Number(url.searchParams.get('ms') || 0); return send(res, 200, { delayMs }); }

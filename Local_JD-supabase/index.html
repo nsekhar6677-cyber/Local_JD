@@ -265,6 +265,7 @@
   .coll-item h3{margin:0 0 4px;font-size:1rem;font-family:'Space Grotesk',sans-serif;}
 
   /* Phones: summary boxes stay on ONE row (smaller text instead of wrapping) */
+  .auto-backup{margin-top:14px;padding:12px;border:1px solid var(--line);background:var(--paper);font-size:.88rem;}
   .lbl-short{display:none;}
   .my-paid-line{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:.9rem;color:var(--ink);}
   .my-paid-line .shot-thumb{width:44px;height:44px;flex:0 0 auto;}
@@ -1042,6 +1043,14 @@
         <input type="file" id="import-backup-input" accept=".csv" class="file-input-hidden">
       </div>
       <p class="note" id="backup-note"></p>
+      <div class="auto-backup" id="auto-backup">
+        <div><b>Automatic backup</b> — 1st of every month, 6:00 AM. Only the latest is kept.</div>
+        <div id="auto-backup-status" class="note" style="margin:4px 0 8px;">Checking…</div>
+        <div class="actions-row" style="margin-top:0;">
+          <button class="ghost" id="auto-backup-download" type="button" disabled>Download latest</button>
+          <button class="ghost" id="auto-backup-run" type="button">Back up now</button>
+        </div>
+      </div>
       <div id="diagnostics-output" style="margin-top:14px;"></div>
     </div>
   </section>
@@ -1285,6 +1294,56 @@ async function filesApi(body){
     throw new ApiError(code, res.status);
   }
   return data;
+}
+
+// Automatic monthly backups (jdb-backup Edge Function): latest file + "Back up now".
+async function backupApi(body){
+  let res;
+  try{
+    res = await fetch(`${SUPABASE_URL}/functions/v1/jdb-backup`, {
+      method:'POST',
+      headers:{'apikey': SUPABASE_PUBLISHABLE_KEY, 'Content-Type':'application/json'},
+      body: JSON.stringify({...body, token: sessionToken})
+    });
+  }catch(e){ throw new ApiError('NETWORK', 0); }
+  let data = null;
+  try{ data = await res.json(); }catch(e){ data = null; }
+  if(!res.ok){
+    const code = (data && data.error) || ('HTTP_' + res.status);
+    if(code === 'SESSION_EXPIRED') handleSessionExpired();
+    throw new ApiError(code, res.status);
+  }
+  return data;
+}
+let autoBackupUrl = null;
+async function refreshAutoBackupStatus(){
+  const st = document.getElementById('auto-backup-status');
+  const dl = document.getElementById('auto-backup-download');
+  if(!st) return;
+  try{
+    const r = await backupApi({action:'status'});
+    autoBackupUrl = r.latest && r.latest.url;
+    dl.disabled = !autoBackupUrl;
+    st.textContent = r.latest
+      ? `Latest: ${r.latest.name}${r.latest.createdAt ? ' · saved ' + new Date(r.latest.createdAt).toLocaleString('en-IN') : ''}`
+      : 'No automatic backup yet — the first one runs on the 1st (or tap "Back up now").';
+  }catch(e){
+    if(e.code === 'SESSION_EXPIRED') return;
+    autoBackupUrl = null; dl.disabled = true;
+    st.textContent = e.code === 'NETWORK' ? "Couldn't check — you appear to be offline." : "Automatic backup isn't set up on this server yet.";
+  }
+}
+async function runAutoBackupNow(){
+  const btn = document.getElementById('auto-backup-run');
+  const st = document.getElementById('auto-backup-status');
+  btn.disabled = true; btn.textContent = 'Backing up…';
+  try{
+    const r = await backupApi({action:'run'});
+    st.textContent = `Saved ${r.name}.`;
+    await refreshAutoBackupStatus();
+  }catch(e){
+    if(e.code !== 'SESSION_EXPIRED') st.textContent = `Backup failed — ${e.code === 'NETWORK' ? 'you appear to be offline' : 'please try again'}. Nothing was deleted.`;
+  }finally{ btn.disabled = false; btn.textContent = 'Back up now'; }
 }
 
 // Stores a compressed screenshot in Supabase Storage; returns its storage path.
@@ -1717,9 +1776,12 @@ async function importBackupCsv(e){
     e.target.value = '';
   }catch(err){
     if(err && err.code === 'SESSION_EXPIRED') return;
+    // a file that can't be parsed fails with a SyntaxError; anything else came from the server
     note.textContent = err && err.code === 'NETWORK'
       ? "Could not restore — you appear to be offline. Nothing was changed."
-      : "Could not read that file — make sure it's a backup CSV exported from this app.";
+      : (err instanceof SyntaxError || !err || !err.code)
+        ? "Could not read that file — make sure it's a backup CSV exported from this app (don't open and re-save it in Excel)."
+        : `Restore failed on the server — nothing was changed. (${err.code})`;
     e.target.value = '';
   }
 }
@@ -2851,6 +2913,9 @@ function initAdminUI(){
   document.getElementById('import-backup-btn').onclick = ()=>document.getElementById('import-backup-input').click();
   document.getElementById('import-backup-input').onchange = importBackupCsv;
   document.getElementById('run-diagnostics-btn').onclick = runStorageDiagnostics;
+  document.getElementById('auto-backup-run').onclick = runAutoBackupNow;
+  document.getElementById('auto-backup-download').onclick = ()=>{ if(autoBackupUrl) window.open(autoBackupUrl, '_blank'); };
+  document.querySelectorAll('#tabs button').forEach(b=>{ if(b.dataset.tab === 'settings') b.addEventListener('click', refreshAutoBackupStatus); });
   document.getElementById('save-my-profile-btn').onclick = saveMyProfile;
   document.getElementById('save-my-password-btn').onclick = saveMyPassword;
   document.getElementById('add-admin-btn').onclick = addAdminProfile;

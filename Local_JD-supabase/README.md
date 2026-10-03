@@ -91,6 +91,16 @@ screen differs by more than 0.1 % of pixels or scrolls sideways.
   verification and history stay. Runs are logged in `jdb.cleanup_log`
   (last run shown in Settings → Run diagnostics).
 
+## Automatic monthly backup
+
+* On the **1st of every month at 06:00 IST** pg_cron calls the `jdb-backup` Edge Function, which saves the same
+  backup CSV as Settings → Data → Download backup into the private Storage bucket `jdb-backups` and deletes older
+  files (only the newest is kept). Restore it with Settings → Data → Restore backup.
+* Admin → Settings → Data shows the latest automatic backup with **Download latest** and **Back up now**.
+  Also visible in the Supabase dashboard → Storage → jdb-backups.
+* Setup per project: deploy `supabase/functions/jdb-backup` (JWT verification off), then run
+  `supabase/migrations/20261003000100_monthly_backup.sql` (bucket + schedule; uses the clean-up Vault secrets).
+
 ## Special (one-time) collections
 
 * **Admin → Collections** — create a collection (title, month, amount per flat, due date, note), then track every
