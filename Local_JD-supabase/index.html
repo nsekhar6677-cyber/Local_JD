@@ -1717,9 +1717,12 @@ async function importBackupCsv(e){
     e.target.value = '';
   }catch(err){
     if(err && err.code === 'SESSION_EXPIRED') return;
+    // a file that can't be parsed fails with a SyntaxError; anything else came from the server
     note.textContent = err && err.code === 'NETWORK'
       ? "Could not restore — you appear to be offline. Nothing was changed."
-      : "Could not read that file — make sure it's a backup CSV exported from this app.";
+      : (err instanceof SyntaxError || !err || !err.code)
+        ? "Could not read that file — make sure it's a backup CSV exported from this app (don't open and re-save it in Excel)."
+        : `Restore failed on the server — nothing was changed. (${err.code})`;
     e.target.value = '';
   }
 }
